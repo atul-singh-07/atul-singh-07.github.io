@@ -6,11 +6,30 @@
 
   <style>
     body {
+      margin: 0;
       background-color: #0d1117;
       color: #c9d1d9;
       font-family: monospace;
+    }
+
+    /* Boot Screen */
+    #boot {
+      padding: 40px;
+      white-space: pre-line;
+      font-size: 16px;
+    }
+
+    /* Main Content */
+    #content {
+      display: none;
       padding: 40px;
       line-height: 1.6;
+      animation: fadeIn 1s ease-in forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     h1 {
@@ -24,24 +43,13 @@
       margin-top: 0;
     }
 
-    p {
-      max-width: 800px;
-    }
-
     .box {
       border: 1px solid #30363d;
       padding: 20px;
       margin-bottom: 25px;
       border-radius: 10px;
       background-color: #0d1117;
-    }
-
-    ul {
-      max-width: 800px;
-    }
-
-    li {
-      margin-bottom: 8px;
+      max-width: 900px;
     }
 
     a {
@@ -52,56 +60,66 @@
     a:hover {
       text-decoration: underline;
     }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 
 <body>
 
+<div id="boot"></div>
+
+<div id="content">
   <h1>Atul Singh</h1>
   <p>
     I enjoy building things where <strong>hardware, code, and logic</strong> come together.
     Most of my learning happens by experimenting, breaking things, and understanding
-    why they work the way they do.
+    how systems behave in the real world.
   </p>
 
   <div class="box">
     <h2>What I’m Interested In</h2>
     <p>
-      I have a strong interest in electronics and embedded systems, but I don’t see hardware
-      as separate from software. For me, electronics becomes meaningful when it interacts
-      with code — controlling motion, sensing the environment, and responding in real time.
+      I’m deeply interested in electronics and embedded systems, but I don’t see hardware
+      in isolation. For me, hardware becomes meaningful when it interacts with software
+      to sense, control, and respond.
     </p>
   </div>
 
   <div class="box">
     <h2>How I Like to Build</h2>
     <p>
-      I prefer project-based learning over purely theoretical study. I enjoy working on
-      small systems that combine microcontrollers, sensors, actuators, and C/C++ code.
+      I prefer project-based learning. I enjoy building small systems using Arduino,
+      sensors, motors, and C/C++ code, then refining them step by step.
     </p>
     <p>
-      While building, I focus on understanding behavior, debugging issues, and improving
-      reliability step by step — both in hardware connections and in software logic.
+      Debugging, understanding failures, and improving reliability are parts of the process
+      I enjoy the most.
     </p>
   </div>
 
   <div class="box">
     <h2>Things I’ve Worked On</h2>
     <ul>
-      <li>Arduino-based projects involving sensors, motors, and real-time interaction</li>
-      <li>Servo motor control using external power sources and proper grounding</li>
-      <li>Ultrasonic sensor experiments for distance measurement and scanning</li>
-      <li>C programming concepts explored through hands-on problem solving</li>
-      <li>Small system-level projects that mix timing, logic, and hardware control</li>
+      <li>Arduino-based systems involving sensors and actuators</li>
+      <li>Servo motor control using external power and common grounding</li>
+      <li>Ultrasonic sensor experiments for distance and scanning</li>
+      <li>C programming explored through practical problem-solving</li>
+      <li>Small system-level projects combining timing, logic, and hardware</li>
     </ul>
   </div>
 
   <div class="box">
     <h2>Currently Exploring</h2>
     <p>
-      Right now, I’m focused on strengthening my foundations in both electronics and
-      programming, with the goal of building more stable and well-structured systems.
-      I’m especially curious about how low-level code interacts directly with hardware.
+      I’m strengthening my foundations in electronics and programming, with a growing
+      interest in how low-level code interacts directly with hardware.
     </p>
   </div>
 
@@ -112,6 +130,41 @@
       LinkedIn: (add link later)
     </p>
   </div>
+</div>
+
+<script>
+  const bootLines = [
+    "Initializing system...",
+    "Loading core modules...",
+    "Mounting projects directory...",
+    "Detecting hardware interfaces...",
+    "Starting embedded workspace...",
+    "",
+    "Welcome, Atul Singh.",
+    "Launching portfolio..."
+  ];
+
+  const bootElement = document.getElementById("boot");
+  const contentElement = document.getElementById("content");
+
+  let line = 0;
+
+  function typeBoot() {
+    if (line < bootLines.length) {
+      bootElement.innerHTML += bootLines[line] + "\n";
+      line++;
+      setTimeout(typeBoot, 400);
+    } else {
+      setTimeout(() => {
+        bootElement.style.display = "none";
+        contentElement.style.display = "block";
+      }, 800);
+    }
+  }
+
+  typeBoot();
+</script>
 
 </body>
 </html>
+
