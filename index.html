@@ -1,170 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Atul Singh | Portfolio</title>
+<meta charset="UTF-8">
+<title>Atul Singh</title>
 
-  <style>
-    body {
-      margin: 0;
-      background-color: #0d1117;
-      color: #c9d1d9;
-      font-family: monospace;
-    }
+<style>
+  body {
+    margin: 0;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: monospace;
+  }
 
-    /* Boot Screen */
-    #boot {
-      padding: 40px;
-      white-space: pre-line;
-      font-size: 16px;
-    }
+  #terminal {
+    padding: 50px;
+    font-size: 16px;
+    min-height: 100vh;
+  }
 
-    /* Main Content */
-    #content {
-      display: none;
-      padding: 40px;
-      line-height: 1.6;
-      animation: fadeIn 1s ease-in forwards;
-    }
+  .prompt {
+    color: #58a6ff;
+  }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    background: #c9d1d9;
+    margin-left: 4px;
+    animation: blink 1s infinite;
+  }
 
-    h1 {
-      color: #58a6ff;
-      font-size: 2.5em;
-      margin-bottom: 10px;
-    }
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
 
-    h2 {
-      color: #58a6ff;
-      margin-top: 0;
-    }
+  #content {
+    display: none;
+    padding: 40px;
+    animation: fade 1s ease forwards;
+  }
 
-    .box {
-      border: 1px solid #30363d;
-      padding: 20px;
-      margin-bottom: 25px;
-      border-radius: 10px;
-      background-color: #0d1117;
-      max-width: 900px;
-    }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
-    a {
-      color: #79c0ff;
-      text-decoration: none;
-    }
+  h1 {
+    color: #58a6ff;
+    font-size: 2.4em;
+  }
 
-    a:hover {
-      text-decoration: underline;
-    }
+  h2 {
+    color: #58a6ff;
+  }
 
-    ul {
-      padding-left: 20px;
-    }
+  .box {
+    border: 1px solid #30363d;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 12px;
+    max-width: 900px;
+  }
 
-    li {
-      margin-bottom: 8px;
-    }
-  </style>
+  a {
+    color: #79c0ff;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+</style>
 </head>
 
 <body>
 
-<div id="boot"></div>
+<div id="terminal"></div>
 
 <div id="content">
   <h1>Atul Singh</h1>
+
   <p>
-    I enjoy building things where <strong>hardware, code, and logic</strong> come together.
-    Most of my learning happens by experimenting, breaking things, and understanding
-    how systems behave in the real world.
+    I enjoy building systems where <strong>hardware, software, and logic</strong>
+    meet. I learn best by building, breaking, debugging, and understanding
+    how things behave in real environments.
   </p>
 
   <div class="box">
-    <h2>What I’m Interested In</h2>
+    <h2>Interests</h2>
     <p>
-      I’m deeply interested in electronics and embedded systems, but I don’t see hardware
-      in isolation. For me, hardware becomes meaningful when it interacts with software
-      to sense, control, and respond.
+      Electronics, embedded systems, and low-level programming.
+      I like connecting code with real-world hardware to make
+      systems sense, move, and respond.
     </p>
   </div>
 
   <div class="box">
-    <h2>How I Like to Build</h2>
+    <h2>How I Build</h2>
     <p>
-      I prefer project-based learning. I enjoy building small systems using Arduino,
-      sensors, motors, and C/C++ code, then refining them step by step.
-    </p>
-    <p>
-      Debugging, understanding failures, and improving reliability are parts of the process
-      I enjoy the most.
+      I follow a project-first approach. Most of my learning comes from
+      Arduino-based experiments, working with sensors, motors,
+      and C/C++ code.
     </p>
   </div>
 
   <div class="box">
-    <h2>Things I’ve Worked On</h2>
+    <h2>Experience</h2>
     <ul>
-      <li>Arduino-based systems involving sensors and actuators</li>
-      <li>Servo motor control using external power and common grounding</li>
-      <li>Ultrasonic sensor experiments for distance and scanning</li>
-      <li>C programming explored through practical problem-solving</li>
-      <li>Small system-level projects combining timing, logic, and hardware</li>
+      <li>Servo motor control with external power handling</li>
+      <li>Ultrasonic sensing and scanning systems</li>
+      <li>Embedded logic using C/C++</li>
+      <li>Debugging hardware–software interaction</li>
     </ul>
   </div>
 
   <div class="box">
-    <h2>Currently Exploring</h2>
-    <p>
-      I’m strengthening my foundations in electronics and programming, with a growing
-      interest in how low-level code interacts directly with hardware.
-    </p>
-  </div>
-
-  <div class="box">
-    <h2>Find Me</h2>
-    <p>
-      <a href="https://github.com/atul-singh-07" target="_blank">GitHub</a><br>
-      LinkedIn: (add link later)
-    </p>
+    <h2>Links</h2>
+    <a href="https://github.com/atul-singh-07" target="_blank">GitHub</a><br>
+    LinkedIn (add later)
   </div>
 </div>
 
 <script>
-  const bootLines = [
-    "Initializing system...",
-    "Loading core modules...",
-    "Mounting projects directory...",
-    "Detecting hardware interfaces...",
-    "Starting embedded workspace...",
-    "",
-    "Welcome, Atul Singh.",
-    "Launching portfolio..."
-  ];
+  const terminal = document.getElementById("terminal");
 
-  const bootElement = document.getElementById("boot");
-  const contentElement = document.getElementById("content");
+  const lines = [
+    "atul@portfolio:~$ whoami",
+    "Atul Singh",
+    "",
+    "atul@portfolio:~$ interests",
+    "hardware · electronics · embedded · coding",
+    "",
+    "atul@portfolio:~$ load portfolio",
+    "✓ ready"
+  ];
 
   let line = 0;
 
-  function typeBoot() {
-    if (line < bootLines.length) {
-      bootElement.innerHTML += bootLines[line] + "\n";
+  function typeLine() {
+    if (line < lines.length) {
+      terminal.innerHTML +=
+        `<div><span class="prompt">${lines[line]}</span></div>`;
       line++;
-      setTimeout(typeBoot, 400);
+      setTimeout(typeLine, 450);
     } else {
+      terminal.innerHTML += `<span class="cursor"></span>`;
       setTimeout(() => {
-        bootElement.style.display = "none";
-        contentElement.style.display = "block";
-      }, 800);
+        terminal.style.display = "none";
+        document.getElementById("content").style.display = "block";
+      }, 900);
     }
   }
 
-  typeBoot();
+  typeLine();
 </script>
 
 </body>
 </html>
+
+
 
