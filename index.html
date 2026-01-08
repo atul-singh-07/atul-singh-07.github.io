@@ -12,6 +12,7 @@
     font-family: monospace;
   }
 
+  /* Terminal intro */
   #terminal {
     padding: 50px;
     font-size: 16px;
@@ -25,6 +26,7 @@
   .cursor {
     display: inline-block;
     width: 8px;
+    height: 16px;
     background: #c9d1d9;
     margin-left: 4px;
     animation: blink 1s infinite;
@@ -35,10 +37,13 @@
     51%, 100% { opacity: 0; }
   }
 
+  /* Main content */
   #content {
     display: none;
     padding: 40px;
+    line-height: 1.7;
     animation: fade 1s ease forwards;
+    max-width: 900px;
   }
 
   @keyframes fade {
@@ -49,18 +54,11 @@
   h1 {
     color: #58a6ff;
     font-size: 2.4em;
+    margin-bottom: 20px;
   }
 
-  h2 {
-    color: #58a6ff;
-  }
-
-  .box {
-    border: 1px solid #30363d;
-    padding: 20px;
-    margin-bottom: 25px;
-    border-radius: 12px;
-    max-width: 900px;
+  p {
+    margin-bottom: 18px;
   }
 
   a {
@@ -82,44 +80,40 @@
   <h1>Atul Singh</h1>
 
   <p>
-    I enjoy building systems where <strong>hardware, software, and logic</strong>
-    meet. I learn best by building, breaking, debugging, and understanding
-    how things behave in real environments.
+    I spend most of my time building small systems and trying to understand how
+    things actually work — not just in theory, but in practice.
   </p>
 
-  <div class="box">
-    <h2>Interests</h2>
-    <p>
-      Electronics, embedded systems, and low-level programming.
-      I like connecting code with real-world hardware to make
-      systems sense, move, and respond.
-    </p>
-  </div>
+  <p>
+    My interest started with electronics and hardware, but very quickly I realized
+    that the real magic happens where hardware meets software. Writing code that
+    controls something physical, watching it fail, fixing it, and seeing it work
+    again is what keeps me engaged.
+  </p>
 
-  <div class="box">
-    <h2>How I Build</h2>
-    <p>
-      I follow a project-first approach. Most of my learning comes from
-      Arduino-based experiments, working with sensors, motors,
-      and C/C++ code.
-    </p>
-  </div>
+  <p>
+    I enjoy experimenting with microcontrollers, sensors, and motors, and I’m
+    particularly interested in how low-level code interacts with hardware.
+    I don’t aim for perfect builds — I aim for learning why something behaves
+    the way it does.
+  </p>
 
-  <div class="box">
-    <h2>Experience</h2>
-    <ul>
-      <li>Servo motor control with external power handling</li>
-      <li>Ultrasonic sensing and scanning systems</li>
-      <li>Embedded logic using C/C++</li>
-      <li>Debugging hardware–software interaction</li>
-    </ul>
-  </div>
+  <p>
+    Most of what I know comes from building projects, breaking them, debugging
+    connections, rewriting logic, and slowly improving things step by step.
+    That process matters more to me than the final result.
+  </p>
 
-  <div class="box">
-    <h2>Links</h2>
-    <a href="https://github.com/atul-singh-07" target="_blank">GitHub</a><br>
-    LinkedIn (add later)
-  </div>
+  <p>
+    Right now, I’m focused on strengthening my fundamentals in electronics and
+    programming, while continuing to build hands-on projects that help me connect
+    both worlds more clearly.
+  </p>
+
+  <p>
+    You can find my work and experiments on
+    <a href="https://github.com/atul-singh-07" target="_blank">GitHub</a>.
+  </p>
 </div>
 
 <script>
@@ -129,21 +123,21 @@
     "atul@portfolio:~$ whoami",
     "Atul Singh",
     "",
-    "atul@portfolio:~$ interests",
-    "hardware · electronics · embedded · coding",
+    "atul@portfolio:~$ focus",
+    "learning by building · hardware + software",
     "",
-    "atul@portfolio:~$ load portfolio",
-    "✓ ready"
+    "atul@portfolio:~$ load site",
+    "✓ done"
   ];
 
-  let line = 0;
+  let index = 0;
 
-  function typeLine() {
-    if (line < lines.length) {
+  function typeLines() {
+    if (index < lines.length) {
       terminal.innerHTML +=
-        `<div><span class="prompt">${lines[line]}</span></div>`;
-      line++;
-      setTimeout(typeLine, 450);
+        `<div><span class="prompt">${lines[index]}</span></div>`;
+      index++;
+      setTimeout(typeLines, 450);
     } else {
       terminal.innerHTML += `<span class="cursor"></span>`;
       setTimeout(() => {
@@ -153,11 +147,8 @@
     }
   }
 
-  typeLine();
+  typeLines();
 </script>
 
 </body>
 </html>
-
-
-
