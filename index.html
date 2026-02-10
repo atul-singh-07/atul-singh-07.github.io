@@ -2,332 +2,384 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <title>Atul Singh</title>
 
 <style>
 :root {
-  --bg: #0d1117;
-  --fg: #c9d1d9;
-  --accent: #58a6ff;
-  --muted: #8b949e;
-  --card: #161b22;
-  --glass: rgba(255,255,255,0.05);
+  --bg:#0d1117;
+  --fg:#c9d1d9;
+  --accent:#58a6ff;
+  --muted:#8b949e;
+  --card:#161b22;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #ffffff;
-    --fg: #24292f;
-    --accent: #0969da;
-    --muted: #57606a;
-    --card: #f6f8fa;
-    --glass: rgba(0,0,0,0.04);
+    --bg:#ffffff;
+    --fg:#24292f;
+    --accent:#0969da;
+    --muted:#57606a;
+    --card:#f6f8fa;
   }
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior:smooth; }
 
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ===== Boot Loader ===== */
+#loader {
+  position:fixed;
+  inset:0;
+  background:var(--bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+
+.loader-box {
+  width:300px;
+}
+
+.loader-text {
+  font-size:14px;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+
+.progress {
+  height:3px;
+  background:rgba(255,255,255,0.1);
+  overflow:hidden;
+}
+
+.progress span {
+  display:block;
+  height:100%;
+  width:0;
+  background:var(--accent);
+  animation:load 2.2s ease forwards;
+}
+
+@keyframes load {
+  to { width:100%; }
 }
 
 /* ===== Status Bar ===== */
 #statusbar {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  padding: 8px 16px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(8px);
-  z-index: 100;
+  position:fixed;
+  top:0;
+  width:100%;
+  padding:8px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:13px;
+  background:rgba(0,0,0,0.35);
+  backdrop-filter:blur(8px);
+  z-index:100;
 }
+
+.status-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .status-right a {
+      color: var(--fg);
+      font-size: 16px;
+      opacity: 0.85;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .status-right a:hover {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+
 
 /* ===== Terminal ===== */
 #terminal {
-  min-height: 100vh;
-  padding: 80px 50px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  min-height:100vh;
+  padding:80px 50px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
 }
 
-.prompt { color: var(--accent); }
+#terminal div { opacity:.9; }
+.prompt { color:var(--accent); }
 
 .cursor {
-  display: inline-block;
-  width: 8px;
-  height: 16px;
-  background: var(--fg);
-  margin-left: 4px;
-  animation: blink 1s infinite;
+  width:8px;
+  height:16px;
+  background:var(--fg);
+  display:inline-block;
+  animation:blink 1s infinite;
 }
 
 @keyframes blink {
   0%,50%{opacity:1}51%,100%{opacity:0}
 }
 
-/* ===== Content ===== */
+/* ===== Main Content ===== */
 #content {
-  display: none;
-  max-width: 1000px;
-  margin: auto;
-  padding: 120px 40px;
-  animation: fadeUp 1s ease forwards;
+  display:none;
+  max-width:900px;
+  margin:auto;
+  padding:120px 40px;
+  animation:fadeUp 1s ease forwards;
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
 }
 
-h1 { color: var(--accent); font-size: 2.6em; }
-h2 { margin-top: 70px; color: var(--accent); }
+h1 { color:var(--accent); font-size:2.6em; }
+h2 { margin-top:60px; color:var(--accent); }
+p { line-height:1.8; }
+.muted { color:var(--muted); }
 
-p { line-height: 1.8; }
-.muted { color: var(--muted); }
-
-/* ===== Projects.app ===== */
-.project-grid {
-  margin-top: 30px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 22px;
+/* ===== Desktop Icons ===== */
+.desktop {
+  display:flex;
+  gap:30px;
+  margin-top:30px;
 }
 
-.project-tile {
-  background: var(--glass);
-  border-radius: 14px;
-  padding: 26px 20px;
-  text-align: center;
-  cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: transform 0.3s ease, background 0.3s ease;
+.icon {
+  text-align:center;
+  cursor:pointer;
+  opacity:.85;
 }
 
-.project-tile:hover {
-  transform: translateY(-6px);
-  background: var(--card);
-}
+.icon:hover { opacity:1; }
 
-.project-icon {
-  font-size: 30px;
-  margin-bottom: 10px;
-}
+.icon div { font-size:32px; }
+.icon span { font-size:13px; color:var(--muted); }
 
-.project-name {
-  font-size: 14px;
-}
-
-/* ===== Modal ===== */
+/* ===== Modal Window ===== */
 .modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  backdrop-filter:blur(6px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:200;
 }
 
-.modal-content {
-  background: var(--card);
-  padding: 30px;
-  border-radius: 14px;
-  max-width: 420px;
-  width: 90%;
-  animation: fadeUp 0.4s ease;
+.window {
+  background:var(--card);
+  width:90%;
+  max-width:900px;
+  border-radius:14px;
+  padding:20px 24px 28px;
+  animation:fadeUp .4s ease;
 }
 
-.modal h3 {
-  margin-top: 0;
-  color: var(--accent);
+.window-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
 }
 
-.modal ul {
-  padding-left: 18px;
+.window-header strong { color:var(--accent); }
+.close { cursor:pointer; color:var(--muted); }
+
+/* Projects Grid */
+.projects-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:20px;
 }
 
-.close {
-  float: right;
-  cursor: pointer;
-  color: var(--muted);
+.project-card {
+  background:rgba(255,255,255,.02);
+  padding:16px;
+  border-radius:10px;
 }
 
-/* ===== Links ===== */
-.links {
-  display: flex;
-  gap: 20px;
-  margin-top: 20px;
+.project-card h3 {
+  margin:0 0 6px;
+  font-size:1em;
 }
 
-.links a {
-  color: var(--fg);
-  text-decoration: none;
-  opacity: 0.85;
+.project-card ul {
+  margin:0;
+  padding-left:16px;
+  font-size:14px;
+  color:var(--muted);
 }
-
-.links a:hover { opacity: 1; }
 </style>
 </head>
 
 <body>
 
+<!-- Loader -->
+<div id="loader">
+  <div class="loader-box">
+    <div class="loader-text">booting system</div>
+    <div class="progress"><span></span></div>
+  </div>
+</div>
+
 <!-- Status Bar -->
 <div id="statusbar">
   <div>Atul Singh</div>
-  <div id="clock">--:--</div>
+  <div class="status-right">
+    <a href="https://github.com/atul-singh-07" target="_blank" title="GitHub">
+  <i class="fab fa-github"></i>
+</a>
+
+<a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" title="LinkedIn">
+  <i class="fab fa-linkedin"></i>
+</a>
+    <div id="clock">--:--</div>
+  </div>
 </div>
 
 <!-- Terminal -->
 <div id="terminal"></div>
 
-<!-- Content -->
+<!-- Main Content -->
 <div id="content">
   <h1>Atul Singh</h1>
   <p class="muted">Electronics • Systems • Programming</p>
 
   <p>
-    I enjoy building systems where <strong>hardware and software interact</strong>.
-    My learning is hands-on — build, test, debug, improve.
+    I enjoy building systems where hardware, software, and logic meet.
+    I learn best by building, breaking, debugging, and understanding real behavior.
   </p>
 
   <h2>Focus</h2>
   <p>
-    Embedded systems using <strong>C/C++</strong>, strengthening <strong>Python</strong>,
-    and understanding real-world system behavior.
+    Embedded systems using <strong>C/C++</strong>, exploring <strong>Python</strong>,
+    and building reliable hardware-software interactions.
   </p>
 
-  <h2>Projects.app</h2>
-  <div class="project-grid">
-    <div class="project-tile" onclick="openProject('blink')">
-      <div class="project-icon">💡</div>
-      <div class="project-name">LED Blink</div>
+  <h2>Desktop</h2>
+  <div class="desktop">
+    <div class="icon" onclick="openProjects()">
+      <div>📂</div>
+      <span>Projects.app</span>
     </div>
-
-    <div class="project-tile" onclick="openProject('traffic')">
-      <div class="project-icon">🚦</div>
-      <div class="project-name">Traffic Light</div>
-    </div>
-
-    <div class="project-tile" onclick="openProject('servo')">
-      <div class="project-icon">⚙️</div>
-      <div class="project-name">Servo Control</div>
-    </div>
-
-    <div class="project-tile" onclick="openProject('radar')">
-      <div class="project-icon">📡</div>
-      <div class="project-name">Ultrasonic Radar</div>
-    </div>
-  </div>
-
-  <h2>Links</h2>
-  <div class="links">
-    <a href="https://github.com/atul-singh-07" target="_blank">GitHub</a>
-    <a href="#">LinkedIn</a>
   </div>
 </div>
 
-<!-- Modal -->
-<div id="modal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal()">×</span>
-    <h3 id="modalTitle"></h3>
-    <ul id="modalDetails"></ul>
+<!-- Projects App -->
+<div class="modal" id="projectsModal">
+  <div class="window">
+    <div class="window-header">
+      <strong>Projects.app</strong>
+      <div class="close" onclick="closeProjects()">✕</div>
+    </div>
+
+    <div class="projects-grid">
+      <div class="project-card">
+        <h3>Ultrasonic Radar Scanner</h3>
+        <ul>
+          <li>Servo-based 180° scanning</li>
+          <li>Real-time distance sensing</li>
+        </ul>
+      </div>
+
+      <div class="project-card">
+        <h3>Servo Motor Control</h3>
+        <ul>
+          <li>External power handling</li>
+          <li>Precise angle control</li>
+        </ul>
+      </div>
+
+      <div class="project-card">
+        <h3>Arduino Automation</h3>
+        <ul>
+          <li>Sensor-based logic system</li>
+          <li>Event-driven responses</li>
+        </ul>
+      </div>
+
+      <div class="project-card">
+        <h3>IR & Obstacle Detection</h3>
+        <ul>
+          <li>IR sensor integration</li>
+          <li>Threshold decisions</li>
+        </ul>
+      </div>
+
+      <div class="project-card">
+        <h3>LED & Buzzer Systems</h3>
+        <ul>
+          <li>Timing & pattern logic</li>
+          <li>Hardware debugging</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-/* ===== Terminal ===== */
-const terminal = document.getElementById("terminal");
-const lines = [
-  "system@atul: initializing…",
+/* Loader → Terminal */
+setTimeout(()=>{
+  document.getElementById("loader").style.display="none";
+  startTerminal();
+},2300);
+
+/* Terminal typing */
+const terminal=document.getElementById("terminal");
+const lines=[
+  "system boot sequence complete",
   "",
-  "→ electronics layer loaded",
-  "→ programming environment active",
+  "user: atul-singh",
+  "profile: initializing interface",
   "",
-  "user: Atul Singh",
-  "mode: learning · building · iterating",
-  "",
-  "launching interface…",
-  "✓ ready"
+  "status: online"
 ];
+let i=0;
 
-let i = 0;
-function type() {
-  if (i < lines.length) {
-    terminal.innerHTML += `<div class="prompt">${lines[i]}</div>`;
-    i++;
-    setTimeout(type, 420);
-  } else {
-    terminal.innerHTML += `<span class="cursor"></span>`;
-    setTimeout(() => {
-      terminal.style.opacity = "0";
-      setTimeout(() => {
-        terminal.style.display = "none";
-        document.getElementById("content").style.display = "block";
-      }, 600);
-    }, 900);
+function startTerminal(){
+  function type(){
+    if(i<lines.length){
+      terminal.innerHTML+=`<div class="prompt">${lines[i]}</div>`;
+      i++; setTimeout(type,420);
+    } else {
+      terminal.innerHTML+=`<span class="cursor"></span>`;
+      setTimeout(()=>{
+        terminal.style.display="none";
+        document.getElementById("content").style.display="block";
+      },900);
+    }
   }
-}
-type();
-
-/* ===== Clock ===== */
-function updateClock() {
-  const now = new Date();
-  document.getElementById("clock").innerText =
-    now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-/* ===== Project Data ===== */
-const projects = {
-  blink: {
-    title: "LED Blink",
-    details: [
-      "Basic GPIO control using Arduino",
-      "Timing logic using delays"
-    ]
-  },
-  traffic: {
-    title: "Traffic Light Controller",
-    details: [
-      "Sequential logic with LEDs",
-      "State-based control system"
-    ]
-  },
-  servo: {
-    title: "Servo Motor Control",
-    details: [
-      "PWM based angle control",
-      "External power handling"
-    ]
-  },
-  radar: {
-    title: "Ultrasonic Radar System",
-    details: [
-      "Distance measurement using HC-SR04",
-      "Servo-based scanning motion"
-    ]
-  }
-};
-
-/* ===== Modal Logic ===== */
-function openProject(key) {
-  document.getElementById("modalTitle").innerText = projects[key].title;
-  document.getElementById("modalDetails").innerHTML =
-    projects[key].details.map(d => `<li>${d}</li>`).join("");
-  document.getElementById("modal").style.display = "flex";
+  type();
 }
 
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
+/* Clock */
+function updateClock(){
+  const n=new Date();
+  document.getElementById("clock").innerText=
+    n.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock,1000); updateClock();
+
+/* Projects App */
+function openProjects(){
+  document.getElementById("projectsModal").style.display="flex";
+}
+function closeProjects(){
+  document.getElementById("projectsModal").style.display="none";
 }
 </script>
 
