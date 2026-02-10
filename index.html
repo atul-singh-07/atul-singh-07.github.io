@@ -2,39 +2,56 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <title>Atul Singh</title>
 
 <style>
 :root {
-  --bg:#0d1117;
-  --fg:#c9d1d9;
-  --accent:#58a6ff;
-  --muted:#8b949e;
-  --card:#161b22;
+  --bg:#05070b;
+  --fg:#dbe4ef;
+  --accent:#63a8ff;
+  --muted:#9aa9bb;
+  --card:rgba(18, 24, 33, 0.8);
+  --window:rgba(17, 23, 32, 0.85);
+  --border:rgba(255,255,255,.1);
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg:#ffffff;
-    --fg:#24292f;
-    --accent:#0969da;
-    --muted:#57606a;
-    --card:#f6f8fa;
+    --bg:#eef2f8;
+    --fg:#1f2b3a;
+    --accent:#0865d7;
+    --muted:#536579;
+    --card:rgba(255,255,255,.75);
+    --window:rgba(255,255,255,.85);
+    --border:rgba(15, 23, 42, .12);
   }
 }
 
+* { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
 
 body {
   margin:0;
-  background:var(--bg);
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 20% 10%, #162337 0%, transparent 45%),
+    radial-gradient(circle at 80% 80%, #151f33 0%, transparent 35%),
+    var(--bg);
   color:var(--fg);
   font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-/* ===== Boot Loader ===== */
+body::before {
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(to bottom, rgba(255,255,255,.02), rgba(0,0,0,.08));
+}
+
+/* Loader */
 #loader {
   position:fixed;
   inset:0;
@@ -45,9 +62,7 @@ body {
   z-index:999;
 }
 
-.loader-box {
-  width:300px;
-}
+.loader-box { width:300px; }
 
 .loader-text {
   font-size:14px;
@@ -69,11 +84,9 @@ body {
   animation:load 2.2s ease forwards;
 }
 
-@keyframes load {
-  to { width:100%; }
-}
+@keyframes load { to { width:100%; } }
 
-/* ===== Status Bar ===== */
+/* Status Bar */
 #statusbar {
   position:fixed;
   top:0;
@@ -83,31 +96,32 @@ body {
   justify-content:space-between;
   align-items:center;
   font-size:13px;
-  background:rgba(0,0,0,0.35);
-  backdrop-filter:blur(8px);
+  background:color-mix(in srgb, var(--card) 80%, transparent);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(10px);
   z-index:100;
 }
 
 .status-right {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
 
-    .status-right a {
-      color: var(--fg);
-      font-size: 16px;
-      opacity: 0.85;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-    }
+.status-right a,
+.status-right span {
+  color:var(--fg);
+  font-size:15px;
+  opacity:.9;
+  text-decoration:none;
+}
 
-    .status-right a:hover {
-      opacity: 1;
-      transform: translateY(-1px);
-    }
+.status-right a:hover {
+  opacity:1;
+  transform:translateY(-1px);
+}
 
-
-/* ===== Terminal ===== */
+/* Terminal */
 #terminal {
   min-height:100vh;
   padding:80px 50px;
@@ -116,7 +130,6 @@ body {
   justify-content:center;
 }
 
-#terminal div { opacity:.9; }
 .prompt { color:var(--accent); }
 
 .cursor {
@@ -128,15 +141,16 @@ body {
 }
 
 @keyframes blink {
-  0%,50%{opacity:1}51%,100%{opacity:0}
+  0%,50%{opacity:1}
+  51%,100%{opacity:0}
 }
 
-/* ===== Main Content ===== */
+/* Main Content */
 #content {
   display:none;
-  max-width:900px;
+  max-width:980px;
   margin:auto;
-  padding:120px 40px;
+  padding:120px 40px 80px;
   animation:fadeUp 1s ease forwards;
 }
 
@@ -145,30 +159,47 @@ body {
   to{opacity:1;transform:translateY(0)}
 }
 
-h1 { color:var(--accent); font-size:2.6em; }
-h2 { margin-top:60px; color:var(--accent); }
+.hero {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:30px;
+  box-shadow:0 18px 42px rgba(0,0,0,.25);
+}
+
+h1 { color:var(--accent); font-size:2.6em; margin:0; }
+h2 { margin-top:40px; color:var(--accent); }
 p { line-height:1.8; }
 .muted { color:var(--muted); }
 
-/* ===== Desktop Icons ===== */
+/* Desktop */
 .desktop {
   display:flex;
-  gap:30px;
-  margin-top:30px;
+  flex-wrap:wrap;
+  gap:26px;
+  margin-top:28px;
 }
 
 .icon {
   text-align:center;
   cursor:pointer;
-  opacity:.85;
+  opacity:.9;
+  width:92px;
+  padding:10px 8px;
+  border-radius:12px;
+  transition:.2s ease;
 }
 
-.icon:hover { opacity:1; }
+.icon:hover {
+  opacity:1;
+  transform:translateY(-3px);
+  background:rgba(255,255,255,.06);
+}
 
-.icon div { font-size:32px; }
-.icon span { font-size:13px; color:var(--muted); }
+.icon div { font-size:34px; }
+.icon span { font-size:12px; color:var(--muted); }
 
-/* ===== Modal Window ===== */
+/* Modal */
 .modal {
   position:fixed;
   inset:0;
@@ -178,15 +209,16 @@ p { line-height:1.8; }
   align-items:center;
   justify-content:center;
   z-index:200;
+  padding:20px;
 }
 
 .window {
-  background:var(--card);
-  width:90%;
-  max-width:900px;
+  background:var(--window);
+  border:1px solid var(--border);
+  width:min(900px, 96vw);
   border-radius:14px;
-  padding:20px 24px 28px;
-  animation:fadeUp .4s ease;
+  padding:14px 20px 24px;
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
 }
 
 .window-header {
@@ -196,10 +228,24 @@ p { line-height:1.8; }
   margin-bottom:20px;
 }
 
-.window-header strong { color:var(--accent); }
-.close { cursor:pointer; color:var(--muted); }
+.window-controls { display:flex; gap:8px; }
 
-/* Projects Grid */
+.dot {
+  width:11px;
+  height:11px;
+  border-radius:50%;
+}
+
+.dot.red { background:#ff5f57; }
+.dot.yellow { background:#febb2f; }
+.dot.green { background:#28c840; }
+
+.close {
+  cursor:pointer;
+  color:var(--muted);
+}
+
+/* Projects */
 .projects-grid {
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
@@ -207,14 +253,10 @@ p { line-height:1.8; }
 }
 
 .project-card {
-  background:rgba(255,255,255,.02);
+  background:rgba(255,255,255,.03);
   padding:16px;
-  border-radius:10px;
-}
-
-.project-card h3 {
-  margin:0 0 6px;
-  font-size:1em;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.08);
 }
 
 .project-card ul {
@@ -223,12 +265,54 @@ p { line-height:1.8; }
   font-size:14px;
   color:var(--muted);
 }
+
+.about-list {
+  margin:0;
+  padding-left:16px;
+}
+
+.about-list li {
+  margin-bottom:8px;
+  color:var(--muted);
+}
+
+/* Dock */
+.dock {
+  position:fixed;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:10px;
+  background:rgba(20,26,36,.65);
+  border:1px solid var(--border);
+  padding:10px 14px;
+  border-radius:14px;
+  backdrop-filter:blur(8px);
+  z-index:110;
+}
+
+.dock button {
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.08);
+  color:var(--fg);
+  font-family:inherit;
+  border-radius:10px;
+  padding:8px 10px;
+  cursor:pointer;
+}
+
+.dock button:hover { background:rgba(255,255,255,.16); }
+
+@media (max-width:640px) {
+  #content, #terminal { padding-inline:20px; }
+  .hero { padding:24px; }
+}
 </style>
 </head>
 
 <body>
 
-<!-- Loader -->
 <div id="loader">
   <div class="loader-box">
     <div class="loader-text">booting system</div>
@@ -236,151 +320,120 @@ p { line-height:1.8; }
   </div>
 </div>
 
-<!-- Status Bar -->
 <div id="statusbar">
-  <div>Atul Singh</div>
+  <div>AtulOS • Atul Singh</div>
   <div class="status-right">
-    <a href="https://github.com/atul-singh-07" target="_blank" title="GitHub">
-  <i class="fab fa-github"></i>
-</a>
-
-<a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" title="LinkedIn">
-  <i class="fab fa-linkedin"></i>
-</a>
+    <a href="https://github.com/atul-singh-07" target="_blank"><i class="fab fa-github"></i></a>
+    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank"><i class="fab fa-linkedin"></i></a>
+    <span><i class="fa-solid fa-wifi"></i></span>
+    <span><i class="fa-solid fa-battery-three-quarters"></i></span>
     <div id="clock">--:--</div>
   </div>
 </div>
 
-<!-- Terminal -->
 <div id="terminal"></div>
 
-<!-- Main Content -->
 <div id="content">
-  <h1>Atul Singh</h1>
-  <p class="muted">Electronics • Systems • Programming</p>
+  <section class="hero">
+    <h1>Atul Singh</h1>
+    <p class="muted">Electronics • Systems • Programming</p>
 
-  <p>
-    I enjoy building systems where hardware, software, and logic meet.
-    I learn best by building, breaking, debugging, and understanding real behavior.
-  </p>
+    <p>I enjoy building systems where hardware, software, and logic meet.</p>
 
-  <h2>Focus</h2>
-  <p>
-    Embedded systems using <strong>C/C++</strong>, exploring <strong>Python</strong>,
-    and building reliable hardware-software interactions.
-  </p>
+    <h2>Desktop</h2>
+    <div class="desktop">
+      <div class="icon" onclick="openWindow('projectsModal')">
+        <div>📂</div><span>Projects.app</span>
+      </div>
+      <div class="icon" onclick="openWindow('aboutModal')">
+        <div>💾</div><span>About.app</span>
+      </div>
+    </div>
+  </section>
+</div>
 
-  <h2>Desktop</h2>
-  <div class="desktop">
-    <div class="icon" onclick="openProjects()">
-      <div>📂</div>
-      <span>Projects.app</span>
+<div class="dock">
+  <button onclick="openWindow('projectsModal')">Projects</button>
+  <button onclick="openWindow('aboutModal')">About</button>
+</div>
+
+<div class="modal" id="projectsModal" onclick="backdropClose(event,'projectsModal')">
+  <div class="window">
+    <div class="window-header">
+      <div class="window-controls">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+      </div>
+      <strong>Projects.app</strong>
+      <div class="close" onclick="closeWindow('projectsModal')">✕</div>
+    </div>
+
+    <div class="projects-grid">
+      <div class="project-card"><h3>Ultrasonic Radar Scanner</h3></div>
+      <div class="project-card"><h3>Servo Motor Control</h3></div>
+      <div class="project-card"><h3>Arduino Automation</h3></div>
     </div>
   </div>
 </div>
 
-<!-- Projects App -->
-<div class="modal" id="projectsModal">
+<div class="modal" id="aboutModal" onclick="backdropClose(event,'aboutModal')">
   <div class="window">
     <div class="window-header">
-      <strong>Projects.app</strong>
-      <div class="close" onclick="closeProjects()">✕</div>
+      <div class="window-controls">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+      </div>
+      <strong>About.app</strong>
+      <div class="close" onclick="closeWindow('aboutModal')">✕</div>
     </div>
 
-    <div class="projects-grid">
-      <div class="project-card">
-        <h3>Ultrasonic Radar Scanner</h3>
-        <ul>
-          <li>Servo-based 180° scanning</li>
-          <li>Real-time distance sensing</li>
-        </ul>
-      </div>
-
-      <div class="project-card">
-        <h3>Servo Motor Control</h3>
-        <ul>
-          <li>External power handling</li>
-          <li>Precise angle control</li>
-        </ul>
-      </div>
-
-      <div class="project-card">
-        <h3>Arduino Automation</h3>
-        <ul>
-          <li>Sensor-based logic system</li>
-          <li>Event-driven responses</li>
-        </ul>
-      </div>
-
-      <div class="project-card">
-        <h3>IR & Obstacle Detection</h3>
-        <ul>
-          <li>IR sensor integration</li>
-          <li>Threshold decisions</li>
-        </ul>
-      </div>
-
-      <div class="project-card">
-        <h3>LED & Buzzer Systems</h3>
-        <ul>
-          <li>Timing & pattern logic</li>
-          <li>Hardware debugging</li>
-        </ul>
-      </div>
-    </div>
+    <ul class="about-list">
+      <li>Embedded systems enthusiast</li>
+      <li>Firmware & hardware debugging</li>
+      <li>Open to internships & collaboration</li>
+    </ul>
   </div>
 </div>
 
 <script>
-/* Loader → Terminal */
-setTimeout(()=>{
-  document.getElementById("loader").style.display="none";
+setTimeout(() => {
+  document.getElementById("loader").style.display = "none";
   startTerminal();
-},2300);
+}, 2300);
 
-/* Terminal typing */
-const terminal=document.getElementById("terminal");
-const lines=[
+const terminal = document.getElementById("terminal");
+const lines = [
   "system boot sequence complete",
-  "",
   "user: atul-singh",
-  "profile: initializing interface",
-  "",
   "status: online"
 ];
-let i=0;
+let i = 0;
 
-function startTerminal(){
-  function type(){
-    if(i<lines.length){
-      terminal.innerHTML+=`<div class="prompt">${lines[i]}</div>`;
-      i++; setTimeout(type,420);
-    } else {
-      terminal.innerHTML+=`<span class="cursor"></span>`;
-      setTimeout(()=>{
-        terminal.style.display="none";
-        document.getElementById("content").style.display="block";
-      },900);
-    }
+function startTerminal() {
+  if (i < lines.length) {
+    terminal.innerHTML += `<div class="prompt">${lines[i]}</div>`;
+    i++;
+    setTimeout(startTerminal, 420);
+  } else {
+    setTimeout(() => {
+      terminal.style.display = "none";
+      document.getElementById("content").style.display = "block";
+    }, 800);
   }
-  type();
 }
 
-/* Clock */
-function updateClock(){
-  const n=new Date();
-  document.getElementById("clock").innerText=
-    n.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+function updateClock() {
+  document.getElementById("clock").innerText =
+    new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
 }
-setInterval(updateClock,1000); updateClock();
+setInterval(updateClock, 1000);
+updateClock();
 
-/* Projects App */
-function openProjects(){
-  document.getElementById("projectsModal").style.display="flex";
-}
-function closeProjects(){
-  document.getElementById("projectsModal").style.display="none";
-}
+function openWindow(id){ document.getElementById(id).style.display="flex"; }
+function closeWindow(id){ document.getElementById(id).style.display="none"; }
+function backdropClose(e,id){ if(e.target.id===id) closeWindow(id); }
 </script>
 
 </body>
