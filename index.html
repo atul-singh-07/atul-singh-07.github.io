@@ -259,13 +259,6 @@ p { line-height:1.8; }
   border:1px solid rgba(255,255,255,.08);
 }
 
-.project-card ul {
-  margin:0;
-  padding-left:16px;
-  font-size:14px;
-  color:var(--muted);
-}
-
 .about-list {
   margin:0;
   padding-left:16px;
@@ -273,6 +266,28 @@ p { line-height:1.8; }
 
 .about-list li {
   margin-bottom:8px;
+  color:var(--muted);
+}
+
+/* 🔹 Added About Profile (extension only) */
+.about-profile {
+  display:flex;
+  gap:22px;
+  align-items:flex-start;
+}
+
+.profile-pic {
+  width:110px;
+  height:110px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  object-fit:cover;
+  background:rgba(255,255,255,.08);
+}
+
+.about-text p {
+  margin-top:0;
+  font-size:14px;
   color:var(--muted);
 }
 
@@ -337,7 +352,6 @@ p { line-height:1.8; }
   <section class="hero">
     <h1>Atul Singh</h1>
     <p class="muted">Electronics • Systems • Programming</p>
-
     <p>I enjoy building systems where hardware, software, and logic meet.</p>
 
     <h2>Desktop</h2>
@@ -389,11 +403,24 @@ p { line-height:1.8; }
       <div class="close" onclick="closeWindow('aboutModal')">✕</div>
     </div>
 
-    <ul class="about-list">
-      <li>Embedded systems enthusiast</li>
-      <li>Firmware & hardware debugging</li>
-      <li>Open to internships & collaboration</li>
-    </ul>
+    <div class="about-profile">
+      <img src="profile.jpg" alt="Atul Singh" class="profile-pic">
+
+      <div class="about-text">
+        <p>
+          I am an Electronics and Systems enthusiast with a strong interest in
+          embedded systems, hardware–software integration, and low-level programming.
+          I enjoy building practical systems that solve real-world problems.
+        </p>
+
+        <ul class="about-list">
+          <li><strong>Core Interests:</strong> Embedded Systems, IoT, Automation</li>
+          <li><strong>Skills:</strong> Arduino, ESP32, C/C++, Sensors</li>
+          <li><strong>Focus:</strong> Hardware logic + software control</li>
+          <li><strong>Status:</strong> Open to internships & collaborations</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
 
