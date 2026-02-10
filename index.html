@@ -63,12 +63,7 @@ body::before {
 }
 
 .loader-box { width:300px; }
-
-.loader-text {
-  font-size:14px;
-  color:var(--muted);
-  margin-bottom:10px;
-}
+.loader-text { font-size:14px; color:var(--muted); margin-bottom:10px; }
 
 .progress {
   height:3px;
@@ -116,11 +111,6 @@ body::before {
   text-decoration:none;
 }
 
-.status-right a:hover {
-  opacity:1;
-  transform:translateY(-1px);
-}
-
 /* Terminal */
 #terminal {
   min-height:100vh;
@@ -131,19 +121,6 @@ body::before {
 }
 
 .prompt { color:var(--accent); }
-
-.cursor {
-  width:8px;
-  height:16px;
-  background:var(--fg);
-  display:inline-block;
-  animation:blink 1s infinite;
-}
-
-@keyframes blink {
-  0%,50%{opacity:1}
-  51%,100%{opacity:0}
-}
 
 /* Main Content */
 #content {
@@ -196,8 +173,15 @@ p { line-height:1.8; }
   background:rgba(255,255,255,.06);
 }
 
-.icon div { font-size:34px; }
-.icon span { font-size:12px; color:var(--muted); }
+.icon i {
+  font-size:32px;
+  color:var(--accent);
+}
+
+.icon span {
+  font-size:12px;
+  color:var(--muted);
+}
 
 /* Modal */
 .modal {
@@ -230,47 +214,18 @@ p { line-height:1.8; }
 
 .window-controls { display:flex; gap:8px; }
 
-.dot {
-  width:11px;
-  height:11px;
-  border-radius:50%;
-}
-
+.dot { width:11px; height:11px; border-radius:50%; }
 .dot.red { background:#ff5f57; }
 .dot.yellow { background:#febb2f; }
 .dot.green { background:#28c840; }
 
-.close {
-  cursor:pointer;
-  color:var(--muted);
-}
+.close { cursor:pointer; color:var(--muted); }
 
-/* Projects */
-.projects-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:20px;
-}
-
-.project-card {
-  background:rgba(255,255,255,.03);
-  padding:16px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.08);
-}
-
-.project-card ul {
-  margin:0;
-  padding-left:16px;
-  font-size:14px;
-  color:var(--muted);
-}
-
+/* Lists */
 .about-list {
   margin:0;
   padding-left:16px;
 }
-
 .about-list li {
   margin-bottom:8px;
   color:var(--muted);
@@ -296,17 +251,9 @@ p { line-height:1.8; }
   background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.08);
   color:var(--fg);
-  font-family:inherit;
   border-radius:10px;
   padding:8px 10px;
   cursor:pointer;
-}
-
-.dock button:hover { background:rgba(255,255,255,.16); }
-
-@media (max-width:640px) {
-  #content, #terminal { padding-inline:20px; }
-  .hero { padding:24px; }
 }
 </style>
 </head>
@@ -338,62 +285,103 @@ p { line-height:1.8; }
     <h1>Atul Singh</h1>
     <p class="muted">Electronics • Systems • Programming</p>
 
-    <p>I enjoy building systems where hardware, software, and logic meet.</p>
-
     <h2>Desktop</h2>
     <div class="desktop">
       <div class="icon" onclick="openWindow('projectsModal')">
-        <div>📂</div><span>Projects.app</span>
+        <i class="fa-solid fa-folder-open"></i>
+        <span>Projects</span>
       </div>
+
       <div class="icon" onclick="openWindow('aboutModal')">
-        <div>💾</div><span>About.app</span>
+        <i class="fa-solid fa-circle-info"></i>
+        <span>About</span>
+      </div>
+
+      <div class="icon" onclick="openWindow('skillsModal')">
+        <i class="fa-solid fa-microchip"></i>
+        <span>Skills</span>
+      </div>
+
+      <div class="icon">
+        <a href="https://drive.google.com" target="_blank" style="color:inherit">
+          <i class="fa-solid fa-file-lines"></i>
+        </a>
+        <span>Resume</span>
+      </div>
+
+      <div class="icon" onclick="openWindow('terminalModal')">
+        <i class="fa-solid fa-terminal"></i>
+        <span>Terminal</span>
       </div>
     </div>
   </section>
 </div>
 
 <div class="dock">
-  <button onclick="openWindow('projectsModal')">Projects</button>
-  <button onclick="openWindow('aboutModal')">About</button>
+  <button onclick="openWindow('projectsModal')"><i class="fa-solid fa-folder-open"></i></button>
+  <button onclick="openWindow('aboutModal')"><i class="fa-solid fa-circle-info"></i></button>
+  <button onclick="openWindow('skillsModal')"><i class="fa-solid fa-microchip"></i></button>
 </div>
 
+<!-- Projects -->
 <div class="modal" id="projectsModal" onclick="backdropClose(event,'projectsModal')">
   <div class="window">
     <div class="window-header">
-      <div class="window-controls">
-        <span class="dot red"></span>
-        <span class="dot yellow"></span>
-        <span class="dot green"></span>
-      </div>
-      <strong>Projects.app</strong>
+      <strong>Projects</strong>
       <div class="close" onclick="closeWindow('projectsModal')">✕</div>
     </div>
-
-    <div class="projects-grid">
-      <div class="project-card"><h3>Ultrasonic Radar Scanner</h3></div>
-      <div class="project-card"><h3>Servo Motor Control</h3></div>
-      <div class="project-card"><h3>Arduino Automation</h3></div>
-    </div>
+    <ul class="about-list">
+      <li>Ultrasonic Radar Scanner</li>
+      <li>Servo Motor Control</li>
+      <li>Arduino Automation</li>
+    </ul>
   </div>
 </div>
 
+<!-- About -->
 <div class="modal" id="aboutModal" onclick="backdropClose(event,'aboutModal')">
   <div class="window">
     <div class="window-header">
-      <div class="window-controls">
-        <span class="dot red"></span>
-        <span class="dot yellow"></span>
-        <span class="dot green"></span>
-      </div>
-      <strong>About.app</strong>
+      <strong>About</strong>
       <div class="close" onclick="closeWindow('aboutModal')">✕</div>
     </div>
-
     <ul class="about-list">
       <li>Embedded systems enthusiast</li>
       <li>Firmware & hardware debugging</li>
       <li>Open to internships & collaboration</li>
     </ul>
+  </div>
+</div>
+
+<!-- Skills -->
+<div class="modal" id="skillsModal" onclick="backdropClose(event,'skillsModal')">
+  <div class="window">
+    <div class="window-header">
+      <strong>Skills</strong>
+      <div class="close" onclick="closeWindow('skillsModal')">✕</div>
+    </div>
+    <ul class="about-list">
+      <li>C / C++</li>
+      <li>Python</li>
+      <li>Arduino & ESP32</li>
+      <li>Embedded Systems</li>
+      <li>HTML & CSS</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Terminal -->
+<div class="modal" id="terminalModal" onclick="backdropClose(event,'terminalModal')">
+  <div class="window">
+    <div class="window-header">
+      <strong>Terminal</strong>
+      <div class="close" onclick="closeWindow('terminalModal')">✕</div>
+    </div>
+    <p class="muted">
+      $ whoami → Atul Singh<br>
+      $ focus → Systems & Hardware<br>
+      $ status → Learning and building
+    </p>
   </div>
 </div>
 
@@ -438,5 +426,3 @@ function backdropClose(e,id){ if(e.target.id===id) closeWindow(id); }
 
 </body>
 </html>
-  
-    
