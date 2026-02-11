@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<title>Atul Singh</title>
+<title>AtulOS – A Browser-Based OS Simulation</title>
 
 <style>
 :root {
@@ -13,26 +13,12 @@
   --accent:#63a8ff;
   --muted:#9aa9bb;
   --card:rgba(18, 24, 33, 0.8);
-  --window:rgba(17, 23, 32, 0.85);
+  --window:rgba(17, 23, 32, 0.92);
   --border:rgba(255,255,255,.1);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg:#eef2f8;
-    --fg:#1f2b3a;
-    --accent:#0865d7;
-    --muted:#536579;
-    --card:rgba(255,255,255,.75);
-    --window:rgba(255,255,255,.85);
-    --border:rgba(15, 23, 42, .12);
-  }
-}
-
-* { box-sizing:border-box; }
-html { scroll-behavior:smooth; }
-
-body {
+*{box-sizing:border-box}
+body{
   margin:0;
   min-height:100vh;
   background:
@@ -43,216 +29,131 @@ body {
   font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-body::before {
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  background:linear-gradient(to bottom, rgba(255,255,255,.02), rgba(0,0,0,.08));
-}
+/* ================= BOOT SCREEN ================= */
 
-/* Loader */
-#loader {
+#bootScreen{
   position:fixed;
   inset:0;
   background:var(--bg);
   display:flex;
   align-items:center;
   justify-content:center;
-  z-index:999;
+  z-index:99999;
+  transition:opacity 1s ease;
 }
 
-.loader-box { width:300px; }
-.loader-text { font-size:14px; color:var(--muted); margin-bottom:10px; }
-
-.progress {
-  height:3px;
-  background:rgba(255,255,255,0.1);
-  overflow:hidden;
+.boot-center{
+  text-align:center;
 }
 
-.progress span {
-  display:block;
-  height:100%;
-  width:0;
-  background:var(--accent);
-  animation:load 2.2s ease forwards;
+.atul-logo{
+  font-size:42px;
+  font-weight:600;
+  letter-spacing:4px;
+  color:white;
+  margin-bottom:30px;
+  animation:pulse 2s infinite ease-in-out;
 }
 
-@keyframes load { to { width:100%; } }
+.loader-ring{
+  width:60px;
+  height:60px;
+  margin:0 auto 20px;
+  border:4px solid rgba(255,255,255,0.15);
+  border-top:4px solid var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
 
-/* Status Bar */
-#statusbar {
-  position:fixed;
-  top:0;
-  width:100%;
+.boot-text{
+  font-size:14px;
+  color:rgba(255,255,255,0.6);
+  letter-spacing:1px;
+}
+
+@keyframes spin{
+  to{ transform:rotate(360deg); }
+}
+
+@keyframes pulse{
+  0%{ opacity:.6; transform:scale(1); }
+  50%{ opacity:1; transform:scale(1.05); }
+  100%{ opacity:.6; transform:scale(1); }
+}
+
+/* Statusbar */
+#statusbar{
+  position:fixed;top:0;width:100%;
   padding:8px 16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-size:13px;
-  background:color-mix(in srgb, var(--card) 80%, transparent);
-  border-bottom:1px solid var(--border);
-  backdrop-filter:blur(10px);
-  z-index:100;
-}
-
-.status-right {
-  display:flex;
-  align-items:center;
-  gap:14px;
-}
-
-.status-right a,
-.status-right span {
-  color:var(--fg);
-  font-size:15px;
-  opacity:.9;
-  text-decoration:none;
-}
-
-/* Terminal */
-#terminal {
-  min-height:100vh;
-  padding:80px 50px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-}
-
-.prompt { color:var(--accent); }
-
-/* Main Content */
-#content {
-  display:none;
-  max-width:980px;
-  margin:auto;
-  padding:120px 40px 80px;
-  animation:fadeUp 1s ease forwards;
-}
-
-@keyframes fadeUp {
-  from{opacity:0;transform:translateY(20px)}
-  to{opacity:1;transform:translateY(0)}
-}
-
-.hero {
+  display:flex;justify-content:space-between;
   background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:30px;
-  box-shadow:0 18px 42px rgba(0,0,0,.25);
+  border-bottom:1px solid var(--border);
+  z-index:5000;
 }
-
-h1 { color:var(--accent); font-size:2.6em; margin:0; }
-h2 { margin-top:40px; color:var(--accent); }
-p { line-height:1.8; }
-.muted { color:var(--muted); }
+.status-right{display:flex;gap:15px;align-items:center}
+.status-right a{color:var(--fg);text-decoration:none}
 
 /* Desktop */
-.desktop {
-  display:flex;
-  flex-wrap:wrap;
-  gap:26px;
-  margin-top:28px;
+#desktop{
+  padding:120px 40px;
 }
-
-.icon {
+.desktop-icons{
+  display:flex;
+  gap:30px;
+  flex-wrap:wrap;
+}
+.icon{
+  width:90px;
   text-align:center;
   cursor:pointer;
-  opacity:.9;
-  width:92px;
-  padding:10px 8px;
-  border-radius:12px;
-  transition:.2s ease;
 }
-
-.icon:hover {
-  opacity:1;
-  transform:translateY(-3px);
-  background:rgba(255,255,255,.06);
-}
-
-.icon i {
-  font-size:32px;
+.icon i{
+  font-size:30px;
   color:var(--accent);
 }
-
-.icon span {
+.icon span{
   font-size:12px;
   color:var(--muted);
 }
 
-/* Modal */
-.modal {
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  backdrop-filter:blur(6px);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:200;
-  padding:20px;
-}
-
-.window {
+/* Windows */
+.app-window{
+  position:absolute;
+  top:160px;
+  left:200px;
+  width:500px;
   background:var(--window);
   border:1px solid var(--border);
-  width:min(900px, 96vw);
   border-radius:14px;
-  padding:14px 20px 24px;
-  box-shadow:0 24px 60px rgba(0,0,0,.35);
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  display:none;
+  flex-direction:column;
 }
-
-.window-header {
+.window-header{
+  padding:10px 14px;
+  background:rgba(255,255,255,.04);
+  cursor:move;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:20px;
+  border-bottom:1px solid var(--border);
 }
-
-.window-controls { display:flex; gap:8px; }
-
-.dot { width:11px; height:11px; border-radius:50%; }
-.dot.red { background:#ff5f57; }
-.dot.yellow { background:#febb2f; }
-.dot.green { background:#28c840; }
-
-.close { cursor:pointer; color:var(--muted); }
-
-/* Lists */
-.about-list {
-  margin:0;
-  padding-left:16px;
+.window-body{
+  padding:16px;
 }
-.about-list li {
-  margin-bottom:8px;
+.close-btn{
+  cursor:pointer;
   color:var(--muted);
 }
 
-/* Dock */
-.dock {
-  position:fixed;
-  bottom:18px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:10px;
-  background:rgba(20,26,36,.65);
+/* Settings Buttons */
+.settings button{
+  margin:6px 6px 0 0;
+  padding:6px 10px;
+  border-radius:6px;
   border:1px solid var(--border);
-  padding:10px 14px;
-  border-radius:14px;
-  backdrop-filter:blur(8px);
-  z-index:110;
-}
-
-.dock button {
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.05);
   color:var(--fg);
-  border-radius:10px;
-  padding:8px 10px;
   cursor:pointer;
 }
 </style>
@@ -260,10 +161,11 @@ p { line-height:1.8; }
 
 <body>
 
-<div id="loader">
-  <div class="loader-box">
-    <div class="loader-text">booting system</div>
-    <div class="progress"><span></span></div>
+<div id="bootScreen">
+  <div class="boot-center">
+    <div class="atul-logo">AtulOS</div>
+    <div class="loader-ring"></div>
+    <div class="boot-text">Starting system...</div>
   </div>
 </div>
 
@@ -272,65 +174,53 @@ p { line-height:1.8; }
   <div class="status-right">
     <a href="https://github.com/atul-singh-07" target="_blank"><i class="fab fa-github"></i></a>
     <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank"><i class="fab fa-linkedin"></i></a>
-    <span><i class="fa-solid fa-wifi"></i></span>
-    <span><i class="fa-solid fa-battery-three-quarters"></i></span>
-    <div id="clock">--:--</div>
+    <div id="clock"></div>
   </div>
 </div>
 
-<div id="terminal"></div>
+<div id="desktop">
+  <h1 style="color:var(--accent)">Atul Singh</h1>
+  <p style="color:var(--muted)">Electronics • Systems • Programming</p>
 
-<div id="content">
-  <section class="hero">
-    <h1>Atul Singh</h1>
-    <p class="muted">Electronics • Systems • Programming</p>
+  <h2 style="margin-top:40px;color:var(--accent)">Desktop</h2>
 
-    <h2>Desktop</h2>
-    <div class="desktop">
-      <div class="icon" onclick="openWindow('projectsModal')">
-        <i class="fa-solid fa-folder-open"></i>
-        <span>Projects</span>
-      </div>
-
-      <div class="icon" onclick="openWindow('aboutModal')">
-        <i class="fa-solid fa-circle-info"></i>
-        <span>About</span>
-      </div>
-
-      <div class="icon" onclick="openWindow('skillsModal')">
-        <i class="fa-solid fa-microchip"></i>
-        <span>Skills</span>
-      </div>
-
-      <div class="icon">
-        <a href="https://drive.google.com" target="_blank" style="color:inherit">
-          <i class="fa-solid fa-file-lines"></i>
-        </a>
-        <span>Resume</span>
-      </div>
-
-      <div class="icon" onclick="openWindow('terminalModal')">
-        <i class="fa-solid fa-terminal"></i>
-        <span>Terminal</span>
-      </div>
+  <div class="desktop-icons">
+    <div class="icon" onclick="openWindow('projects')">
+      <i class="fa-solid fa-folder-open"></i>
+      <span>Projects</span>
     </div>
-  </section>
+
+    <div class="icon" onclick="openWindow('about')">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>About</span>
+    </div>
+
+    <div class="icon" onclick="openWindow('skills')">
+      <i class="fa-solid fa-microchip"></i>
+      <span>Skills</span>
+    </div>
+
+    <div class="icon" onclick="openWindow('terminal')">
+      <i class="fa-solid fa-terminal"></i>
+      <span>Terminal</span>
+    </div>
+
+    <div class="icon" onclick="openWindow('settings')">
+      <i class="fa-solid fa-gear"></i>
+      <span>Settings</span>
+    </div>
+  </div>
 </div>
 
-<div class="dock">
-  <button onclick="openWindow('projectsModal')"><i class="fa-solid fa-folder-open"></i></button>
-  <button onclick="openWindow('aboutModal')"><i class="fa-solid fa-circle-info"></i></button>
-  <button onclick="openWindow('skillsModal')"><i class="fa-solid fa-microchip"></i></button>
-</div>
+<!-- WINDOWS -->
 
-<!-- Projects -->
-<div class="modal" id="projectsModal" onclick="backdropClose(event,'projectsModal')">
-  <div class="window">
-    <div class="window-header">
-      <strong>Projects</strong>
-      <div class="close" onclick="closeWindow('projectsModal')">✕</div>
-    </div>
-    <ul class="about-list">
+<div class="app-window" id="projects">
+  <div class="window-header">
+    <strong>Projects</strong>
+    <span class="close-btn" onclick="closeWindow('projects')">✕</span>
+  </div>
+  <div class="window-body">
+    <ul>
       <li>Ultrasonic Radar Scanner</li>
       <li>Servo Motor Control</li>
       <li>Arduino Automation</li>
@@ -338,37 +228,36 @@ p { line-height:1.8; }
   </div>
 </div>
 
-<!-- About -->
-<div class="modal" id="aboutModal" onclick="backdropClose(event,'aboutModal')">
-  <div class="window">
-    <div class="window-header">
-      <strong>About</strong>
-      <div class="close" onclick="closeWindow('aboutModal')">✕</div>
-    </div>
-    <ul class="about-list">
-      <li>I build systems where <strong>electronics and code</strong> work together.
+<div class="app-window" id="about">
+  <div class="window-header">
+    <strong>About</strong>
+    <span class="close-btn" onclick="closeWindow('about')">✕</span>
+  </div>
+  <div class="window-body">
+    <p>I build systems where <strong>electronics and code</strong> work together.
     My interest lies in understanding how software controls and interacts with
-    real-world hardware.</li>
-      <li>I work with <strong>C and C++</strong> for embedded systems and microcontrollers,
+    real-world hardware.</p>
+
+    <p>I work with <strong>C and C++</strong> for embedded systems and microcontrollers,
     and I’m exploring <strong>Python</strong> to strengthen problem-solving and
-    automation skills.</li>
-      <li>I enjoy hands-on learning—writing code, testing it on hardware, debugging,
+    automation skills.</p>
+
+    <p>I enjoy hands-on learning—writing code, testing it on hardware, debugging,
     and improving systems step by step. Seeing code turn into real behavior is
-    what excites me the most.</li>
-      <li>Outside of tech, I enjoy playing <strong>cricket and badminton</strong>—sports help me stay active,
-  focused, and reset my mind.</li>
-    </ul>
+    what excites me the most.</p>
+
+    <p>Outside of tech, I enjoy playing <strong>cricket and badminton</strong>—sports help me stay active,
+    focused, and reset my mind.</p>
   </div>
 </div>
 
-<!-- Skills -->
-<div class="modal" id="skillsModal" onclick="backdropClose(event,'skillsModal')">
-  <div class="window">
-    <div class="window-header">
-      <strong>Skills</strong>
-      <div class="close" onclick="closeWindow('skillsModal')">✕</div>
-    </div>
-    <ul class="about-list">
+<div class="app-window" id="skills">
+  <div class="window-header">
+    <strong>Skills</strong>
+    <span class="close-btn" onclick="closeWindow('skills')">✕</span>
+  </div>
+  <div class="window-body">
+    <ul>
       <li>C / C++</li>
       <li>Python</li>
       <li>Arduino & ESP32</li>
@@ -378,58 +267,109 @@ p { line-height:1.8; }
   </div>
 </div>
 
-<!-- Terminal -->
-<div class="modal" id="terminalModal" onclick="backdropClose(event,'terminalModal')">
-  <div class="window">
-    <div class="window-header">
-      <strong>Terminal</strong>
-      <div class="close" onclick="closeWindow('terminalModal')">✕</div>
-    </div>
-    <p class="muted">
-      $ whoami → Atul Singh<br>
-      $ focus → Systems & Hardware<br>
-      $ status → Learning and building
-    </p>
+<div class="app-window" id="terminal">
+  <div class="window-header">
+    <strong>Terminal</strong>
+    <span class="close-btn" onclick="closeWindow('terminal')">✕</span>
+  </div>
+  <div class="window-body">
+    <p>$ whoami → Atul Singh</p>
+    <p>$ focus → Systems & Hardware</p>
+    <p>$ status → Learning and building</p>
+  </div>
+</div>
+
+<div class="app-window" id="settings">
+  <div class="window-header">
+    <strong>System Settings</strong>
+    <span class="close-btn" onclick="closeWindow('settings')">✕</span>
+  </div>
+  <div class="window-body settings">
+    <p><strong>Theme</strong></p>
+    <button onclick="setTheme('dark')">Dark</button>
+    <button onclick="setTheme('light')">Light</button>
+
+    <p style="margin-top:15px;"><strong>Accent</strong></p>
+    <button onclick="setAccent('#63a8ff')">Blue</button>
+    <button onclick="setAccent('#28c840')">Green</button>
+    <button onclick="setAccent('#ff5f57')">Red</button>
   </div>
 </div>
 
 <script>
-setTimeout(() => {
-  document.getElementById("loader").style.display = "none";
-  startTerminal();
-}, 2300);
-
-const terminal = document.getElementById("terminal");
-const lines = [
-  "system boot sequence complete",
-  "user: atul-singh",
-  "status: online"
-];
-let i = 0;
-
-function startTerminal() {
-  if (i < lines.length) {
-    terminal.innerHTML += `<div class="prompt">${lines[i]}</div>`;
-    i++;
-    setTimeout(startTerminal, 420);
-  } else {
-    setTimeout(() => {
-      terminal.style.display = "none";
-      document.getElementById("content").style.display = "block";
-    }, 800);
-  }
+/* Boot Fade */
+window.addEventListener("load",()=>{
+  setTimeout(()=>{
+    const boot=document.getElementById("bootScreen");
+    boot.style.opacity="0";
+    setTimeout(()=>boot.style.display="none",1000);
+  },3000);
+});
+/* Clock */
+function updateClock(){
+  document.getElementById("clock").innerText=
+    new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
-
-function updateClock() {
-  document.getElementById("clock").innerText =
-    new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-}
-setInterval(updateClock, 1000);
+setInterval(updateClock,1000);
 updateClock();
 
-function openWindow(id){ document.getElementById(id).style.display="flex"; }
-function closeWindow(id){ document.getElementById(id).style.display="none"; }
-function backdropClose(e,id){ if(e.target.id===id) closeWindow(id); }
+/* Window Manager */
+let highestZ=100;
+function openWindow(id){
+  const win=document.getElementById(id);
+  win.style.display="flex";
+  bringToFront(win);
+}
+function closeWindow(id){
+  document.getElementById(id).style.display="none";
+}
+function bringToFront(win){
+  highestZ++;
+  win.style.zIndex=highestZ;
+}
+document.querySelectorAll(".app-window").forEach(win=>{
+  win.addEventListener("mousedown",()=>bringToFront(win));
+});
+
+/* Dragging */
+document.querySelectorAll(".app-window").forEach(win=>{
+  const header=win.querySelector(".window-header");
+  let offsetX=0,offsetY=0,isDragging=false;
+
+  header.addEventListener("mousedown",e=>{
+    isDragging=true;
+    offsetX=e.clientX-win.offsetLeft;
+    offsetY=e.clientY-win.offsetTop;
+  });
+  document.addEventListener("mouseup",()=>isDragging=false);
+  document.addEventListener("mousemove",e=>{
+    if(!isDragging)return;
+    win.style.left=e.clientX-offsetX+"px";
+    win.style.top=e.clientY-offsetY+"px";
+  });
+});
+
+/* Settings */
+function setTheme(mode){
+  if(mode==="light"){
+    document.documentElement.style.setProperty('--bg','#eef2f8');
+    document.documentElement.style.setProperty('--fg','#1f2b3a');
+  }else{
+    document.documentElement.style.setProperty('--bg','#05070b');
+    document.documentElement.style.setProperty('--fg','#dbe4ef');
+  }
+  localStorage.setItem("theme",mode);
+}
+function setAccent(color){
+  document.documentElement.style.setProperty('--accent',color);
+  localStorage.setItem("accent",color);
+}
+window.onload=()=>{
+  const t=localStorage.getItem("theme");
+  const a=localStorage.getItem("accent");
+  if(t)setTheme(t);
+  if(a)setAccent(a);
+}
 </script>
 
 </body>
