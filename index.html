@@ -1,223 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <title>AtulOS – A Browser-Based OS Simulation</title>
 
 <style>
 :root {
-  --bg:#05070b;
-  --fg:#dbe4ef;
-  --accent:#63a8ff;
-  --muted:#9aa9bb;
-  --card:rgba(18, 24, 33, 0.8);
-  --window:rgba(17, 23, 32, 0.92);
-  --border:rgba(255,255,255,.1);
+  --bg: #05070b;
+  --fg: #dbe4ef;
+  --accent: #63a8ff;
+  --muted: #9aa9bb;
+  --card: rgba(18, 24, 33, 0.8);
+  --window: rgba(17, 23, 32, 0.92);
+  --border: rgba(255,255,255,.1);
 }
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  min-height:100vh;
+/* Light theme overrides (applied via [data-theme="light"]) */
+:root[data-theme="light"] {
+  --bg: #eef2f8;
+  --fg: #1f2b3a;
+  --muted: #5a6b78;
+  --card: rgba(255,255,255,0.9);
+  --window: rgba(255,255,255,0.96);
+  --border: rgba(0,0,0,.06);
+}
+
+* { box-sizing: border-box; }
+html,body { height: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
   background:
     radial-gradient(circle at 20% 10%, #162337 0%, transparent 45%),
     radial-gradient(circle at 80% 80%, #151f33 0%, transparent 35%),
     var(--bg);
-  color:var(--fg);
-  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.4;
 }
 
 /* ================= BOOT SCREEN ================= */
 
-#bootScreen{
-  position:fixed;
-  inset:0;
-  background:var(--bg);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:99999;
-  transition:opacity 1s ease;
+#bootScreen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  transition: opacity 1s ease;
+}
+#bootScreen[aria-hidden="true"] { pointer-events: none; }
+
+.boot-center { text-align: center; }
+
+.atul-logo {
+  font-size: 42px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: white;
+  margin-bottom: 30px;
+  animation: pulse 2s infinite ease-in-out;
 }
 
-.boot-center{
-  text-align:center;
+.loader-ring {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 20px;
+  border: 4px solid rgba(255,255,255,0.15);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.atul-logo{
-  font-size:42px;
-  font-weight:600;
-  letter-spacing:4px;
-  color:white;
-  margin-bottom:30px;
-  animation:pulse 2s infinite ease-in-out;
+.boot-text {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 1px;
 }
 
-.loader-ring{
-  width:60px;
-  height:60px;
-  margin:0 auto 20px;
-  border:4px solid rgba(255,255,255,0.15);
-  border-top:4px solid var(--accent);
-  border-radius:50%;
-  animation:spin 1s linear infinite;
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse {
+  0% { opacity: .6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: .6; transform: scale(1); }
 }
 
-.boot-text{
-  font-size:14px;
-  color:rgba(255,255,255,0.6);
-  letter-spacing:1px;
-}
-
-@keyframes spin{
-  to{ transform:rotate(360deg); }
-}
-
-@keyframes pulse{
-  0%{ opacity:.6; transform:scale(1); }
-  50%{ opacity:1; transform:scale(1.05); }
-  100%{ opacity:.6; transform:scale(1); }
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .atul-logo, .loader-ring { animation: none !important; }
+  * { transition: none !important; }
 }
 
 /* Statusbar */
-#statusbar{
-  position:fixed;top:0;width:100%;
-  padding:8px 16px;
-  display:flex;justify-content:space-between;
-  background:var(--card);
-  border-bottom:1px solid var(--border);
-  z-index:5000;
+#statusbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  z-index: 5000;
 }
-.status-right{display:flex;gap:15px;align-items:center}
-.status-right a{color:var(--fg);text-decoration:none}
+#statusbar[role="status"] { outline: none; }
+
+.status-right {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.status-right i {
+  color: var(--fg);
+  opacity: .85;
+  transition: 0.2s;
+  cursor: pointer;
+}
+.status-right i:hover { opacity: 1; color: var(--accent); }
+
+.status-right a {
+  color: var(--fg);
+  text-decoration: none;
+}
 
 /* Desktop */
-#desktop{
-  padding:120px 40px;
+#desktop {
+  padding: 120px 40px;
 }
-.desktop-icons{
-  display:flex;
-  gap:30px;
-  flex-wrap:wrap;
+.brand-title { color: var(--accent); margin: 0; }
+.brand-sub { color: var(--muted); margin: 6px 0 0 0; }
+
+.section-title { margin-top: 40px; color: var(--accent); }
+
+/* Desktop icons */
+.desktop-icons {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  margin-top: 18px;
 }
-.icon{
-  width:90px;
-  text-align:center;
-  cursor:pointer;
+.icon {
+  width: 90px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
 }
-.icon i{
-  font-size:30px;
-  color:var(--accent);
-}
-.icon span{
-  font-size:12px;
-  color:var(--muted);
-}
+.icon i { font-size: 30px; color: var(--accent); }
+.icon span { font-size: 12px; color: var(--muted); display: block; margin-top: 6px; }
+
+/* Focus styles for keyboard users */
+.icon:focus { outline: 2px solid var(--accent); border-radius: 6px; }
 
 /* Windows */
-.app-window{
-  position:absolute;
-  top:160px;
-  left:200px;
-  width:500px;
-  background:var(--window);
-  border:1px solid var(--border);
-  border-radius:14px;
-  box-shadow:0 24px 60px rgba(0,0,0,.5);
-  display:none;
-  flex-direction:column;
+.app-window {
+  position: absolute;
+  top: 160px;
+  left: 200px;
+  width: 500px;
+  max-width: calc(100% - 32px);
+  background: var(--window);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  display: none;
+  flex-direction: column;
+  min-height: 120px;
+  overflow: hidden;
 }
-.window-header{
-  padding:10px 14px;
-  background:rgba(255,255,255,.04);
-  cursor:move;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border-bottom:1px solid var(--border);
+.window-header {
+  padding: 10px 14px;
+  background: rgba(255,255,255,.04);
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
 }
-.window-body{
-  padding:16px;
+.window-header .title-left { display:flex; gap:10px; align-items:center; }
+.window-header .controls { display:flex; gap:8px; align-items:center; }
+.window-header button {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 6px;
+  border-radius: 6px;
 }
-.close-btn{
-  cursor:pointer;
-  color:var(--muted);
-}
+.window-header button:hover { color: var(--accent); background: rgba(255,255,255,0.02); }
+
+.window-body { padding: 16px; overflow: auto; }
 
 /* Settings Buttons */
-.settings button{
-  margin:6px 6px 0 0;
-  padding:6px 10px;
-  border-radius:6px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.05);
-  color:var(--fg);
-  cursor:pointer;
+.settings button {
+  margin: 6px 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  color: var(--fg);
+  cursor: pointer;
 }
+
+/* Small screens */
+@media (max-width: 700px) {
+  #desktop { padding: 100px 16px; }
+  .app-window { width: calc(100% - 24px); left: 12px; top: 120px; border-radius: 10px; }
+}
+
+/* Utility */
+.hidden { display: none !important; }
+.small { font-size: 13px; color: var(--muted); }
 </style>
 </head>
 
 <body>
 
-<div id="bootScreen">
+<!-- BOOT SCREEN -->
+<div id="bootScreen" role="status" aria-live="polite" aria-label="Boot screen">
   <div class="boot-center">
     <div class="atul-logo">AtulOS</div>
-    <div class="loader-ring"></div>
+    <div class="loader-ring" aria-hidden="true"></div>
     <div class="boot-text">Starting system...</div>
   </div>
 </div>
 
-<div id="statusbar">
+<!-- STATUS BAR -->
+<div id="statusbar" role="status" aria-label="System status bar">
   <div>AtulOS • Atul Singh</div>
   <div class="status-right">
-    <a href="https://github.com/atul-singh-07" target="_blank"><i class="fab fa-github"></i></a>
-    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank"><i class="fab fa-linkedin"></i></a>
-    <div id="clock"></div>
+    <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile"><i class="fab fa-github" aria-hidden="true"></i></a>
+    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile"><i class="fab fa-linkedin" aria-hidden="true"></i></a>
+    <div id="clock" aria-live="polite" class="small"></div>
   </div>
 </div>
 
-<div id="desktop">
-  <h1 style="color:var(--accent)">Atul Singh</h1>
-  <p style="color:var(--muted)">Electronics • Systems • Programming</p>
+<!-- DESKTOP -->
+<main id="desktop" role="main" aria-label="Desktop">
+  <h1 class="brand-title">Atul Singh</h1>
+  <p class="brand-sub">Electronics • Systems • Programming</p>
 
-  <h2 style="margin-top:40px;color:var(--accent)">Desktop</h2>
+  <h2 class="section-title">Desktop</h2>
 
-  <div class="desktop-icons">
-    <div class="icon" onclick="openWindow('projects')">
-      <i class="fa-solid fa-folder-open"></i>
+  <div class="desktop-icons" role="list">
+    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Projects" onclick="openWindow('projects')" onkeydown="if(event.key==='Enter') openWindow('projects')">
+      <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
       <span>Projects</span>
     </div>
 
-    <div class="icon" onclick="openWindow('about')">
-      <i class="fa-solid fa-circle-info"></i>
+    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open About" onclick="openWindow('about')" onkeydown="if(event.key==='Enter') openWindow('about')">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
       <span>About</span>
     </div>
 
-    <div class="icon" onclick="openWindow('skills')">
-      <i class="fa-solid fa-microchip"></i>
+    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Skills" onclick="openWindow('skills')" onkeydown="if(event.key==='Enter') openWindow('skills')">
+      <i class="fa-solid fa-microchip" aria-hidden="true"></i>
       <span>Skills</span>
     </div>
 
-    <div class="icon" onclick="openWindow('terminal')">
-      <i class="fa-solid fa-terminal"></i>
+    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Terminal" onclick="openWindow('terminal')" onkeydown="if(event.key==='Enter') openWindow('terminal')">
+      <i class="fa-solid fa-terminal" aria-hidden="true"></i>
       <span>Terminal</span>
     </div>
 
-    <div class="icon" onclick="openWindow('settings')">
-      <i class="fa-solid fa-gear"></i>
+    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Settings" onclick="openWindow('settings')" onkeydown="if(event.key==='Enter') openWindow('settings')">
+      <i class="fa-solid fa-gear" aria-hidden="true"></i>
       <span>Settings</span>
     </div>
   </div>
-</div>
+</main>
 
-<!-- WINDOWS -->
+<!-- WINDOWS (preserve all existing content) -->
 
-<div class="app-window" id="projects">
-  <div class="window-header">
-    <strong>Projects</strong>
-    <span class="close-btn" onclick="closeWindow('projects')">✕</span>
+<div class="app-window" id="projects" role="dialog" aria-labelledby="projects-title" tabindex="0" data-window-id="projects">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <strong id="projects-title">Projects</strong>
+    </div>
+    <div class="controls">
+      <button aria-label="Minimize Projects" data-action="minimize" title="Minimize">▁</button>
+      <button aria-label="Maximize Projects" data-action="maximize" title="Maximize">▢</button>
+      <button class="close-btn" aria-label="Close Projects" data-action="close" title="Close">✕</button>
+    </div>
   </div>
   <div class="window-body">
     <ul>
@@ -228,10 +302,16 @@ body{
   </div>
 </div>
 
-<div class="app-window" id="about">
-  <div class="window-header">
-    <strong>About</strong>
-    <span class="close-btn" onclick="closeWindow('about')">✕</span>
+<div class="app-window" id="about" role="dialog" aria-labelledby="about-title" tabindex="0" data-window-id="about">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <strong id="about-title">About</strong>
+    </div>
+    <div class="controls">
+      <button aria-label="Minimize About" data-action="minimize" title="Minimize">▁</button>
+      <button aria-label="Maximize About" data-action="maximize" title="Maximize">▢</button>
+      <button class="close-btn" aria-label="Close About" data-action="close" title="Close">✕</button>
+    </div>
   </div>
   <div class="window-body">
     <p>I build systems where <strong>electronics and code</strong> work together.
@@ -251,10 +331,16 @@ body{
   </div>
 </div>
 
-<div class="app-window" id="skills">
-  <div class="window-header">
-    <strong>Skills</strong>
-    <span class="close-btn" onclick="closeWindow('skills')">✕</span>
+<div class="app-window" id="skills" role="dialog" aria-labelledby="skills-title" tabindex="0" data-window-id="skills">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <strong id="skills-title">Skills</strong>
+    </div>
+    <div class="controls">
+      <button aria-label="Minimize Skills" data-action="minimize" title="Minimize">▁</button>
+      <button aria-label="Maximize Skills" data-action="maximize" title="Maximize">▢</button>
+      <button class="close-btn" aria-label="Close Skills" data-action="close" title="Close">✕</button>
+    </div>
   </div>
   <div class="window-body">
     <ul>
@@ -267,109 +353,451 @@ body{
   </div>
 </div>
 
-<div class="app-window" id="terminal">
-  <div class="window-header">
-    <strong>Terminal</strong>
-    <span class="close-btn" onclick="closeWindow('terminal')">✕</span>
+<div class="app-window" id="terminal" role="dialog" aria-labelledby="terminal-title" tabindex="0" data-window-id="terminal">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <strong id="terminal-title">Terminal</strong>
+    </div>
+    <div class="controls">
+      <button aria-label="Minimize Terminal" data-action="minimize" title="Minimize">▁</button>
+      <button aria-label="Maximize Terminal" data-action="maximize" title="Maximize">▢</button>
+      <button class="close-btn" aria-label="Close Terminal" data-action="close" title="Close">✕</button>
+    </div>
   </div>
   <div class="window-body">
-    <p>$ whoami → Atul Singh</p>
-    <p>$ focus → Systems & Hardware</p>
-    <p>$ status → Learning and building</p>
+    <div id="terminal-output" class="small" aria-live="polite">
+      <p>$ whoami → Atul Singh</p>
+      <p>$ focus → Systems & Hardware</p>
+      <p>$ status → Learning and building</p>
+    </div>
+    <div style="margin-top:10px;">
+      <label for="term-input" class="small" style="display:block;margin-bottom:6px;">Command</label>
+      <input id="term-input" type="text" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--fg);" aria-label="Terminal command input" />
+    </div>
   </div>
 </div>
 
-<div class="app-window" id="settings">
-  <div class="window-header">
-    <strong>System Settings</strong>
-    <span class="close-btn" onclick="closeWindow('settings')">✕</span>
+<div class="app-window" id="settings" role="dialog" aria-labelledby="settings-title" tabindex="0" data-window-id="settings">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <strong id="settings-title">System Settings</strong>
+    </div>
+    <div class="controls">
+      <button aria-label="Minimize Settings" data-action="minimize" title="Minimize">▁</button>
+      <button aria-label="Maximize Settings" data-action="maximize" title="Maximize">▢</button>
+      <button class="close-btn" aria-label="Close Settings" data-action="close" title="Close">✕</button>
+    </div>
   </div>
   <div class="window-body settings">
     <p><strong>Theme</strong></p>
-    <button onclick="setTheme('dark')">Dark</button>
-    <button onclick="setTheme('light')">Light</button>
+    <button onclick="setTheme('dark')" aria-label="Set dark theme">Dark</button>
+    <button onclick="setTheme('light')" aria-label="Set light theme">Light</button>
 
     <p style="margin-top:15px;"><strong>Accent</strong></p>
-    <button onclick="setAccent('#63a8ff')">Blue</button>
-    <button onclick="setAccent('#28c840')">Green</button>
-    <button onclick="setAccent('#ff5f57')">Red</button>
+    <button onclick="setAccent('#63a8ff')" aria-label="Set blue accent">Blue</button>
+    <button onclick="setAccent('#28c840')" aria-label="Set green accent">Green</button>
+    <button onclick="setAccent('#ff5f57')" aria-label="Set red accent">Red</button>
   </div>
 </div>
 
 <script>
-/* Boot Fade */
-window.addEventListener("load",()=>{
-  setTimeout(()=>{
-    const boot=document.getElementById("bootScreen");
-    boot.style.opacity="0";
-    setTimeout(()=>boot.style.display="none",1000);
-  },3000);
-});
-/* Clock */
-function updateClock(){
-  document.getElementById("clock").innerText=
-    new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-}
-setInterval(updateClock,1000);
-updateClock();
+/*
+  Consolidated, self-contained script:
+  - Uses addEventListener for load handlers
+  - Improved dragging (getBoundingClientRect), prevents text selection while dragging
+  - Constrains windows to viewport
+  - Touch support for dragging
+  - Keyboard accessibility (Enter to open icons, Esc to close topmost)
+  - Persist window positions, sizes, zIndex, and theme/accent in localStorage
+  - Adds minimize/maximize behavior (simple)
+  - Keeps all original content intact
+*/
 
-/* Window Manager */
-let highestZ=100;
-function openWindow(id){
-  const win=document.getElementById(id);
-  win.style.display="flex";
-  bringToFront(win);
-}
-function closeWindow(id){
-  document.getElementById(id).style.display="none";
-}
-function bringToFront(win){
-  highestZ++;
-  win.style.zIndex=highestZ;
-}
-document.querySelectorAll(".app-window").forEach(win=>{
-  win.addEventListener("mousedown",()=>bringToFront(win));
-});
+(function () {
+  'use strict';
 
-/* Dragging */
-document.querySelectorAll(".app-window").forEach(win=>{
-  const header=win.querySelector(".window-header");
-  let offsetX=0,offsetY=0,isDragging=false;
+  /* ---------- Utilities ---------- */
+  const $ = (sel, ctx = document) => ctx.querySelector(sel);
+  const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
-  header.addEventListener("mousedown",e=>{
-    isDragging=true;
-    offsetX=e.clientX-win.offsetLeft;
-    offsetY=e.clientY-win.offsetTop;
+  /* ---------- Boot screen fade ---------- */
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const boot = document.getElementById('bootScreen');
+      boot.style.opacity = '0';
+      boot.setAttribute('aria-hidden', 'true');
+      setTimeout(() => boot.style.display = 'none', 1000);
+    }, 3000);
   });
-  document.addEventListener("mouseup",()=>isDragging=false);
-  document.addEventListener("mousemove",e=>{
-    if(!isDragging)return;
-    win.style.left=e.clientX-offsetX+"px";
-    win.style.top=e.clientY-offsetY+"px";
-  });
-});
 
-/* Settings */
-function setTheme(mode){
-  if(mode==="light"){
-    document.documentElement.style.setProperty('--bg','#eef2f8');
-    document.documentElement.style.setProperty('--fg','#1f2b3a');
-  }else{
-    document.documentElement.style.setProperty('--bg','#05070b');
-    document.documentElement.style.setProperty('--fg','#dbe4ef');
+  /* ---------- Clock ---------- */
+  function updateClock() {
+    document.getElementById('clock').innerText =
+      new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
-  localStorage.setItem("theme",mode);
-}
-function setAccent(color){
-  document.documentElement.style.setProperty('--accent',color);
-  localStorage.setItem("accent",color);
-}
-window.onload=()=>{
-  const t=localStorage.getItem("theme");
-  const a=localStorage.getItem("accent");
-  if(t)setTheme(t);
-  if(a)setAccent(a);
-}
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  /* ---------- Theme & Accent (persisted) ---------- */
+  function setTheme(mode) {
+    if (mode === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    localStorage.setItem('theme', mode);
+  }
+  function setAccent(color) {
+    document.documentElement.style.setProperty('--accent', color);
+    localStorage.setItem('accent', color);
+  }
+
+  window.addEventListener('load', () => {
+    const t = localStorage.getItem('theme');
+    const a = localStorage.getItem('accent');
+    if (t) setTheme(t);
+    if (a) setAccent(a);
+  });
+
+  /* ---------- Window manager state persistence ---------- */
+  const STORAGE_KEY = 'atul_windows_v1';
+  let highestZ = 100;
+
+  function loadWindowState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function saveWindowState(state) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) { /* ignore */ }
+  }
+
+  const windowState = loadWindowState();
+
+  /* ---------- Window helpers ---------- */
+  function bringToFront(win) {
+    highestZ++;
+    win.style.zIndex = highestZ;
+    // persist zIndex
+    const id = win.dataset.windowId;
+    if (id) {
+      windowState[id] = windowState[id] || {};
+      windowState[id].z = highestZ;
+      saveWindowState(windowState);
+    }
+  }
+
+  function openWindow(id) {
+    const win = document.getElementById(id);
+    if (!win) return;
+    // restore position/size if available
+    const state = windowState[id] || {};
+    if (state.left !== undefined) win.style.left = state.left + 'px';
+    if (state.top !== undefined) win.style.top = state.top + 'px';
+    if (state.width !== undefined) win.style.width = state.width + 'px';
+    if (state.height !== undefined) win.style.height = state.height + 'px';
+    if (state.z !== undefined) {
+      highestZ = Math.max(highestZ, state.z);
+      win.style.zIndex = state.z;
+    }
+    win.style.display = 'flex';
+    win.setAttribute('aria-hidden', 'false');
+    win.focus();
+    bringToFront(win);
+  }
+
+  function closeWindow(id) {
+    const win = document.getElementById(id);
+    if (!win) return;
+    win.style.display = 'none';
+    win.setAttribute('aria-hidden', 'true');
+    // persist closed state
+    windowState[id] = windowState[id] || {};
+    windowState[id].open = false;
+    saveWindowState(windowState);
+  }
+
+  function minimizeWindow(win) {
+    // simple minimize: hide but keep state
+    win.style.display = 'none';
+    windowState[win.dataset.windowId] = windowState[win.dataset.windowId] || {};
+    windowState[win.dataset.windowId].minimized = true;
+    saveWindowState(windowState);
+  }
+
+  function maximizeWindow(win) {
+    const id = win.dataset.windowId;
+    const isMax = win.dataset.maximized === 'true';
+    if (!isMax) {
+      // store previous
+      const rect = win.getBoundingClientRect();
+      windowState[id] = windowState[id] || {};
+      windowState[id].prev = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+      // maximize
+      win.style.left = '8px';
+      win.style.top = (document.getElementById('statusbar').offsetHeight + 8) + 'px';
+      win.style.width = (window.innerWidth - 16) + 'px';
+      win.style.height = (window.innerHeight - (document.getElementById('statusbar').offsetHeight + 24)) + 'px';
+      win.dataset.maximized = 'true';
+    } else {
+      // restore
+      const prev = windowState[id] && windowState[id].prev;
+      if (prev) {
+        win.style.left = prev.left + 'px';
+        win.style.top = prev.top + 'px';
+        win.style.width = prev.width + 'px';
+        win.style.height = prev.height + 'px';
+      }
+      win.dataset.maximized = 'false';
+    }
+    // persist
+    windowState[id] = windowState[id] || {};
+    windowState[id].maximized = win.dataset.maximized === 'true';
+    saveWindowState(windowState);
+  }
+
+  /* ---------- Initialize windows from saved state ---------- */
+  document.querySelectorAll('.app-window').forEach(win => {
+    const id = win.dataset.windowId;
+    const state = windowState[id] || {};
+    if (state.left !== undefined) win.style.left = state.left + 'px';
+    if (state.top !== undefined) win.style.top = state.top + 'px';
+    if (state.width !== undefined) win.style.width = state.width + 'px';
+    if (state.height !== undefined) win.style.height = state.height + 'px';
+    if (state.z !== undefined) {
+      win.style.zIndex = state.z;
+      highestZ = Math.max(highestZ, state.z);
+    }
+    if (state.open === false || state.minimized) {
+      win.style.display = 'none';
+      win.setAttribute('aria-hidden', 'true');
+    } else {
+      // keep closed by default; user opens via icons
+      win.style.display = 'none';
+      win.setAttribute('aria-hidden', 'true');
+    }
+    if (state.maximized) {
+      win.dataset.maximized = 'true';
+    }
+  });
+
+  /* ---------- Dragging (mouse + touch) with constraints ---------- */
+  document.querySelectorAll('.app-window').forEach(win => {
+    const header = win.querySelector('[data-drag-handle]') || win.querySelector('.window-header');
+    let isDragging = false;
+    let offsetX = 0, offsetY = 0;
+
+    function startDrag(clientX, clientY) {
+      isDragging = true;
+      const rect = win.getBoundingClientRect();
+      offsetX = clientX - rect.left;
+      offsetY = clientY - rect.top;
+      document.body.style.userSelect = 'none';
+      bringToFront(win);
+    }
+
+    function stopDrag() {
+      if (!isDragging) return;
+      isDragging = false;
+      document.body.style.userSelect = '';
+      // persist position and size
+      const id = win.dataset.windowId;
+      const rect = win.getBoundingClientRect();
+      windowState[id] = windowState[id] || {};
+      windowState[id].left = Math.round(rect.left);
+      windowState[id].top = Math.round(rect.top);
+      windowState[id].width = Math.round(rect.width);
+      windowState[id].height = Math.round(rect.height);
+      saveWindowState(windowState);
+    }
+
+    function onMove(clientX, clientY) {
+      if (!isDragging) return;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      let left = clientX - offsetX;
+      let top = clientY - offsetY;
+      // constrain within viewport (leave small margin)
+      left = Math.max(8, Math.min(left, vw - win.offsetWidth - 8));
+      top = Math.max(document.getElementById('statusbar').offsetHeight + 8, Math.min(top, vh - win.offsetHeight - 8));
+      win.style.left = left + 'px';
+      win.style.top = top + 'px';
+    }
+
+    header.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      startDrag(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      onMove(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('mouseup', () => {
+      stopDrag();
+    });
+
+    // Touch support
+    header.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      startDrag(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      stopDrag();
+    });
+
+    // Bring to front on mousedown inside window
+    win.addEventListener('mousedown', () => bringToFront(win));
+
+    // Controls (minimize/maximize/close)
+    const controls = win.querySelectorAll('[data-action]');
+    controls.forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        const action = btn.dataset.action;
+        if (action === 'close') {
+          closeWindow(win.id);
+        } else if (action === 'minimize') {
+          minimizeWindow(win);
+        } else if (action === 'maximize') {
+          maximizeWindow(win);
+        }
+      });
+    });
+
+    // Make window focusable and keyboard accessible
+    win.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeWindow(win.id);
+      } else if (e.key === 'F11') {
+        // toggle maximize
+        maximizeWindow(win);
+      }
+    });
+  });
+
+  /* ---------- Global keyboard shortcuts ---------- */
+  document.addEventListener('keydown', (e) => {
+    // Esc closes topmost window
+    if (e.key === 'Escape') {
+      const wins = Array.from(document.querySelectorAll('.app-window'))
+        .filter(w => w.style.display !== 'none')
+        .sort((a, b) => (parseInt(b.style.zIndex || 0) - parseInt(a.style.zIndex || 0)));
+      if (wins.length) {
+        closeWindow(wins[0].id);
+      }
+    }
+  });
+
+  /* ---------- Click handlers for desktop icons (already inline but ensure keyboard) ---------- */
+  // (Icons already have onkeydown inline handlers for Enter)
+
+  /* ---------- Terminal: simple interactive behavior ---------- */
+  const termInput = document.getElementById('term-input');
+  const termOutput = document.getElementById('terminal-output');
+  if (termInput) {
+    const history = [];
+    let histIdx = -1;
+    termInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const cmd = termInput.value.trim();
+        if (!cmd) return;
+        history.push(cmd);
+        histIdx = history.length;
+        const p = document.createElement('p');
+        p.textContent = `$ ${cmd} → ${handleCommand(cmd)}`;
+        termOutput.appendChild(p);
+        termInput.value = '';
+        termOutput.scrollTop = termOutput.scrollHeight;
+      } else if (e.key === 'ArrowUp') {
+        if (history.length && histIdx > 0) {
+          histIdx--;
+          termInput.value = history[histIdx];
+        } else if (history.length && histIdx === history.length) {
+          histIdx = history.length - 1;
+          termInput.value = history[histIdx];
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (history.length && histIdx < history.length - 1) {
+          histIdx++;
+          termInput.value = history[histIdx];
+        } else {
+          histIdx = history.length;
+          termInput.value = '';
+        }
+      }
+    });
+  }
+
+  function handleCommand(cmd) {
+    // simple simulated responses; keep safe and generic
+    const c = cmd.toLowerCase();
+    if (c === 'whoami') return 'Atul Singh';
+    if (c === 'focus') return 'Systems & Hardware';
+    if (c === 'status') return 'Learning and building';
+    if (c === 'help') return 'Available: whoami, focus, status, help';
+    return 'command not found';
+  }
+
+  /* ---------- Accessibility: ensure links have rel (already set in markup) ---------- */
+
+  /* ---------- Save window positions on resize (to keep them inside viewport) ---------- */
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('.app-window').forEach(win => {
+      if (win.style.display === 'none') return;
+      const rect = win.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight;
+      let left = rect.left, top = rect.top;
+      left = Math.max(8, Math.min(left, vw - rect.width - 8));
+      top = Math.max(document.getElementById('statusbar').offsetHeight + 8, Math.min(top, vh - rect.height - 8));
+      win.style.left = left + 'px';
+      win.style.top = top + 'px';
+      // persist
+      const id = win.dataset.windowId;
+      windowState[id] = windowState[id] || {};
+      windowState[id].left = Math.round(left);
+      windowState[id].top = Math.round(top);
+      saveWindowState(windowState);
+    });
+  });
+
+  /* ---------- Expose openWindow/closeWindow to inline handlers (keeps original onclick working) ---------- */
+  window.openWindow = openWindow;
+  window.closeWindow = closeWindow;
+  window.setTheme = setTheme;
+  window.setAccent = setAccent;
+
+  /* ---------- Ensure external links are safe (already set in markup) ---------- */
+
+  /* ---------- Final: restore any windows that were open when last saved ---------- */
+  window.addEventListener('load', () => {
+    Object.keys(windowState).forEach(id => {
+      const state = windowState[id];
+      if (state && state.open && !state.minimized) {
+        const win = document.getElementById(id);
+        if (win) {
+          win.style.display = 'flex';
+          win.setAttribute('aria-hidden', 'false');
+          if (state.z) {
+            win.style.zIndex = state.z;
+            highestZ = Math.max(highestZ, state.z);
+          }
+        }
+      }
+    });
+  });
+
+})();
 </script>
 
 </body>
