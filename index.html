@@ -141,7 +141,17 @@ body {
 .brand-sub { color: var(--muted); margin: 6px 0 0 0; }
 
 .section-title { margin-top: 40px; color: var(--accent); }
-
+  .console-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(99,168,255,0.5);
+}
+  .console-title:hover {
+  transform: translateX(4px);
+  transition: 0.3s ease;
+}
 /* Desktop icons */
 .desktop-icons {
   display: flex;
@@ -267,7 +277,9 @@ body {
   <h1 class="brand-title">Atul Singh</h1>
   <p class="brand-sub">Electronics • Systems • Programming</p>
 
-  <h2 class="section-title">Desktop</h2>
+ <h2 class="section-title console-title">
+  <i class="fa-solid fa-terminal"></i> Main Console
+</h2>
 
   <div class="desktop-icons" role="list">
     <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Projects" onclick="openWindow('projects')" onkeydown="if(event.key==='Enter') openWindow('projects')">
