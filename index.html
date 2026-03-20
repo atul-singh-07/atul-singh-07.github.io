@@ -896,16 +896,39 @@ box-shadow:0 8px 25px rgba(0,0,0,.4);
       }
     });
   }
+let isLoggedIn = false;
+const PASSWORD = "atul123";
 
-  function handleCommand(cmd) {
-    // simple simulated responses; keep safe and generic
-    const c = cmd.toLowerCase();
-    if (c === 'whoami') return 'Atul Singh';
-    if (c === 'focus') return 'Systems & Hardware';
-    if (c === 'status') return 'Learning and building';
-    if (c === 'help') return 'Available: whoami, focus, status, help';
-    return 'command not found';
+function handleCommand(cmd) {
+
+  cmd = cmd.toLowerCase();
+
+  if (!isLoggedIn) {
+    if (cmd === PASSWORD) {
+      isLoggedIn = true;
+      return "Access Granted 🔓";
+    } else {
+      return "Enter Password First ❌";
+    }
   }
+
+  if (cmd === "light on") {
+    db.ref("devices/light").set("on");
+    return "Light turned ON 💡";
+  }
+
+  if (cmd === "light off") {
+    db.ref("devices/light").set("off");
+    return "Light turned OFF 🌑";
+  }
+
+  if (cmd === "help") {
+    return "Commands: light on, light off";
+  }
+
+  return "Command not found";
+}
+ 
 
   /* ---------- Accessibility: ensure links have rel (already set in markup) ---------- */
 
@@ -1075,6 +1098,24 @@ document.querySelectorAll(".app-window").forEach(win => {
 });
 
 </script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBy0wkzI0RfZdOdgYb5Teb_-6lDMQR8xr8",
+  authDomain: "atulos-iot.firebaseapp.com",
+  databaseURL: "https://atulos-iot-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "atulos-iot",
+  storageBucket: "atulos-iot.firebasestorage.app",
+  messagingSenderId: "910811873112",
+  appId: "1:910811873112:web:a9398353af0ab257c66f2d"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+</script>
 </body>
 </html>
