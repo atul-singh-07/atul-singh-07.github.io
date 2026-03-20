@@ -557,6 +557,27 @@ box-shadow:0 8px 25px rgba(0,0,0,.4);
     <button onclick="setAccent('#ff5f57')" aria-label="Set red accent">Red</button>
   </div>
 </div>
+<!-- ✅ PASTE FIREBASE HERE -->
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "atulos-iot.firebaseapp.com",
+  databaseURL: "https://atulos-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "atulos-iot",
+  storageBucket: "atulos-iot.firebasestorage.app",
+  messagingSenderId: "910811873112",
+  appId: "1:910811873112:web:a9398353af0ab257c66f2d"
+};
+
+firebase.initializeApp(firebaseConfig);
+</script>
+
+
+<!-- ✅ YOUR ORIGINAL SCRIPT (UNCHANGED) -->
 
 <script>
 /*
@@ -896,6 +917,7 @@ box-shadow:0 8px 25px rgba(0,0,0,.4);
       }
     });
   }
+
 let isLoggedIn = false;
 const PASSWORD = "atul123";
 
@@ -985,142 +1007,7 @@ function handleCommand(cmd) {
 
 })();
 </script>
-<script>
-
-/* ================= BOOT SCREEN ================= */
-
-window.addEventListener("load", () => {
-  const boot = document.getElementById("bootScreen");
-
-  setTimeout(() => {
-    boot.style.opacity = "0";
-    setTimeout(() => boot.style.display = "none", 1000);
-  }, 1800);
-});
 
 
-/* ================= CLOCK ================= */
-
-function updateClock(){
-  const clock = document.getElementById("clock");
-  const now = new Date();
-
-  const time = now.toLocaleTimeString([],{
-    hour:'2-digit',
-    minute:'2-digit'
-  });
-
-  clock.textContent = time;
-}
-
-setInterval(updateClock,1000);
-updateClock();
-
-
-/* ================= WINDOW CONTROL ================= */
-
-let zIndexCounter = 10;
-
-function openWindow(id){
-  const win = document.getElementById(id);
-  win.style.display = "flex";
-  win.style.zIndex = ++zIndexCounter;
-}
-
-
-/* ================= CLOSE / MINIMIZE / MAXIMIZE ================= */
-
-document.querySelectorAll(".app-window").forEach(win => {
-
-  const close = win.querySelector('[data-action="close"]');
-  const minimize = win.querySelector('[data-action="minimize"]');
-  const maximize = win.querySelector('[data-action="maximize"]');
-
-  close.onclick = () => {
-    win.style.display = "none";
-  };
-
-  minimize.onclick = () => {
-    win.style.display = "none";
-  };
-
-  maximize.onclick = () => {
-
-    if(win.classList.contains("maximized")){
-      win.classList.remove("maximized");
-
-      win.style.top = "160px";
-      win.style.left = "200px";
-      win.style.width = "500px";
-
-    } else {
-
-      win.classList.add("maximized");
-
-      win.style.top = "60px";
-      win.style.left = "10px";
-      win.style.width = "calc(100% - 20px)";
-      win.style.height = "calc(100% - 80px)";
-    }
-  };
-
-});
-
-
-/* ================= DRAG WINDOWS ================= */
-
-document.querySelectorAll(".app-window").forEach(win => {
-
-  const header = win.querySelector("[data-drag-handle]");
-
-  let isDragging = false;
-  let offsetX, offsetY;
-
-  header.addEventListener("mousedown",(e)=>{
-
-    isDragging = true;
-
-    offsetX = e.clientX - win.offsetLeft;
-    offsetY = e.clientY - win.offsetTop;
-
-    win.style.zIndex = ++zIndexCounter;
-
-  });
-
-  document.addEventListener("mousemove",(e)=>{
-
-    if(!isDragging) return;
-
-    win.style.left = (e.clientX - offsetX) + "px";
-    win.style.top = (e.clientY - offsetY) + "px";
-
-  });
-
-  document.addEventListener("mouseup",()=>{
-    isDragging = false;
-  });
-
-});
-
-</script>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBy0wkzI0RfZdOdgYb5Teb_-6lDMQR8xr8",
-  authDomain: "atulos-iot.firebaseapp.com",
-  databaseURL: "https://atulos-iot-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "atulos-iot",
-  storageBucket: "atulos-iot.firebasestorage.app",
-  messagingSenderId: "910811873112",
-  appId: "1:910811873112:web:a9398353af0ab257c66f2d"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-</script>
 </body>
 </html>
