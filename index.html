@@ -913,12 +913,16 @@ function handleCommand(cmd) {
   }
 
   if (cmd === "light on") {
-    db.ref("devices/light").set("on");
+    firebase.database().ref("devices/light").set("on")
+      .then(() => console.log("LIGHT ON SUCCESS"))
+      .catch(err => console.log("ERROR:", err));
     return "Light turned ON 💡";
   }
 
   if (cmd === "light off") {
-    db.ref("devices/light").set("off");
+    firebase.database().ref("devices/light").set("off")
+      .then(() => console.log("LIGHT OFF SUCCESS"))
+      .catch(err => console.log("ERROR:", err));
     return "Light turned OFF 🌑";
   }
 
