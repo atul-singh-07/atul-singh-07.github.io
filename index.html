@@ -228,6 +228,22 @@ body {
 /* Utility */
 .hidden { display: none !important; }
 .small { font-size: 13px; color: var(--muted); }
+/* 🔥 STATUS PANEL */
+#statusPanel {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 15px var(--accent);
+}
+
+#statusText {
+  color: var(--accent);
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre;
+}
 </style>
 </head>
 
@@ -523,6 +539,18 @@ box-shadow:0 8px 25px rgba(0,0,0,.4);
     </div>
   </div>
   <div class="window-body">
+    <!-- 🔥 STATUS PANEL -->
+<div id="statusPanel">
+  <pre id="statusText">
+━━━━━━━━━━━━━━━━━━━━━━
+ DEVICES STATUS
+━━━━━━━━━━━━━━━━━━━━━━
+💡 Light   : OFF
+🌀 Fan     : OFF
+🔊 Buzzer  : OFF
+━━━━━━━━━━━━━━━━━━━━━━
+  </pre>
+</div>
     <div id="terminal-output" class="small" aria-live="polite">
       <p>$ whoami → Atul Singh</p>
       <p>$ focus → Systems & Hardware</p>
@@ -566,7 +594,7 @@ box-shadow:0 8px 25px rgba(0,0,0,.4);
 const firebaseConfig = {
   apiKey: "AIzaSy...",
   authDomain: "atulos-iot.firebaseapp.com",
-  databaseURL: "https://atulos-iot-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  databaseURL: "https://atulos-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "atulos-iot",
   storageBucket: "atulos-iot.firebasestorage.app",
   messagingSenderId: "910811873112",
@@ -574,6 +602,34 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
+// 🔥 FUNCTION FIRST (OUTSIDE)
+function updateStatus(data) {
+  const light = (data.light || "off").toUpperCase();
+  const fan = (data.fan || "off").toUpperCase();
+  const buzzer = (data.buzzer || "off").toUpperCase();
+
+  const statusDisplay = `
+━━━━━━━━━━━━━━━━━━━━━━
+ DEVICES STATUS
+━━━━━━━━━━━━━━━━━━━━━━
+💡 Light   : ${light}
+🌀 Fan     : ${fan}
+🔊 Buzzer  : ${buzzer}
+━━━━━━━━━━━━━━━━━━━━━━
+  `;
+
+  document.getElementById("statusText").textContent = statusDisplay;
+}
+
+// 🔥 LISTENER AFTER FUNCTION
+firebase.database().ref("devices").on("value", (snapshot) => {
+  const data = snapshot.val();
+
+  if (data) {
+    updateStatus(data);
+  }
+});
 </script>
 
 
