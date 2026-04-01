@@ -13,24 +13,23 @@
   --accent: #63a8ff;
   --muted: #9aa9bb;
   --card: rgba(18, 24, 33, 0.8);
-  --window: rgba(17, 23, 32, 0.92);
+  --window: rgba(17, 23, 32, 0.95);
   --border: rgba(255,255,255,.1);
 }
 
-/* Light theme overrides (applied via [data-theme="light"]) */
 :root[data-theme="light"] {
   --bg: #eef2f8;
   --fg: #1f2b3a;
   --muted: #5a6b78;
   --card: rgba(255,255,255,0.9);
   --window: rgba(255,255,255,0.96);
-  --border: rgba(0,0,0,.06);
+  --border: rgba(0,0,0,.08);
 }
 
-* { box-sizing: border-box; }
-html,body { height: 100%; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
 body {
-  margin: 0;
   min-height: 100vh;
   background:
     radial-gradient(circle at 20% 10%, #162337 0%, transparent 45%),
@@ -39,16 +38,14 @@ body {
   color: var(--fg);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   line-height: 1.4;
 }
 
-/* ================= BOOT SCREEN ================= */
-
+/* ── BOOT SCREEN ── */
 #bootScreen {
   position: fixed;
   inset: 0;
-  background: var(--bg);
+  background: #05070b;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -61,532 +58,854 @@ body {
 
 .atul-logo {
   font-size: 42px;
-  font-weight: 600;
-  letter-spacing: 4px;
+  font-weight: 700;
+  letter-spacing: 6px;
   color: white;
   margin-bottom: 30px;
   animation: pulse 2s infinite ease-in-out;
 }
+.atul-logo span { color: #63a8ff; }
 
 .loader-ring {
   width: 60px;
   height: 60px;
   margin: 0 auto 20px;
-  border: 4px solid rgba(255,255,255,0.15);
-  border-top: 4px solid var(--accent);
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top: 3px solid #63a8ff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 .boot-text {
-  font-size: 14px;
-  color: rgba(255,255,255,0.6);
-  letter-spacing: 1px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse {
-  0% { opacity: .6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-  100% { opacity: .6; transform: scale(1); }
+  0%,100% { opacity:.65; transform:scale(1); }
+  50% { opacity:1; transform:scale(1.04); }
 }
 
-/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .atul-logo, .loader-ring { animation: none !important; }
   * { transition: none !important; }
 }
 
-/* Statusbar */
+/* ── STATUSBAR ── */
 #statusbar {
   position: fixed;
   top: 0;
   width: 100%;
-  padding: 8px 16px;
+  padding: 8px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: var(--card);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
   z-index: 5000;
+  font-size: 13px;
 }
-#statusbar[role="status"] { outline: none; }
+
+.status-left { display: flex; align-items: center; gap: 10px; }
+.status-dot {
+  width: 8px; height: 8px;
+  background: #28c840;
+  border-radius: 50%;
+  animation: blink-dot 2s infinite;
+}
+@keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
 
 .status-right {
   display: flex;
-  gap: 18px;
+  gap: 16px;
   align-items: center;
-  font-size: 14px;
 }
-
 .status-right i {
   color: var(--fg);
-  opacity: .85;
+  opacity: .8;
   transition: 0.2s;
   cursor: pointer;
 }
 .status-right i:hover { opacity: 1; color: var(--accent); }
+.status-right a { color: var(--fg); text-decoration: none; }
 
-.status-right a {
-  color: var(--fg);
-  text-decoration: none;
+/* ── DESKTOP ── */
+#desktop { padding: 110px 44px 44px; }
+
+.brand-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.brand-sub {
+  color: var(--muted);
+  margin: 6px 0 0;
+  font-size: 14px;
 }
 
-/* Desktop */
-#desktop {
-  padding: 120px 40px;
-}
-.brand-title { color: var(--accent); margin: 0; }
-.brand-sub { color: var(--muted); margin: 6px 0 0 0; }
-
-.section-title { margin-top: 40px; color: var(--accent); }
-  .console-title {
+.section-title {
+  margin-top: 40px;
+  color: var(--accent);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
   display: flex;
   align-items: center;
   gap: 10px;
-  letter-spacing: 1px;
-  text-shadow: 0 0 12px rgba(99,168,255,0.5);
 }
- 
-/* Desktop icons */
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── DESKTOP ICONS ── */
 .desktop-icons {
   display: flex;
-  gap: 30px;
+  gap: 24px;
   flex-wrap: wrap;
-  margin-top: 18px;
+  margin-top: 24px;
 }
+
 .icon {
-  width: 90px;
+  width: 84px;
   text-align: center;
   cursor: pointer;
   user-select: none;
+  padding: 14px 8px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
-.icon i { font-size: 30px; color: var(--accent); }
-.icon span { font-size: 12px; color: var(--muted); display: block; margin-top: 6px; }
+.icon:hover {
+  background: rgba(99,168,255,0.08);
+  border-color: rgba(99,168,255,0.2);
+  transform: translateY(-2px);
+}
+.icon:active { transform: scale(0.95); }
+.icon i { font-size: 28px; color: var(--accent); display: block; }
+.icon span {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin-top: 8px;
+  letter-spacing: 0.3px;
+}
+.icon:focus { outline: 2px solid var(--accent); border-radius: 12px; }
 
-/* Focus styles for keyboard users */
-.icon:focus { outline: 2px solid var(--accent); border-radius: 6px; }
-
-/* Windows */
+/* ── APP WINDOWS ── */
 .app-window {
   position: absolute;
-  top: 160px;
-  left: 200px;
-  width: 500px;
+  top: 140px;
+  left: 180px;
+  width: 520px;
   max-width: calc(100% - 32px);
   background: var(--window);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  border-radius: 10px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.55), 0 0 0 0.5px rgba(255,255,255,0.04) inset;
   display: none;
   flex-direction: column;
   min-height: 120px;
   overflow: hidden;
+  backdrop-filter: blur(20px);
 }
+
+/* ── WINDOWS-STYLE TITLE BAR ── */
 .window-header {
-  padding: 10px 14px;
+  padding: 0 0 0 14px;
   background: rgba(255,255,255,.04);
   cursor: move;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
   border-bottom: 1px solid var(--border);
+  user-select: none;
+  min-height: 34px;
 }
-.window-header .title-left { display:flex; gap:10px; align-items:center; }
-.window-header .controls { display:flex; gap:8px; align-items:center; }
-.window-header button {
-  background: transparent;
+
+.window-header .title-left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  padding: 6px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.window-header .title-left i {
+  font-size: 13px;
+  color: var(--accent);
+  opacity: 0.9;
+}
+
+/* Windows 11-style control buttons */
+.window-header .controls {
+  display: flex;
+  align-items: stretch;
+  margin-left: 8px;
+}
+
+.win-btn {
+  width: 46px;
+  height: 100%;
   border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 6px;
-  border-radius: 6px;
-}
-.window-header button:hover { color: var(--accent); background: rgba(255,255,255,0.02); }
-
-.window-body { padding: 16px; overflow: auto; }
-
-/* Settings Buttons */
-.settings button {
-  margin: 6px 6px 0 0;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,.05);
+  background: transparent;
   color: var(--fg);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+  outline: none;
+  border-radius: 0;
+  flex-shrink: 0;
 }
 
-/* Small screens */
-@media (max-width: 700px) {
-  #desktop { padding: 100px 16px; }
-  .app-window { width: calc(100% - 24px); left: 12px; top: 120px; border-radius: 10px; }
+.win-btn i {
+  pointer-events: none;
+  font-size: 10px;
 }
 
-/* Utility */
-.hidden { display: none !important; }
-.small { font-size: 13px; color: var(--muted); }
-/* 🔥 STATUS PANEL */
+.win-btn.min:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.win-btn.max:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.win-btn.close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+.win-btn.close:active { background: #c41230; }
+.win-btn.min:active, .win-btn.max:active { background: rgba(255,255,255,0.06); }
+
+/* Light theme adjustments for win buttons */
+:root[data-theme="light"] .win-btn { color: #333; }
+:root[data-theme="light"] .win-btn.min:hover,
+:root[data-theme="light"] .win-btn.max:hover { background: rgba(0,0,0,0.08); color: #000; }
+
+.window-body { padding: 18px; overflow: auto; }
+
+/* ── STATUS PANEL (IoT) ── */
 #statusPanel {
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid var(--accent);
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(99,168,255,0.3);
   border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 12px;
-  box-shadow: 0 0 15px var(--accent);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 0 20px rgba(99,168,255,0.08);
 }
-
 #statusText {
   color: var(--accent);
   font-family: monospace;
   font-size: 13px;
   white-space: pre;
+  line-height: 1.7;
 }
+
+/* ── TERMINAL AUTH ── */
+#terminal-auth-overlay {
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(99,168,255,0.25);
+  border-radius: 10px;
+  padding: 20px 18px 16px;
+  margin-bottom: 14px;
+}
+#terminal-auth-overlay p {
+  color: var(--accent);
+  font-size: 13px;
+  margin-bottom: 10px;
+  font-family: monospace;
+}
+#terminal-auth-overlay .auth-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#terminal-auth-overlay .prompt-label {
+  color: #28c840;
+  font-size: 13px;
+  white-space: nowrap;
+  font-family: monospace;
+}
+#term-password-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--fg);
+  font-family: monospace;
+  font-size: 13px;
+  outline: none;
+  letter-spacing: 3px;
+  transition: border-color 0.2s;
+}
+#term-password-input:focus { border-color: rgba(99,168,255,0.4); }
+#term-auth-btn {
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s;
+}
+#term-auth-btn:hover { filter: brightness(1.1); }
+#term-auth-msg {
+  margin-top: 8px;
+  font-size: 12px;
+  min-height: 16px;
+  font-family: monospace;
+}
+
+/* ── TERMINAL ── */
+#terminal-output {
+  font-size: 13px;
+  color: var(--muted);
+}
+#terminal-output p { margin: 4px 0; }
+#terminal-output p::before { content: ''; }
+
+/* ── SETTINGS ── */
+.settings-group { margin-bottom: 18px; }
+.settings-group p { font-size: 13px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.settings-group button {
+  margin: 0 6px 6px 0;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.settings-group button:hover {
+  background: rgba(99,168,255,0.12);
+  border-color: rgba(99,168,255,0.3);
+}
+
+/* ── ATUL AI CHAT ── */
+#ai-chat {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 300px;
+  max-height: 420px;
+  scroll-behavior: smooth;
+}
+
+.ai-bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ai-bubble-wrap.user { align-items: flex-end; }
+.ai-bubble-wrap.ai   { align-items: flex-start; }
+
+.ai-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid var(--border);
+}
+.ai-bubble.user {
+  background: var(--accent);
+  color: #000;
+  border-radius: 14px 14px 4px 14px;
+  border-color: transparent;
+}
+.ai-bubble.ai {
+  background: rgba(255,255,255,0.06);
+  color: var(--fg);
+  border-radius: 14px 14px 14px 4px;
+}
+
+.ai-ts {
+  font-size: 10px;
+  color: var(--muted);
+  padding: 0 4px;
+}
+
+/* Typing indicator */
+#ai-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 14px;
+  border-radius: 14px 14px 14px 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  width: fit-content;
+}
+.typing-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.typing-dot:nth-child(1) { animation: td 1s infinite 0.0s; }
+.typing-dot:nth-child(2) { animation: td 1s infinite 0.25s; }
+.typing-dot:nth-child(3) { animation: td 1s infinite 0.5s; }
+@keyframes td { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
+
+/* AI input area */
+.ai-input-row {
+  display: flex;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+  gap: 8px;
+  align-items: center;
+}
+#ai-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+#ai-input:focus { border-color: rgba(99,168,255,0.4); }
+#ai-input::placeholder { color: var(--muted); }
+
+#mic-btn, #ai-send-btn {
+  padding: 10px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.2s;
+}
+#mic-btn { background: rgba(255,255,255,0.05); color: var(--fg); }
+#mic-btn:hover { background: rgba(255,255,255,0.1); }
+#mic-btn.listening { color: #ff5f57; border-color: rgba(255,95,87,0.4); background: rgba(255,95,87,0.08); }
+
+#ai-send-btn {
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+  font-size: 13px;
+  border-color: transparent;
+  padding: 10px 18px;
+}
+#ai-send-btn:hover { filter: brightness(1.1); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 700px) {
+  #desktop { padding: 100px 16px 32px; }
+  .app-window { width: calc(100% - 24px); left: 12px; top: 110px; border-radius: 10px; }
+  .win-btn { width: 38px; }
+}
+
+.hidden { display: none !important; }
+.small { font-size: 13px; color: var(--muted); }
 </style>
 </head>
-
 <body>
 
-<!-- BOOT SCREEN -->
+<!-- ══════════════════════════════════════════
+     BOOT SCREEN
+══════════════════════════════════════════ -->
 <div id="bootScreen" role="status" aria-live="polite" aria-label="Boot screen">
   <div class="boot-center">
-    <div class="atul-logo">AtulOS</div>
+    <div class="atul-logo">Atul<span>OS</span></div>
     <div class="loader-ring" aria-hidden="true"></div>
     <div class="boot-text">Starting system...</div>
   </div>
 </div>
 
-<!-- STATUS BAR -->
+<!-- ══════════════════════════════════════════
+     STATUS BAR
+══════════════════════════════════════════ -->
 <div id="statusbar" role="status" aria-label="System status bar">
-  <div>AtulOS • Atul Singh</div>
+  <div class="status-left">
+    <div class="status-dot" title="Online"></div>
+    <span>AtulOS &nbsp;·&nbsp; Atul Singh</span>
+  </div>
   <div class="status-right">
-
-  <!-- WiFi -->
-  <i class="fa-solid fa-wifi" title="WiFi Connected"></i>
-
-  <!-- Battery -->
-  <i class="fa-solid fa-battery-three-quarters" title="Battery 75%"></i>
-
-  <!-- GitHub -->
-  <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer">
-    <i class="fab fa-github"></i>
-  </a>
-
-  <!-- LinkedIn -->
-  <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" rel="noopener noreferrer">
-    <i class="fab fa-linkedin"></i>
-  </a>
-
-  <!-- Clock -->
-  <div id="clock" class="small"></div>
-
-</div>
+    <i class="fa-solid fa-wifi" title="WiFi Connected"></i>
+    <i class="fa-solid fa-battery-three-quarters" title="Battery 75%"></i>
+    <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" title="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+    <div id="clock" class="small"></div>
+  </div>
 </div>
 
-<!-- DESKTOP -->
+<!-- ══════════════════════════════════════════
+     DESKTOP
+══════════════════════════════════════════ -->
 <main id="desktop" role="main" aria-label="Desktop">
   <h1 class="brand-title">Atul Singh</h1>
-  <p class="brand-sub">Electronics • Systems • Programming</p>
+  <p class="brand-sub">Electronics &nbsp;·&nbsp; Systems &nbsp;·&nbsp; Programming</p>
 
- <h2 class="section-title console-title">
-  <i class="fa-solid fa-terminal"></i> Main Console
-</h2>
+  <h2 class="section-title">
+    <i class="fa-solid fa-terminal" style="font-size:13px;"></i>
+    Main Console
+  </h2>
 
   <div class="desktop-icons" role="list">
-    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Projects" onclick="openWindow('projects')" onkeydown="if(event.key==='Enter') openWindow('projects')">
-      <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+    <div class="icon" role="button" tabindex="0" aria-label="Open Projects"
+         onclick="openWindow('projects')" onkeydown="if(event.key==='Enter') openWindow('projects')">
+      <i class="fa-solid fa-folder-open"></i>
       <span>Projects</span>
     </div>
-
-    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open About" onclick="openWindow('about')" onkeydown="if(event.key==='Enter') openWindow('about')">
-      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    <div class="icon" role="button" tabindex="0" aria-label="Open About"
+         onclick="openWindow('about')" onkeydown="if(event.key==='Enter') openWindow('about')">
+      <i class="fa-solid fa-circle-info"></i>
       <span>About</span>
     </div>
-
-    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Skills" onclick="openWindow('skills')" onkeydown="if(event.key==='Enter') openWindow('skills')">
-      <i class="fa-solid fa-microchip" aria-hidden="true"></i>
+    <div class="icon" role="button" tabindex="0" aria-label="Open Skills"
+         onclick="openWindow('skills')" onkeydown="if(event.key==='Enter') openWindow('skills')">
+      <i class="fa-solid fa-microchip"></i>
       <span>Skills</span>
     </div>
-
-    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Terminal" onclick="openWindow('terminal')" onkeydown="if(event.key==='Enter') openWindow('terminal')">
-      <i class="fa-solid fa-terminal" aria-hidden="true"></i>
+    <div class="icon" role="button" tabindex="0" aria-label="Open Terminal"
+         onclick="openWindow('terminal')" onkeydown="if(event.key==='Enter') openWindow('terminal')">
+      <i class="fa-solid fa-terminal"></i>
       <span>Terminal</span>
     </div>
-
-    <div class="icon" role="button" tabindex="0" aria-pressed="false" aria-label="Open Settings" onclick="openWindow('settings')" onkeydown="if(event.key==='Enter') openWindow('settings')">
-      <i class="fa-solid fa-gear" aria-hidden="true"></i>
+    <div class="icon" role="button" tabindex="0" aria-label="Open Settings"
+         onclick="openWindow('settings')" onkeydown="if(event.key==='Enter') openWindow('settings')">
+      <i class="fa-solid fa-gear"></i>
       <span>Settings</span>
+    </div>
+    <div class="icon" role="button" tabindex="0" aria-label="Open Atul AI"
+         onclick="openWindow('atulAI')" onkeydown="if(event.key==='Enter') openWindow('atulAI')">
+      <i class="fa-solid fa-robot"></i>
+      <span>Atul AI</span>
     </div>
   </div>
 </main>
 
-<!-- WINDOWS (preserve all existing content) -->
 
+<!-- ══════════════════════════════════════════
+     WINDOW: PROJECTS
+══════════════════════════════════════════ -->
 <div class="app-window" id="projects" role="dialog" aria-labelledby="projects-title" tabindex="0" data-window-id="projects">
   <div class="window-header" data-drag-handle>
     <div class="title-left">
-      <strong id="projects-title">Projects</strong>
+      <i class="fa-solid fa-folder-open"></i>
+      <span id="projects-title">Projects</span>
     </div>
     <div class="controls">
-      <button aria-label="Minimize Projects" data-action="minimize" title="Minimize">▁</button>
-      <button aria-label="Maximize Projects" data-action="maximize" title="Maximize">▢</button>
-      <button class="close-btn" aria-label="Close Projects" data-action="close" title="Close">✕</button>
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Projects">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Projects">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Projects">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </div>
   <div class="window-body">
-   <!-- 🔥 Featured Smart Parking Project -->
-<div style="
-  padding:18px;
-  margin-bottom:25px;
-  border-radius:14px;
-  border:1px solid var(--accent);
-  background: linear-gradient(145deg, rgba(99,168,255,0.08), rgba(99,168,255,0.03));
-">
 
-  <h3 style="margin:0 0 8px 0; color: var(--accent);">
-    🚗 Smart Parking Management System
-  </h3>
-
-  <p style="margin:0 0 12px 0; font-size:13px; color:var(--muted);">
-    Real-time IoT parking system built using ESP32, Firebase and a live web dashboard.
-    Displays slot availability dynamically with cloud integration.
-  </p>
-
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-
-    <a href="https://atul-singh-07.github.io/Smart-Parking-Dashboard/"
-       target="_blank"
-       rel="noopener noreferrer"
-       style="
-         padding:8px 14px;
-         background: var(--accent);
-         color:#000;
-         font-weight:600;
-         border-radius:6px;
-         text-decoration:none;
-         font-size:13px;
-       ">
-       Open Live Dashboard →
-    </a>
-
-    <a href="https://github.com/atul-singh-07"
-       target="_blank"
-       rel="noopener noreferrer"
-       style="
-         padding:8px 14px;
-         border:1px solid var(--border);
-         border-radius:6px;
-         text-decoration:none;
-         font-size:13px;
-         color:var(--fg);
-       ">
-       View GitHub
-    </a>
-
-  </div>
-</div>
-
-<!-- 📁 Arduino Mini Projects -->
-<h3 style="color: var(--accent); margin-bottom:12px;">
-  Arduino Mini Projects
-</h3>
-
-<ul style="list-style:none; padding-left:0;">
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/01_led_blink"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       01. LED Blink
-    </a>
-  </li>
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/02_traffic_light"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       02. Traffic Light System
-    </a>
-  </li>
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/03_dht11_sensor"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       03. DHT11 Temperature & Humidity Sensor
-    </a>
-  </li>
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/04_rgb_led"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       04. RGB LED Control
-    </a>
-  </li>
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/05_seven_segment_display"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       05. Seven Segment Display
-    </a>
-  </li>
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/06_servo"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       06. Servo Motor Control
-    </a>
-  </li>
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/07_radar_system"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       07. Ultrasonic Radar System
-    </a>
-  </li>
-
-  <li style="margin-bottom:12px;">
-    <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/08_joystick_led"
-       target="_blank" rel="noopener noreferrer"
-       style="color: var(--accent); text-decoration:none;">
-       08. Joystick Controlled LED
-    </a>
-  </li>
-
-</ul>
-  </div>
-</div>
-
-<div class="app-window" id="about" role="dialog" aria-labelledby="about-title" tabindex="0" data-window-id="about">
-  <div class="window-header" data-drag-handle>
-    <div class="title-left">
-      <strong id="about-title">About</strong>
+    <!-- Featured -->
+    <div style="padding:16px;margin-bottom:22px;border-radius:12px;border:1px solid rgba(99,168,255,0.25);background:linear-gradient(145deg,rgba(99,168,255,0.07),rgba(99,168,255,0.02));">
+      <h3 style="margin:0 0 8px;color:var(--accent);font-size:15px;">🚗 Smart Parking Management System</h3>
+      <p style="margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.6;">
+        Real-time IoT parking system built using ESP32, Firebase and a live web dashboard.
+        Displays slot availability dynamically with cloud integration.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="https://atul-singh-07.github.io/Smart-Parking-Dashboard/" target="_blank" rel="noopener noreferrer"
+           style="padding:8px 14px;background:var(--accent);color:#000;font-weight:700;border-radius:8px;text-decoration:none;font-size:13px;">
+          Open Live Dashboard →
+        </a>
+        <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer"
+           style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;text-decoration:none;font-size:13px;color:var(--fg);">
+          View GitHub
+        </a>
+      </div>
     </div>
-    <div class="controls">
-      <button aria-label="Minimize About" data-action="minimize" title="Minimize">▁</button>
-      <button aria-label="Maximize About" data-action="maximize" title="Maximize">▢</button>
-      <button class="close-btn" aria-label="Close About" data-action="close" title="Close">✕</button>
-    </div>
-  </div>
-  <div class="window-body">
-    <div style="text-align:center; margin-bottom:15px;">
-  <img src="assets/atul-profile.jpeg"
-       alt="Atul Singh"
-       style="
-width:140px;
-height:140px;
-border-radius:50%;
-object-fit:cover;
-object-position:center 20%;
-border:3px solid var(--accent);
-box-shadow:0 8px 25px rgba(0,0,0,.4);
-">
-</div>
-    <p>I build systems where <strong>electronics and code</strong> work together.
-    My interest lies in understanding how software controls and interacts with
-    real-world hardware.</p>
 
-    <p>I work with <strong>C and C++</strong> for embedded systems and microcontrollers,
-    and I’m exploring <strong>Python</strong> to strengthen problem-solving and
-    automation skills.</p>
-
-    <p>I enjoy hands-on learning—writing code, testing it on hardware, debugging,
-    and improving systems step by step. Seeing code turn into real behavior is
-    what excites me the most.</p>
-
-    <p>Outside of tech, I enjoy playing <strong>cricket and badminton</strong>—sports help me stay active,
-    focused, and reset my mind.</p>
-  </div>
-</div>
-
-<div class="app-window" id="skills" role="dialog" aria-labelledby="skills-title" tabindex="0" data-window-id="skills">
-  <div class="window-header" data-drag-handle>
-    <div class="title-left">
-      <strong id="skills-title">Skills</strong>
-    </div>
-    <div class="controls">
-      <button aria-label="Minimize Skills" data-action="minimize" title="Minimize">▁</button>
-      <button aria-label="Maximize Skills" data-action="maximize" title="Maximize">▢</button>
-      <button class="close-btn" aria-label="Close Skills" data-action="close" title="Close">✕</button>
-    </div>
-  </div>
-  <div class="window-body">
-    <ul>
-      <li>C / C++</li>
-      <li>Python</li>
-      <li>Arduino & ESP32</li>
-      <li>Embedded Systems</li>
-      <li>HTML & CSS</li>
+    <h3 style="color:var(--accent);margin-bottom:14px;font-size:14px;text-transform:uppercase;letter-spacing:1px;">Arduino Mini Projects</h3>
+    <ul style="list-style:none;padding:0;">
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/01_led_blink" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">01. LED Blink</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/02_traffic_light" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">02. Traffic Light System</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/03_dht11_sensor" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">03. DHT11 Temperature &amp; Humidity Sensor</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/04_rgb_led" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">04. RGB LED Control</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/05_seven_segment_display" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">05. Seven Segment Display</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/06_servo" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">06. Servo Motor Control</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/07_radar_system" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">07. Ultrasonic Radar System</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/08_joystick_led" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">08. Joystick Controlled LED</a></li>
     </ul>
   </div>
 </div>
 
-<div class="app-window" id="terminal" role="dialog" aria-labelledby="terminal-title" tabindex="0" data-window-id="terminal">
+
+<!-- ══════════════════════════════════════════
+     WINDOW: ABOUT
+══════════════════════════════════════════ -->
+<div class="app-window" id="about" role="dialog" aria-labelledby="about-title" tabindex="0" data-window-id="about">
   <div class="window-header" data-drag-handle>
     <div class="title-left">
-      <strong id="terminal-title">Terminal</strong>
+      <i class="fa-solid fa-circle-info"></i>
+      <span id="about-title">About</span>
     </div>
     <div class="controls">
-      <button aria-label="Minimize Terminal" data-action="minimize" title="Minimize">▁</button>
-      <button aria-label="Maximize Terminal" data-action="maximize" title="Maximize">▢</button>
-      <button class="close-btn" aria-label="Close Terminal" data-action="close" title="Close">✕</button>
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize About">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize About">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close About">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </div>
   <div class="window-body">
-    <!-- 🔥 STATUS PANEL -->
-<div id="statusPanel">
-  <pre id="statusText">
-━━━━━━━━━━━━━━━━━━━━━━
+    <div style="text-align:center;margin-bottom:18px;">
+      <img src="assets/atul-profile.jpeg" alt="Atul Singh"
+           style="width:130px;height:130px;border-radius:50%;object-fit:cover;object-position:center 20%;border:3px solid var(--accent);box-shadow:0 8px 30px rgba(0,0,0,.4);">
+    </div>
+    <p style="margin-bottom:12px;font-size:14px;line-height:1.7;">I build systems where <strong>electronics and code</strong> work together. My interest lies in understanding how software controls and interacts with real-world hardware.</p>
+    <p style="margin-bottom:12px;font-size:14px;line-height:1.7;">I work with <strong>C and C++</strong> for embedded systems and microcontrollers, and I'm exploring <strong>Python</strong> to strengthen problem-solving and automation skills.</p>
+    <p style="margin-bottom:12px;font-size:14px;line-height:1.7;">I enjoy hands-on learning — writing code, testing it on hardware, debugging, and improving systems step by step.</p>
+    <p style="font-size:14px;line-height:1.7;">Outside of tech, I enjoy playing <strong>cricket and badminton</strong> — sports help me stay active, focused, and reset my mind.</p>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     WINDOW: SKILLS
+══════════════════════════════════════════ -->
+<div class="app-window" id="skills" role="dialog" aria-labelledby="skills-title" tabindex="0" data-window-id="skills">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <i class="fa-solid fa-microchip"></i>
+      <span id="skills-title">Skills</span>
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Skills">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Skills">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Skills">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+  <div class="window-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.03);">
+        <div style="color:var(--accent);font-size:20px;margin-bottom:8px;">⚙️</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">C / C++</div>
+        <div style="font-size:12px;color:var(--muted);">Primary language for embedded systems</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.03);">
+        <div style="color:var(--accent);font-size:20px;margin-bottom:8px;">🐍</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Python</div>
+        <div style="font-size:12px;color:var(--muted);">Automation & problem solving</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.03);">
+        <div style="color:var(--accent);font-size:20px;margin-bottom:8px;">🔌</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Arduino &amp; ESP32</div>
+        <div style="font-size:12px;color:var(--muted);">Microcontroller programming</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.03);">
+        <div style="color:var(--accent);font-size:20px;margin-bottom:8px;">🖥️</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Embedded Systems</div>
+        <div style="font-size:12px;color:var(--muted);">Hardware-software integration</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.03);">
+        <div style="color:var(--accent);font-size:20px;margin-bottom:8px;">🌐</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">HTML &amp; CSS</div>
+        <div style="font-size:12px;color:var(--muted);">Web interfaces &amp; dashboards</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.03);">
+        <div style="color:var(--accent);font-size:20px;margin-bottom:8px;">☁️</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Firebase / IoT</div>
+        <div style="font-size:12px;color:var(--muted);">Real-time cloud integration</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     WINDOW: TERMINAL
+══════════════════════════════════════════ -->
+<div class="app-window" id="terminal" role="dialog" aria-labelledby="terminal-title" tabindex="0" data-window-id="terminal">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <i class="fa-solid fa-terminal"></i>
+      <span id="terminal-title">Terminal</span>
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Terminal">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Terminal">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Terminal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+  <div class="window-body">
+
+    <!-- Auth Overlay -->
+    <div id="terminal-auth-overlay">
+      <p>🔐 AtulOS Terminal — Authentication Required</p>
+      <div class="auth-row">
+        <span class="prompt-label">Password:</span>
+        <input id="term-password-input" type="password" placeholder="••••••••" autocomplete="off" aria-label="Terminal password" />
+        <button id="term-auth-btn">Unlock</button>
+      </div>
+      <div id="term-auth-msg"></div>
+    </div>
+
+    <div id="statusPanel" style="display:none;">
+      <pre id="statusText">━━━━━━━━━━━━━━━━━━━━━━
  DEVICES STATUS
 ━━━━━━━━━━━━━━━━━━━━━━
 💡 Light   : OFF
 🌀 Fan     : OFF
 🔊 Buzzer  : OFF
-━━━━━━━━━━━━━━━━━━━━━━
-  </pre>
-</div>
-    <div id="terminal-output" class="small" aria-live="polite">
-      <p>$ whoami → Atul Singh</p>
-      <p>$ focus → Systems & Hardware</p>
-      <p>$ status → Learning and building</p>
+━━━━━━━━━━━━━━━━━━━━━━</pre>
     </div>
-    <div style="margin-top:10px;">
-      <label for="term-input" class="small" style="display:block;margin-bottom:6px;">Command</label>
-      <input id="term-input" type="text" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--fg);" aria-label="Terminal command input" />
+    <div id="terminal-output" class="small" aria-live="polite" style="display:none;">
+      <p style="color:#28c840;">$ whoami → Atul Singh</p>
+      <p style="color:#28c840;">$ focus  → Systems &amp; Hardware</p>
+      <p style="color:#28c840;">$ status → Learning and building</p>
+    </div>
+    <div id="terminal-input-area" style="margin-top:12px;display:none;">
+      <label for="term-input" style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Command</label>
+      <input id="term-input" type="text"
+             style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--fg);font-family:inherit;font-size:13px;outline:none;"
+             aria-label="Terminal command input"
+             placeholder="Type a command... (try: light on, fan off, open projects)" />
     </div>
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════════
+     WINDOW: SETTINGS
+══════════════════════════════════════════ -->
 <div class="app-window" id="settings" role="dialog" aria-labelledby="settings-title" tabindex="0" data-window-id="settings">
   <div class="window-header" data-drag-handle>
     <div class="title-left">
-      <strong id="settings-title">System Settings</strong>
+      <i class="fa-solid fa-gear"></i>
+      <span id="settings-title">System Settings</span>
     </div>
     <div class="controls">
-      <button aria-label="Minimize Settings" data-action="minimize" title="Minimize">▁</button>
-      <button aria-label="Maximize Settings" data-action="maximize" title="Maximize">▢</button>
-      <button class="close-btn" aria-label="Close Settings" data-action="close" title="Close">✕</button>
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Settings">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Settings">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Settings">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </div>
-  <div class="window-body settings">
-    <p><strong>Theme</strong></p>
-    <button onclick="setTheme('dark')" aria-label="Set dark theme">Dark</button>
-    <button onclick="setTheme('light')" aria-label="Set light theme">Light</button>
-
-    <p style="margin-top:15px;"><strong>Accent</strong></p>
-    <button onclick="setAccent('#63a8ff')" aria-label="Set blue accent">Blue</button>
-    <button onclick="setAccent('#28c840')" aria-label="Set green accent">Green</button>
-    <button onclick="setAccent('#ff5f57')" aria-label="Set red accent">Red</button>
+  <div class="window-body">
+    <div class="settings-group">
+      <p>Theme</p>
+      <button onclick="setTheme('dark')" aria-label="Set dark theme">🌑 Dark</button>
+      <button onclick="setTheme('light')" aria-label="Set light theme">☀️ Light</button>
+    </div>
+    <div class="settings-group">
+      <p>Accent Color</p>
+      <button onclick="setAccent('#63a8ff')" aria-label="Blue accent" style="border-left:3px solid #63a8ff;">Blue</button>
+      <button onclick="setAccent('#28c840')" aria-label="Green accent" style="border-left:3px solid #28c840;">Green</button>
+      <button onclick="setAccent('#ff5f57')" aria-label="Red accent" style="border-left:3px solid #ff5f57;">Red</button>
+      <button onclick="setAccent('#febc2e')" aria-label="Yellow accent" style="border-left:3px solid #febc2e;">Yellow</button>
+      <button onclick="setAccent('#bf5af2')" aria-label="Purple accent" style="border-left:3px solid #bf5af2;">Purple</button>
+    </div>
+    <div class="settings-group">
+      <p>System Info</p>
+      <div style="padding:12px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px;color:var(--muted);line-height:1.8;">
+        OS: AtulOS v2.0<br>
+        Build: 2025.stable<br>
+        AI: Atul AI Engine v2<br>
+        Firebase: Connected
+      </div>
+    </div>
   </div>
 </div>
-<!-- ✅ PASTE FIREBASE HERE -->
 
+
+<!-- ══════════════════════════════════════════
+     WINDOW: ATUL AI
+══════════════════════════════════════════ -->
+<div class="app-window" id="atulAI" role="dialog" aria-labelledby="atulai-title" tabindex="0" data-window-id="atulAI" style="width:480px;">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <i class="fa-solid fa-robot"></i>
+      <span id="atulai-title">Atul AI</span>
+      <span style="font-size:11px;color:var(--muted);background:rgba(40,200,64,0.12);border:1px solid rgba(40,200,64,0.25);padding:2px 8px;border-radius:20px;">● Online</span>
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Atul AI">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Atul AI">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Atul AI">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="ai-chat" aria-live="polite"></div>
+
+  <div class="ai-input-row">
+    <input id="ai-input" type="text" placeholder="Ask me anything or give a command..." aria-label="AI chat input" />
+    <button id="mic-btn" title="Voice input" aria-label="Voice input">🎤</button>
+    <button id="ai-send-btn" onclick="aiSendMessage()" aria-label="Send message">Send</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     FIREBASE SDK
+══════════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
@@ -603,59 +922,37 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-// 🔥 FUNCTION FIRST (OUTSIDE)
 function updateStatus(data) {
-  const light = (data.light || "off").toUpperCase();
-  const fan = (data.fan || "off").toUpperCase();
-  const buzzer = (data.buzzer || "off").toUpperCase();
-
-  const statusDisplay = `
-━━━━━━━━━━━━━━━━━━━━━━
+  const light  = (data.light  || 'off').toUpperCase();
+  const fan    = (data.fan    || 'off').toUpperCase();
+  const buzzer = (data.buzzer || 'off').toUpperCase();
+  document.getElementById('statusText').textContent =
+`━━━━━━━━━━━━━━━━━━━━━━
  DEVICES STATUS
 ━━━━━━━━━━━━━━━━━━━━━━
 💡 Light   : ${light}
 🌀 Fan     : ${fan}
 🔊 Buzzer  : ${buzzer}
-━━━━━━━━━━━━━━━━━━━━━━
-  `;
-
-  document.getElementById("statusText").textContent = statusDisplay;
+━━━━━━━━━━━━━━━━━━━━━━`;
 }
 
-// 🔥 LISTENER AFTER FUNCTION
-firebase.database().ref("devices").on("value", (snapshot) => {
-  const data = snapshot.val();
-
-  if (data) {
-    updateStatus(data);
-  }
+firebase.database().ref('devices').on('value', (snap) => {
+  const data = snap.val();
+  if (data) updateStatus(data);
 });
 </script>
 
 
-<!-- ✅ YOUR ORIGINAL SCRIPT (UNCHANGED) -->
-
+<!-- ══════════════════════════════════════════
+     MAIN SCRIPT
+══════════════════════════════════════════ -->
 <script>
-/*
-  Consolidated, self-contained script:
-  - Uses addEventListener for load handlers
-  - Improved dragging (getBoundingClientRect), prevents text selection while dragging
-  - Constrains windows to viewport
-  - Touch support for dragging
-  - Keyboard accessibility (Enter to open icons, Esc to close topmost)
-  - Persist window positions, sizes, zIndex, and theme/accent in localStorage
-  - Adds minimize/maximize behavior (simple)
-  - Keeps all original content intact
-*/
-
 (function () {
   'use strict';
 
-  /* ---------- Utilities ---------- */
-  const $ = (sel, ctx = document) => ctx.querySelector(sel);
-  const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
-
-  /* ---------- Boot screen fade ---------- */
+  /* ─────────────────────────────────────────
+     BOOT SCREEN
+  ───────────────────────────────────────── */
   window.addEventListener('load', () => {
     setTimeout(() => {
       const boot = document.getElementById('bootScreen');
@@ -665,15 +962,19 @@ firebase.database().ref("devices").on("value", (snapshot) => {
     }, 3000);
   });
 
-  /* ---------- Clock ---------- */
+  /* ─────────────────────────────────────────
+     CLOCK
+  ───────────────────────────────────────── */
   function updateClock() {
-    document.getElementById('clock').innerText =
+    document.getElementById('clock').textContent =
       new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
   setInterval(updateClock, 1000);
   updateClock();
 
-  /* ---------- Theme & Accent (persisted) ---------- */
+  /* ─────────────────────────────────────────
+     THEME & ACCENT
+  ───────────────────────────────────────── */
   function setTheme(mode) {
     if (mode === 'light') {
       document.documentElement.setAttribute('data-theme', 'light');
@@ -682,6 +983,7 @@ firebase.database().ref("devices").on("value", (snapshot) => {
     }
     localStorage.setItem('theme', mode);
   }
+
   function setAccent(color) {
     document.documentElement.style.setProperty('--accent', color);
     localStorage.setItem('accent', color);
@@ -694,31 +996,26 @@ firebase.database().ref("devices").on("value", (snapshot) => {
     if (a) setAccent(a);
   });
 
-  /* ---------- Window manager state persistence ---------- */
-  const STORAGE_KEY = 'atul_windows_v1';
+  /* ─────────────────────────────────────────
+     WINDOW MANAGER
+  ───────────────────────────────────────── */
+  const STORAGE_KEY = 'atul_windows_v2';
   let highestZ = 100;
 
   function loadWindowState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      return {};
-    }
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch(e) { return {}; }
   }
   function saveWindowState(state) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) { /* ignore */ }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch(e) {}
   }
 
   const windowState = loadWindowState();
 
-  /* ---------- Window helpers ---------- */
   function bringToFront(win) {
     highestZ++;
     win.style.zIndex = highestZ;
-    // persist zIndex
     const id = win.dataset.windowId;
     if (id) {
       windowState[id] = windowState[id] || {};
@@ -730,11 +1027,10 @@ firebase.database().ref("devices").on("value", (snapshot) => {
   function openWindow(id) {
     const win = document.getElementById(id);
     if (!win) return;
-    // restore position/size if available
     const state = windowState[id] || {};
     if (state.left !== undefined) win.style.left = state.left + 'px';
-    if (state.top !== undefined) win.style.top = state.top + 'px';
-    if (state.width !== undefined) win.style.width = state.width + 'px';
+    if (state.top  !== undefined) win.style.top  = state.top  + 'px';
+    if (state.width  !== undefined) win.style.width  = state.width  + 'px';
     if (state.height !== undefined) win.style.height = state.height + 'px';
     if (state.z !== undefined) {
       highestZ = Math.max(highestZ, state.z);
@@ -744,6 +1040,15 @@ firebase.database().ref("devices").on("value", (snapshot) => {
     win.setAttribute('aria-hidden', 'false');
     win.focus();
     bringToFront(win);
+    windowState[id] = windowState[id] || {};
+    windowState[id].open = true;
+    windowState[id].minimized = false;
+    saveWindowState(windowState);
+
+    /* Reset terminal auth when reopened */
+    if (id === 'terminal') {
+      termResetAuth();
+    }
   }
 
   function closeWindow(id) {
@@ -751,319 +1056,823 @@ firebase.database().ref("devices").on("value", (snapshot) => {
     if (!win) return;
     win.style.display = 'none';
     win.setAttribute('aria-hidden', 'true');
-    // persist closed state
     windowState[id] = windowState[id] || {};
     windowState[id].open = false;
     saveWindowState(windowState);
   }
 
   function minimizeWindow(win) {
-    // simple minimize: hide but keep state
     win.style.display = 'none';
-    windowState[win.dataset.windowId] = windowState[win.dataset.windowId] || {};
-    windowState[win.dataset.windowId].minimized = true;
+    const id = win.dataset.windowId;
+    windowState[id] = windowState[id] || {};
+    windowState[id].minimized = true;
     saveWindowState(windowState);
   }
 
   function maximizeWindow(win) {
     const id = win.dataset.windowId;
     const isMax = win.dataset.maximized === 'true';
+    const maxBtn = win.querySelector('.win-btn.max i');
     if (!isMax) {
-      // store previous
       const rect = win.getBoundingClientRect();
       windowState[id] = windowState[id] || {};
       windowState[id].prev = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-      // maximize
-      win.style.left = '8px';
-      win.style.top = (document.getElementById('statusbar').offsetHeight + 8) + 'px';
-      win.style.width = (window.innerWidth - 16) + 'px';
-      win.style.height = (window.innerHeight - (document.getElementById('statusbar').offsetHeight + 24)) + 'px';
+      const bar = document.getElementById('statusbar');
+      win.style.left   = '8px';
+      win.style.top    = (bar.offsetHeight + 8) + 'px';
+      win.style.width  = (window.innerWidth - 16) + 'px';
+      win.style.height = (window.innerHeight - bar.offsetHeight - 24) + 'px';
       win.dataset.maximized = 'true';
+      /* Switch icon to restore icon */
+      if (maxBtn) { maxBtn.className = 'fa-regular fa-window-restore'; }
     } else {
-      // restore
       const prev = windowState[id] && windowState[id].prev;
       if (prev) {
-        win.style.left = prev.left + 'px';
-        win.style.top = prev.top + 'px';
-        win.style.width = prev.width + 'px';
+        win.style.left   = prev.left   + 'px';
+        win.style.top    = prev.top    + 'px';
+        win.style.width  = prev.width  + 'px';
         win.style.height = prev.height + 'px';
       }
       win.dataset.maximized = 'false';
+      /* Restore square icon */
+      if (maxBtn) { maxBtn.className = 'fa-regular fa-square'; }
     }
-    // persist
     windowState[id] = windowState[id] || {};
     windowState[id].maximized = win.dataset.maximized === 'true';
     saveWindowState(windowState);
   }
 
-  /* ---------- Initialize windows from saved state ---------- */
+  /* Expose globals */
+  window.openWindow  = openWindow;
+  window.closeWindow = closeWindow;
+  window.setTheme    = setTheme;
+  window.setAccent   = setAccent;
+
+  /* Init all windows */
   document.querySelectorAll('.app-window').forEach(win => {
     const id = win.dataset.windowId;
     const state = windowState[id] || {};
-    if (state.left !== undefined) win.style.left = state.left + 'px';
-    if (state.top !== undefined) win.style.top = state.top + 'px';
-    if (state.width !== undefined) win.style.width = state.width + 'px';
+    if (state.left   !== undefined) win.style.left   = state.left   + 'px';
+    if (state.top    !== undefined) win.style.top    = state.top    + 'px';
+    if (state.width  !== undefined) win.style.width  = state.width  + 'px';
     if (state.height !== undefined) win.style.height = state.height + 'px';
-    if (state.z !== undefined) {
+    if (state.z      !== undefined) {
       win.style.zIndex = state.z;
       highestZ = Math.max(highestZ, state.z);
     }
-    if (state.open === false || state.minimized) {
-      win.style.display = 'none';
-      win.setAttribute('aria-hidden', 'true');
-    } else {
-      // keep closed by default; user opens via icons
-      win.style.display = 'none';
-      win.setAttribute('aria-hidden', 'true');
-    }
-    if (state.maximized) {
-      win.dataset.maximized = 'true';
-    }
+    win.style.display = 'none';
+    win.setAttribute('aria-hidden', 'true');
   });
 
-  /* ---------- Dragging (mouse + touch) with constraints ---------- */
+  /* Dragging */
   document.querySelectorAll('.app-window').forEach(win => {
     const header = win.querySelector('[data-drag-handle]') || win.querySelector('.window-header');
-    let isDragging = false;
-    let offsetX = 0, offsetY = 0;
+    let dragging = false, ox = 0, oy = 0;
 
-    function startDrag(clientX, clientY) {
-      isDragging = true;
-      const rect = win.getBoundingClientRect();
-      offsetX = clientX - rect.left;
-      offsetY = clientY - rect.top;
+    function startDrag(cx, cy) {
+      dragging = true;
+      const r = win.getBoundingClientRect();
+      ox = cx - r.left; oy = cy - r.top;
       document.body.style.userSelect = 'none';
       bringToFront(win);
     }
-
     function stopDrag() {
-      if (!isDragging) return;
-      isDragging = false;
+      if (!dragging) return;
+      dragging = false;
       document.body.style.userSelect = '';
-      // persist position and size
       const id = win.dataset.windowId;
-      const rect = win.getBoundingClientRect();
+      const r = win.getBoundingClientRect();
       windowState[id] = windowState[id] || {};
-      windowState[id].left = Math.round(rect.left);
-      windowState[id].top = Math.round(rect.top);
-      windowState[id].width = Math.round(rect.width);
-      windowState[id].height = Math.round(rect.height);
+      windowState[id].left   = Math.round(r.left);
+      windowState[id].top    = Math.round(r.top);
+      windowState[id].width  = Math.round(r.width);
+      windowState[id].height = Math.round(r.height);
       saveWindowState(windowState);
     }
-
-    function onMove(clientX, clientY) {
-      if (!isDragging) return;
+    function onMove(cx, cy) {
+      if (!dragging) return;
+      const bar = document.getElementById('statusbar');
       const vw = window.innerWidth, vh = window.innerHeight;
-      let left = clientX - offsetX;
-      let top = clientY - offsetY;
-      // constrain within viewport (leave small margin)
+      let left = cx - ox, top = cy - oy;
       left = Math.max(8, Math.min(left, vw - win.offsetWidth - 8));
-      top = Math.max(document.getElementById('statusbar').offsetHeight + 8, Math.min(top, vh - win.offsetHeight - 8));
+      top  = Math.max(bar.offsetHeight + 8, Math.min(top, vh - win.offsetHeight - 8));
       win.style.left = left + 'px';
-      win.style.top = top + 'px';
+      win.style.top  = top  + 'px';
     }
 
-    header.addEventListener('mousedown', (e) => {
+    header.addEventListener('mousedown', e => {
+      /* Don't start drag if clicking a button */
+      if (e.target.closest('.win-btn')) return;
       e.preventDefault();
       startDrag(e.clientX, e.clientY);
     });
+    document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup', stopDrag);
 
-    document.addEventListener('mousemove', (e) => {
-      onMove(e.clientX, e.clientY);
-    });
-
-    document.addEventListener('mouseup', () => {
-      stopDrag();
-    });
-
-    // Touch support
-    header.addEventListener('touchstart', (e) => {
-      const t = e.touches[0];
-      startDrag(t.clientX, t.clientY);
+    header.addEventListener('touchstart', e => {
+      if (e.target.closest('.win-btn')) return;
+      const t = e.touches[0]; startDrag(t.clientX, t.clientY);
     }, { passive: true });
-
-    document.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      const t = e.touches[0];
-      onMove(t.clientX, t.clientY);
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const t = e.touches[0]; onMove(t.clientX, t.clientY);
     }, { passive: true });
+    document.addEventListener('touchend', stopDrag);
 
-    document.addEventListener('touchend', () => {
-      stopDrag();
-    });
-
-    // Bring to front on mousedown inside window
     win.addEventListener('mousedown', () => bringToFront(win));
 
-    // Controls (minimize/maximize/close)
-    const controls = win.querySelectorAll('[data-action]');
-    controls.forEach(btn => {
-      btn.addEventListener('click', (ev) => {
-        const action = btn.dataset.action;
-        if (action === 'close') {
-          closeWindow(win.id);
-        } else if (action === 'minimize') {
-          minimizeWindow(win);
-        } else if (action === 'maximize') {
-          maximizeWindow(win);
-        }
+    /* Window controls */
+    win.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const a = btn.dataset.action;
+        if (a === 'close')    closeWindow(win.id);
+        if (a === 'minimize') minimizeWindow(win);
+        if (a === 'maximize') maximizeWindow(win);
       });
     });
 
-    // Make window focusable and keyboard accessible
-    win.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeWindow(win.id);
-      } else if (e.key === 'F11') {
-        // toggle maximize
-        maximizeWindow(win);
-      }
+    win.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeWindow(win.id);
+      if (e.key === 'F11')    maximizeWindow(win);
     });
   });
 
-  /* ---------- Global keyboard shortcuts ---------- */
-  document.addEventListener('keydown', (e) => {
-    // Esc closes topmost window
+  /* Global Esc closes topmost */
+  document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       const wins = Array.from(document.querySelectorAll('.app-window'))
         .filter(w => w.style.display !== 'none')
         .sort((a, b) => (parseInt(b.style.zIndex || 0) - parseInt(a.style.zIndex || 0)));
-      if (wins.length) {
-        closeWindow(wins[0].id);
-      }
+      if (wins.length) closeWindow(wins[0].id);
     }
   });
 
-  /* ---------- Click handlers for desktop icons (already inline but ensure keyboard) ---------- */
-  // (Icons already have onkeydown inline handlers for Enter)
-
-  /* ---------- Terminal: simple interactive behavior ---------- */
-  const termInput = document.getElementById('term-input');
-  const termOutput = document.getElementById('terminal-output');
-  if (termInput) {
-    const history = [];
-    let histIdx = -1;
-    termInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const cmd = termInput.value.trim();
-        if (!cmd) return;
-        history.push(cmd);
-        histIdx = history.length;
-        const p = document.createElement('p');
-        p.textContent = `$ ${cmd} → ${handleCommand(cmd)}`;
-        termOutput.appendChild(p);
-        termInput.value = '';
-        termOutput.scrollTop = termOutput.scrollHeight;
-      } else if (e.key === 'ArrowUp') {
-        if (history.length && histIdx > 0) {
-          histIdx--;
-          termInput.value = history[histIdx];
-        } else if (history.length && histIdx === history.length) {
-          histIdx = history.length - 1;
-          termInput.value = history[histIdx];
-        }
-      } else if (e.key === 'ArrowDown') {
-        if (history.length && histIdx < history.length - 1) {
-          histIdx++;
-          termInput.value = history[histIdx];
-        } else {
-          histIdx = history.length;
-          termInput.value = '';
-        }
-      }
-    });
-  }
-
-let isLoggedIn = false;
-const PASSWORD = "atul123";
-
-function handleCommand(cmd) {
-
-  cmd = cmd.toLowerCase();
-
-  if (!isLoggedIn) {
-    if (cmd === PASSWORD) {
-      isLoggedIn = true;
-      return "Access Granted 🔓";
-    } else {
-      return "Enter Password First ❌";
-    }
-  }
-
-  if (cmd === "light on") {
-     console.log("LIGHT ON COMMAND DETECTED");
-    firebase.database().ref("devices/light").set("on")
-      .then(() => console.log("LIGHT ON SUCCESS"))
-      .catch(err => console.log("ERROR:", err));
-    return "Light turned ON 💡";
-  }
-
-  if (cmd === "light off") {
-    firebase.database().ref("devices/light").set("off")
-      .then(() => console.log("LIGHT OFF SUCCESS"))
-      .catch(err => console.log("ERROR:", err));
-    return "Light turned OFF 🌑";
-  }
-
-  if (cmd === "help") {
-    return "Commands: light on, light off";
-  }
-
-  return "Command not found";
-}
- 
-
-  /* ---------- Accessibility: ensure links have rel (already set in markup) ---------- */
-
-  /* ---------- Save window positions on resize (to keep them inside viewport) ---------- */
+  /* Resize constraint */
   window.addEventListener('resize', () => {
     document.querySelectorAll('.app-window').forEach(win => {
       if (win.style.display === 'none') return;
-      const rect = win.getBoundingClientRect();
+      const r = win.getBoundingClientRect();
+      const bar = document.getElementById('statusbar');
       const vw = window.innerWidth, vh = window.innerHeight;
-      let left = rect.left, top = rect.top;
-      left = Math.max(8, Math.min(left, vw - rect.width - 8));
-      top = Math.max(document.getElementById('statusbar').offsetHeight + 8, Math.min(top, vh - rect.height - 8));
+      let left = Math.max(8, Math.min(r.left, vw - r.width - 8));
+      let top  = Math.max(bar.offsetHeight + 8, Math.min(r.top, vh - r.height - 8));
       win.style.left = left + 'px';
-      win.style.top = top + 'px';
-      // persist
+      win.style.top  = top  + 'px';
       const id = win.dataset.windowId;
       windowState[id] = windowState[id] || {};
       windowState[id].left = Math.round(left);
-      windowState[id].top = Math.round(top);
+      windowState[id].top  = Math.round(top);
       saveWindowState(windowState);
     });
   });
 
-  /* ---------- Expose openWindow/closeWindow to inline handlers (keeps original onclick working) ---------- */
-  window.openWindow = openWindow;
-  window.closeWindow = closeWindow;
-  window.setTheme = setTheme;
-  window.setAccent = setAccent;
+  /* ─────────────────────────────────────────
+     TERMINAL AUTHENTICATION
+  ───────────────────────────────────────── */
+  const TERMINAL_PASSWORD = 'atul0775';
+  let isAuthenticated = false;
 
-  /* ---------- Ensure external links are safe (already set in markup) ---------- */
+  function termResetAuth() {
+    isAuthenticated = false;
+    const overlay    = document.getElementById('terminal-auth-overlay');
+    const statusPnl  = document.getElementById('statusPanel');
+    const termOut    = document.getElementById('terminal-output');
+    const termInArea = document.getElementById('terminal-input-area');
+    const authMsg    = document.getElementById('term-auth-msg');
+    const pwInput    = document.getElementById('term-password-input');
 
-  /* ---------- Final: restore any windows that were open when last saved ---------- */
-  window.addEventListener('load', () => {
-    Object.keys(windowState).forEach(id => {
-      const state = windowState[id];
-      if (state && state.open && !state.minimized) {
-        const win = document.getElementById(id);
-        if (win) {
-          win.style.display = 'flex';
-          win.setAttribute('aria-hidden', 'false');
-          if (state.z) {
-            win.style.zIndex = state.z;
-            highestZ = Math.max(highestZ, state.z);
-          }
-        }
-      }
-    });
+    if (overlay)    overlay.style.display = 'block';
+    if (statusPnl)  statusPnl.style.display = 'none';
+    if (termOut)    termOut.style.display = 'none';
+    if (termInArea) termInArea.style.display = 'none';
+    if (authMsg)    { authMsg.textContent = ''; authMsg.style.color = ''; }
+    if (pwInput)    pwInput.value = '';
+    setTimeout(() => { if (pwInput) pwInput.focus(); }, 100);
+  }
+
+  function termUnlock() {
+    const overlay    = document.getElementById('terminal-auth-overlay');
+    const statusPnl  = document.getElementById('statusPanel');
+    const termOut    = document.getElementById('terminal-output');
+    const termInArea = document.getElementById('terminal-input-area');
+    const termIn     = document.getElementById('term-input');
+
+    isAuthenticated = true;
+    if (overlay)    overlay.style.display = 'none';
+    if (statusPnl)  statusPnl.style.display = 'block';
+    if (termOut)    termOut.style.display = 'block';
+    if (termInArea) termInArea.style.display = 'block';
+    setTimeout(() => { if (termIn) termIn.focus(); }, 100);
+  }
+
+  function termTryAuth() {
+    const pwInput = document.getElementById('term-password-input');
+    const authMsg = document.getElementById('term-auth-msg');
+    if (!pwInput || !authMsg) return;
+
+    const entered = pwInput.value;
+    if (entered === TERMINAL_PASSWORD) {
+      authMsg.textContent = '✔ Access granted. Welcome, Atul.';
+      authMsg.style.color = '#28c840';
+      setTimeout(termUnlock, 500);
+    } else {
+      authMsg.textContent = '✖ Incorrect password. Please try again.';
+      authMsg.style.color = '#ff5f57';
+      pwInput.value = '';
+      pwInput.focus();
+      /* Shake animation */
+      pwInput.style.transition = 'transform 0.1s';
+      pwInput.style.transform = 'translateX(-6px)';
+      setTimeout(() => { pwInput.style.transform = 'translateX(6px)'; }, 100);
+      setTimeout(() => { pwInput.style.transform = 'translateX(0)'; }, 200);
+    }
+  }
+
+  /* Wire up auth button and Enter key */
+  document.addEventListener('DOMContentLoaded', () => {
+    const authBtn = document.getElementById('term-auth-btn');
+    const pwInput = document.getElementById('term-password-input');
+    if (authBtn) authBtn.addEventListener('click', termTryAuth);
+    if (pwInput) {
+      pwInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') termTryAuth();
+      });
+    }
   });
 
-})();
+  /* ─────────────────────────────────────────
+     TERMINAL COMMANDS
+  ───────────────────────────────────────── */
+  const termInput  = document.getElementById('term-input');
+  const termOutput = document.getElementById('terminal-output');
+  const termHistory = [];
+  let termHistIdx = -1;
+
+  if (termInput) {
+    termInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (!isAuthenticated) return; /* Block if not authenticated */
+        const cmd = termInput.value.trim();
+        if (!cmd) return;
+        termHistory.push(cmd);
+        termHistIdx = termHistory.length;
+        const p = document.createElement('p');
+        const response = window.atulAIEngine ? atulAIEngine(cmd) : '—';
+        p.innerHTML = `<span style="color:#63a8ff;">$</span> ${cmd} → <span style="color:#28c840;">${response}</span>`;
+        termOutput.appendChild(p);
+        termInput.value = '';
+        termOutput.scrollTop = termOutput.scrollHeight;
+      } else if (e.key === 'ArrowUp') {
+        if (termHistory.length && termHistIdx > 0) {
+          termHistIdx--;
+          termInput.value = termHistory[termHistIdx];
+        }
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        if (termHistIdx < termHistory.length - 1) {
+          termHistIdx++;
+          termInput.value = termHistory[termHistIdx];
+        } else {
+          termHistIdx = termHistory.length;
+          termInput.value = '';
+        }
+        e.preventDefault();
+      }
+    });
+  }
+
+  /* Expose termResetAuth globally for openWindow hook */
+  window.termResetAuth = termResetAuth;
+
+})(); /* end IIFE */
 </script>
 
 
+<!-- ══════════════════════════════════════════
+     ATUL AI ENGINE — Full OS Assistant
+══════════════════════════════════════════ -->
+<script>
+/* ================================================================
+   SECTION 1: AI ENGINE
+   Intent detection, fuzzy scoring, random responses
+================================================================ */
+
+const ATUL_AI = {
+
+  intents: [
+
+    /* ── Greetings ── */
+    {
+      tags: ['greet'],
+      patterns: ['hello','hi','hey','sup','yo','howdy','hiya','good morning','good evening','good afternoon','what up','greetings'],
+      responses: [
+        "Hey! 👋 AtulOS AI online. What can I do for you?",
+        "Hello! I'm your OS assistant. Try asking me to open an app or control a device.",
+        "Hi there! Say 'help' to see all my commands. 🤖",
+        "Hey, good to see you! What are we building today? ⚡"
+      ]
+    },
+
+    /* ── Identity ── */
+    {
+      tags: ['identity'],
+      patterns: ['who are you','what are you','your name','introduce yourself','tell me about yourself','what is your name','are you an ai'],
+      responses: [
+        "I'm Atul AI — a built-in OS assistant running entirely in your browser. No cloud, no API keys. 🤖",
+        "AtulOS AI at your service. I can open apps, control IoT devices, and answer questions about Atul.",
+        "I'm Atul AI — think of me as your personal OS co-pilot. I run offline, right in your browser!"
+      ]
+    },
+
+    /* ── Creator ── */
+    {
+      tags: ['creator'],
+      patterns: ['who made you','who built you','who created you','who is your creator','who wrote you','who programmed you','who designed you'],
+      responses: [
+        "I was built by Atul Singh — an embedded systems enthusiast who also writes web code. 🛠️",
+        "Atul Singh created me as part of AtulOS. He works with C, C++, Python, ESP32, and Arduino.",
+        "My creator is Atul Singh. He's into hardware-software systems and built this entire OS simulation!"
+      ]
+    },
+
+    /* ── Capabilities ── */
+    {
+      tags: ['capabilities'],
+      patterns: ['what can you do','help','commands','features','capabilities','list commands','what do you support','how do i use you','show me commands'],
+      responses: [
+        "Here's what I can do:\n\n🖥️  Apps: \"open terminal\", \"close projects\", \"minimize settings\"\n💡  Devices: \"turn on light\", \"turn off fan\", \"start buzzer\"\n🎨  UI: \"dark mode\", \"light mode\"\n📁  Info: \"show skills\", \"about atul\", \"tell me a joke\"\n🎤  Voice: tap the mic button to speak!"
+      ]
+    },
+
+    /* ── About Atul ── */
+    {
+      tags: ['about_atul'],
+      patterns: ['about atul','tell me about atul','who is atul','atul singh','tell me about the creator'],
+      responses: [
+        "Atul Singh builds systems where code meets hardware. He's into embedded systems, C/C++, Python, and IoT. Open the About window for the full story! 📖",
+        "Atul is an electronics and systems enthusiast who built this entire OS simulation. He loves real-world hardware projects. 💻⚡"
+      ],
+      action: () => openWindow('about')
+    },
+
+    /* ── Skills ── */
+    {
+      tags: ['skills'],
+      patterns: ['skills','what does atul know','technologies','languages','atul skills','tech stack','what languages','what tools'],
+      responses: [
+        "Atul's skills:\n\n• C / C++ (primary)\n• Python\n• Arduino & ESP32\n• Embedded Systems\n• HTML & CSS\n• Firebase / IoT\n\nOpening Skills window now! 🧠",
+        "He's strong in C, C++, Python, Arduino, ESP32, and web tech. Opening Skills window..."
+      ],
+      action: () => openWindow('skills')
+    },
+
+    /* ── Projects ── */
+    {
+      tags: ['projects'],
+      patterns: ['projects','what has atul built','show projects','portfolio','smart parking','arduino projects','his work'],
+      responses: [
+        "Atul's flagship project is a Smart Parking System using ESP32 + Firebase with a live web dashboard. He also has 8 Arduino mini-projects! Opening Projects now. 📁",
+        "Check out the Projects window — live IoT dashboard, LED experiments, radar system and more!"
+      ],
+      action: () => openWindow('projects')
+    },
+
+    /* ── Open windows ── */
+    {
+      tags: ['open_terminal'],
+      patterns: ['open terminal','launch terminal','start terminal','show terminal','terminal please','pls open terminal','give me terminal'],
+      responses: ["Terminal launched! 💻","Opening terminal for you.","Terminal is up! Type a command."],
+      action: () => openWindow('terminal')
+    },
+    {
+      tags: ['open_projects'],
+      patterns: ['open projects','launch projects','show projects window','go to projects'],
+      responses: ["Projects window opened! 📁","Here are all of Atul's projects."],
+      action: () => openWindow('projects')
+    },
+    {
+      tags: ['open_about'],
+      patterns: ['open about','show about','launch about','go to about','about window'],
+      responses: ["About window opened! ℹ️","Here's Atul's profile."],
+      action: () => openWindow('about')
+    },
+    {
+      tags: ['open_skills'],
+      patterns: ['open skills','show skills','launch skills','go to skills','skills window'],
+      responses: ["Skills window opened! 🧠","Have a look at Atul's tech stack."],
+      action: () => openWindow('skills')
+    },
+    {
+      tags: ['open_settings'],
+      patterns: ['open settings','launch settings','show settings','go to settings','settings window'],
+      responses: ["Settings opened! ⚙️","Here you can change theme and accent."],
+      action: () => openWindow('settings')
+    },
+    {
+      tags: ['open_ai'],
+      patterns: ['open atul ai','launch atul ai','open ai','ai window'],
+      responses: ["I'm already here! 😄"],
+    },
+
+    /* ── Close windows ── */
+    {
+      tags: ['close_terminal'],
+      patterns: ['close terminal','hide terminal','shut terminal','exit terminal'],
+      responses: ["Terminal closed. ✓","Done, terminal is hidden."],
+      action: () => closeWindow('terminal')
+    },
+    {
+      tags: ['close_projects'],
+      patterns: ['close projects','hide projects','exit projects'],
+      responses: ["Projects closed. ✓"],
+      action: () => closeWindow('projects')
+    },
+    {
+      tags: ['close_about'],
+      patterns: ['close about','hide about','exit about'],
+      responses: ["About window closed. ✓"],
+      action: () => closeWindow('about')
+    },
+    {
+      tags: ['close_skills'],
+      patterns: ['close skills','hide skills','exit skills'],
+      responses: ["Skills closed. ✓"],
+      action: () => closeWindow('skills')
+    },
+    {
+      tags: ['close_settings'],
+      patterns: ['close settings','hide settings','exit settings'],
+      responses: ["Settings closed. ✓"],
+      action: () => closeWindow('settings')
+    },
+
+    /* ── Theme control ── */
+    {
+      tags: ['dark_theme'],
+      patterns: ['dark mode','dark theme','switch to dark','enable dark','turn on dark','go dark'],
+      responses: ["Dark mode activated. 🌑","Switched to dark theme!"],
+      action: () => setTheme('dark')
+    },
+    {
+      tags: ['light_theme'],
+      patterns: ['light mode','light theme','switch to light','enable light','turn on light mode','go light'],
+      responses: ["Light mode activated. ☀️","Switched to light theme!"],
+      action: () => setTheme('light')
+    },
+
+    /* ── Device: Light ── */
+    {
+      tags: ['light_on'],
+      patterns: ['turn on light','light on','switch on light','enable light','lights on','on the light','light please on','put light on','turn the light on'],
+      responses: ["Light turned ON 💡","Switching light on!","Done — light is ON.","Got it, light is on! 💡"],
+      action: () => { try { firebase.database().ref('devices/light').set('on'); } catch(e){} }
+    },
+    {
+      tags: ['light_off'],
+      patterns: ['turn off light','light off','switch off light','disable light','lights off','off the light','turn the light off','put light off'],
+      responses: ["Light turned OFF 🌑","Light is now off.","Done — light is OFF."],
+      action: () => { try { firebase.database().ref('devices/light').set('off'); } catch(e){} }
+    },
+
+    /* ── Device: Fan ── */
+    {
+      tags: ['fan_on'],
+      patterns: ['turn on fan','fan on','start fan','switch on fan','enable fan','fan please on','run fan'],
+      responses: ["Fan started! 🌀","Fan is running.","Fan ON — staying cool! 🌀"],
+      action: () => { try { firebase.database().ref('devices/fan').set('on'); } catch(e){} }
+    },
+    {
+      tags: ['fan_off'],
+      patterns: ['turn off fan','fan off','stop fan','switch off fan','disable fan','fan please off'],
+      responses: ["Fan stopped. 🛑","Fan is OFF.","Done — fan stopped."],
+      action: () => { try { firebase.database().ref('devices/fan').set('off'); } catch(e){} }
+    },
+
+    /* ── Device: Buzzer ── */
+    {
+      tags: ['buzzer_on'],
+      patterns: ['start buzzer','buzzer on','turn on buzzer','enable buzzer','activate buzzer','sound buzzer'],
+      responses: ["Buzzer activated! 🔊","Buzzer is ON.","Alert! Buzzer is running. 🔊"],
+      action: () => { try { firebase.database().ref('devices/buzzer').set('on'); } catch(e){} }
+    },
+    {
+      tags: ['buzzer_off'],
+      patterns: ['stop buzzer','buzzer off','turn off buzzer','disable buzzer','deactivate buzzer','silence buzzer'],
+      responses: ["Buzzer stopped. 🔇","Buzzer is OFF.","Silence restored. 🔇"],
+      action: () => { try { firebase.database().ref('devices/buzzer').set('off'); } catch(e){} }
+    },
+
+    /* ── System status ── */
+    {
+      tags: ['status'],
+      patterns: ['status','system status','os status','check system','all good','how is the system','system check'],
+      responses: [
+        "All systems operational 🚀",
+        "AtulOS is running normally. No issues detected. ✅",
+        "System check: ✅ All clear. Firebase connected, AI online, windows ready."
+      ]
+    },
+
+    /* ── Time ── */
+    {
+      tags: ['time'],
+      patterns: ['what time','current time','tell me the time','what is the time','time please','what time is it'],
+      responses: [],
+      dynamicResponse: () => `Current time: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} 🕐`
+    },
+
+    /* ── Date ── */
+    {
+      tags: ['date'],
+      patterns: ['what date','today date','what day is it','what is today','current date','tell me date'],
+      responses: [],
+      dynamicResponse: () => `Today is ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} 📅`
+    },
+
+    /* ── Jokes ── */
+    {
+      tags: ['joke'],
+      patterns: ['tell me a joke','joke','make me laugh','say something funny','funny','humor'],
+      responses: [
+        "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
+        "A SQL query walks into a bar, walks up to two tables and asks: 'Can I join you?' 😄",
+        "Why did the developer go broke? He used up all his cache. 💸",
+        "How many programmers does it take to change a light bulb? None — that's a hardware problem! 💡",
+        "Why do Java developers wear glasses? Because they don't C#. 🤓"
+      ]
+    },
+
+    /* ── Thanks ── */
+    {
+      tags: ['thanks'],
+      patterns: ['thanks','thank you','thx','ty','thank u','cheers','great','awesome'],
+      responses: [
+        "You're welcome! 😊 Anything else?",
+        "Happy to help! Let me know if you need anything.",
+        "Anytime! That's what I'm here for. 🤖",
+        "No problem! Fire away if you have more commands."
+      ]
+    },
+
+    /* ── Bye ── */
+    {
+      tags: ['bye'],
+      patterns: ['bye','goodbye','see you','later','cya','take care','good night'],
+      responses: [
+        "See you later! AtulOS will be here when you return. 👋",
+        "Goodbye! Come back anytime. 🤖",
+        "Later! The OS stays running for you. 👋"
+      ]
+    },
+
+    /* ── Weather (fun) ── */
+    {
+      tags: ['weather'],
+      patterns: ['weather','what is the weather','how is the weather outside'],
+      responses: [
+        "I don't have sensor data for outside weather, but inside AtulOS it's always a perfect 72°F! 😄",
+        "Ask your phone for that one — I'm an embedded OS, not a weather station! ⛅"
+      ]
+    },
+
+  ],
+
+  /* ── Fuzzy scorer ── */
+  score(input, patterns) {
+    const norm = input.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    let best = 0;
+    for (const pat of patterns) {
+      if (norm === pat) { best = 1; break; }
+      if (norm.includes(pat)) { best = Math.max(best, 0.9); continue; }
+      const pWords = pat.split(' ');
+      const iWords = norm.split(' ');
+      const overlap = pWords.filter(pw => iWords.some(iw => iw.includes(pw) || pw.includes(iw)));
+      const ratio = overlap.length / pWords.length;
+      if (ratio > 0.55) best = Math.max(best, 0.45 + ratio * 0.35);
+    }
+    return best;
+  },
+
+  /* ── Main process ── */
+  process(rawInput) {
+    if (!rawInput || !rawInput.trim()) return null;
+
+    let bestScore = 0;
+    let bestIntent = null;
+
+    for (const intent of this.intents) {
+      const s = this.score(rawInput, intent.patterns);
+      if (s > bestScore) { bestScore = s; bestIntent = intent; }
+    }
+
+    if (bestIntent && bestScore >= 0.44) {
+      if (bestIntent.action) {
+        try { bestIntent.action(); } catch(e) { console.warn('AI action error:', e); }
+      }
+      if (bestIntent.dynamicResponse) return bestIntent.dynamicResponse();
+      const pool = bestIntent.responses;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    const fallbacks = [
+      "I didn't quite get that. Try 'help' to see what I can do. 🤔",
+      "Hmm, not sure about that one. Try: 'open terminal', 'turn on light', or 'tell me a joke'.",
+      "I'm still learning! Try rephrasing or say 'commands' for a list. 🧠",
+      "That one stumped me. Can you try a different phrasing? 🤖"
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+};
+
+/* ── Global engine function ── */
+function atulAIEngine(input) {
+  return ATUL_AI.process(input);
+}
+window.atulAIEngine = atulAIEngine;
+
+/* Override legacy terminal function */
+window.atulAI = atulAIEngine;
+
+
+/* ================================================================
+   SECTION 2: CHAT UI INTEGRATION
+================================================================ */
+
+const aiCmdHistory = [];
+let aiHistIdx = -1;
+
+function aiTimestamp() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function aiAppendMessage(role, text, animate) {
+  const chat = document.getElementById('ai-chat');
+  if (!chat) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = `ai-bubble-wrap ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = `ai-bubble ${role}`;
+
+  const ts = document.createElement('span');
+  ts.className = 'ai-ts';
+  ts.textContent = aiTimestamp();
+
+  wrap.appendChild(bubble);
+  wrap.appendChild(ts);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+
+  if (animate && role === 'ai') {
+    bubble.textContent = '';
+    let i = 0;
+    const speed = Math.max(10, Math.min(28, 1200 / Math.max(text.length, 1)));
+    const tick = setInterval(() => {
+      bubble.textContent += text[i];
+      i++;
+      chat.scrollTop = chat.scrollHeight;
+      if (i >= text.length) clearInterval(tick);
+    }, speed);
+  } else {
+    bubble.textContent = text;
+    chat.scrollTop = chat.scrollHeight;
+  }
+}
+
+function aiShowTyping() {
+  const chat = document.getElementById('ai-chat');
+  if (!chat) return;
+  const el = document.createElement('div');
+  el.id = 'ai-typing-indicator';
+  el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function aiHideTyping() {
+  const el = document.getElementById('ai-typing-indicator');
+  if (el) el.remove();
+}
+
+function aiSendMessage() {
+  const inputEl = document.getElementById('ai-input');
+  if (!inputEl) return;
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  aiCmdHistory.push(text);
+  aiHistIdx = aiCmdHistory.length;
+
+  aiAppendMessage('user', text, false);
+  inputEl.value = '';
+
+  aiShowTyping();
+  const delay = 350 + Math.random() * 400;
+  setTimeout(() => {
+    aiHideTyping();
+    const resp = atulAIEngine(text) || "I have no response for that. 🤔";
+    aiAppendMessage('ai', resp, true);
+  }, delay);
+}
+
+window.aiSendMessage = aiSendMessage;
+
+/* Input keyboard handling */
+document.addEventListener('DOMContentLoaded', () => {
+  /* Boot greeting */
+  setTimeout(() => {
+    aiAppendMessage('ai', "Hello! I'm Atul AI 👋\nI can control OS windows, IoT devices, and answer questions.\nType 'help' to see all commands, or tap 🎤 to speak!", false);
+  }, 3500); /* after boot screen */
+
+  const input = document.getElementById('ai-input');
+  if (!input) return;
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      aiSendMessage();
+    } else if (e.key === 'ArrowUp') {
+      if (aiCmdHistory.length && aiHistIdx > 0) {
+        aiHistIdx--;
+        input.value = aiCmdHistory[aiHistIdx];
+      }
+      e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+      if (aiHistIdx < aiCmdHistory.length - 1) {
+        aiHistIdx++;
+        input.value = aiCmdHistory[aiHistIdx];
+      } else {
+        aiHistIdx = aiCmdHistory.length;
+        input.value = '';
+      }
+      e.preventDefault();
+    }
+  });
+});
+
+
+/* ================================================================
+   SECTION 3: VOICE CONTROL (Web Speech API)
+================================================================ */
+
+(function setupVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = document.getElementById('mic-btn');
+  if (!micBtn) return;
+
+  if (!SR) {
+    micBtn.title = 'Voice not supported in this browser';
+    micBtn.style.opacity = '0.35';
+    micBtn.style.cursor = 'not-allowed';
+    micBtn.disabled = true;
+    return;
+  }
+
+  const recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  let listening = false;
+
+  micBtn.addEventListener('click', () => {
+    if (listening) { recognition.stop(); return; }
+    try { recognition.start(); }
+    catch(e) { console.warn('Speech start error:', e); }
+  });
+
+  recognition.addEventListener('start', () => {
+    listening = true;
+    micBtn.textContent = '⏹';
+    micBtn.title = 'Listening… click to stop';
+    micBtn.classList.add('listening');
+  });
+
+  recognition.addEventListener('result', e => {
+    const transcript = e.results[0][0].transcript;
+    const input = document.getElementById('ai-input');
+    if (input) {
+      input.value = transcript;
+      aiSendMessage();
+    }
+  });
+
+  recognition.addEventListener('end', () => {
+    listening = false;
+    micBtn.textContent = '🎤';
+    micBtn.title = 'Voice input';
+    micBtn.classList.remove('listening');
+  });
+
+  recognition.addEventListener('error', e => {
+    listening = false;
+    micBtn.textContent = '🎤';
+    micBtn.classList.remove('listening');
+    if (e.error !== 'no-speech') {
+      aiAppendMessage('ai', `Voice error: "${e.error}". Please try again. 🎤`, false);
+    }
+  });
+})();
+
+</script>
 </body>
 </html>
