@@ -16,7 +16,6 @@
   --window: rgba(17, 23, 32, 0.95);
   --border: rgba(255,255,255,.1);
 }
-
 :root[data-theme="light"] {
   --bg: #eef2f8;
   --fg: #1f2b3a;
@@ -25,10 +24,8 @@
   --window: rgba(255,255,255,0.96);
   --border: rgba(0,0,0,.08);
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
-
 body {
   min-height: 100vh;
   background:
@@ -43,52 +40,34 @@ body {
 
 /* ── BOOT SCREEN ── */
 #bootScreen {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: #05070b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 99999;
-  transition: opacity 1s ease;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 99999; transition: opacity 1s ease;
 }
 #bootScreen[aria-hidden="true"] { pointer-events: none; }
-
 .boot-center { text-align: center; }
-
 .atul-logo {
-  font-size: 42px;
-  font-weight: 700;
-  letter-spacing: 6px;
-  color: white;
+  font-size: 42px; font-weight: 700;
+  letter-spacing: 6px; color: white;
   margin-bottom: 30px;
   animation: pulse 2s infinite ease-in-out;
 }
 .atul-logo span { color: #63a8ff; }
-
 .loader-ring {
-  width: 60px;
-  height: 60px;
+  width: 60px; height: 60px;
   margin: 0 auto 20px;
   border: 3px solid rgba(255,255,255,0.1);
   border-top: 3px solid #63a8ff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
-
-.boot-text {
-  font-size: 13px;
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
+.boot-text { font-size: 13px; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse {
   0%,100% { opacity:.65; transform:scale(1); }
   50% { opacity:1; transform:scale(1.04); }
 }
-
 @media (prefers-reduced-motion: reduce) {
   .atul-logo, .loader-ring { animation: none !important; }
   * { transition: none !important; }
@@ -96,369 +75,346 @@ body {
 
 /* ── STATUSBAR ── */
 #statusbar {
-  position: fixed;
-  top: 0;
-  width: 100%;
+  position: fixed; top: 0; width: 100%;
   padding: 8px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
   background: var(--card);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
-  z-index: 5000;
-  font-size: 13px;
+  z-index: 5000; font-size: 13px;
 }
-
 .status-left { display: flex; align-items: center; gap: 10px; }
-.status-dot {
-  width: 8px; height: 8px;
-  background: #28c840;
-  border-radius: 50%;
-  animation: blink-dot 2s infinite;
-}
+.status-dot { width: 8px; height: 8px; background: #28c840; border-radius: 50%; animation: blink-dot 2s infinite; }
 @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-.status-right {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-.status-right i {
-  color: var(--fg);
-  opacity: .8;
-  transition: 0.2s;
-  cursor: pointer;
-}
+.status-right { display: flex; gap: 16px; align-items: center; }
+.status-right i { color: var(--fg); opacity: .8; transition: 0.2s; cursor: pointer; }
 .status-right i:hover { opacity: 1; color: var(--accent); }
 .status-right a { color: var(--fg); text-decoration: none; }
 
-/* ── DESKTOP ── */
-#desktop { padding: 110px 44px 44px; }
+/* Voice toggle in status bar */
+#voice-toggle-btn {
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--fg); font-size: 11px;
+  cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 5px;
+  transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+#voice-toggle-btn:hover { background: rgba(99,168,255,0.12); border-color: rgba(99,168,255,0.3); }
+#voice-toggle-btn.voice-on  { color: #28c840; border-color: rgba(40,200,64,0.3); }
+#voice-toggle-btn.voice-off { color: #ff5f57; border-color: rgba(255,95,87,0.3); }
 
-.brand-title {
-  font-size: 28px;
+/* Speaking indicator */
+#speaking-indicator {
+  position: fixed; bottom: 56px; left: 20px;
+  background: rgba(10,15,22,0.95);
+  border: 1px solid rgba(40,200,64,0.35);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 11px; color: #28c840;
+  z-index: 6001; display: none;
+  align-items: center; gap: 6px;
+  backdrop-filter: blur(12px);
+  animation: fadeSlideUp 0.2s ease;
+}
+.speak-wave { display: flex; gap: 2px; align-items: center; }
+.speak-wave span {
+  width: 3px; border-radius: 2px;
+  background: #28c840;
+  animation: wave-bar 0.8s ease-in-out infinite;
+}
+.speak-wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+.speak-wave span:nth-child(2) { height: 10px; animation-delay: 0.1s; }
+.speak-wave span:nth-child(3) { height: 14px; animation-delay: 0.2s; }
+.speak-wave span:nth-child(4) { height: 10px; animation-delay: 0.3s; }
+.speak-wave span:nth-child(5) { height: 6px; animation-delay: 0.4s; }
+@keyframes wave-bar {
+  0%,100% { transform: scaleY(0.5); opacity: 0.5; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+/* ── VOICE SETTINGS PANEL (modal) ── */
+#voice-settings-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 10000; display: none;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#voice-settings-panel {
+  background: var(--window);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 380px; max-width: calc(100% - 32px);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  overflow: hidden;
+  animation: panelIn 0.2s ease;
+}
+@keyframes panelIn {
+  from { opacity:0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+.vs-header {
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.vs-header h3 { font-size: 14px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.vs-close {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--fg);
+  cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.vs-close:hover { background: #e81123; color: #fff; border-color: transparent; }
+.vs-body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.vs-row { display: flex; flex-direction: column; gap: 6px; }
+.vs-row label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.vs-row select, .vs-row input[type="range"] {
+  width: 100%; background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px; color: var(--fg);
+  font-family: inherit; font-size: 13px;
+  outline: none; transition: border-color 0.2s;
+}
+.vs-row select { padding: 8px 12px; cursor: pointer; }
+.vs-row select:focus { border-color: rgba(99,168,255,0.4); }
+.vs-slider-row { display: flex; align-items: center; gap: 10px; }
+.vs-slider-row input[type="range"] { flex:1; padding: 4px 0; cursor: pointer; accent-color: var(--accent); }
+.vs-slider-val {
+  font-size: 12px; color: var(--accent);
+  min-width: 28px; text-align: right;
   font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 1px;
 }
-.brand-sub {
-  color: var(--muted);
-  margin: 6px 0 0;
-  font-size: 14px;
+.vs-test-btn {
+  padding: 9px 14px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(99,168,255,0.1);
+  color: var(--accent); font-size: 13px;
+  font-family: inherit; cursor: pointer;
+  transition: background 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
+.vs-test-btn:hover { background: rgba(99,168,255,0.2); }
 
+/* ── DESKTOP ── */
+#desktop { padding: 110px 44px 80px; }
+.brand-title { font-size: 28px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+.brand-sub { color: var(--muted); margin: 6px 0 0; font-size: 14px; }
 .section-title {
-  margin-top: 40px;
-  color: var(--accent);
-  font-size: 14px;
-  text-transform: uppercase;
+  margin-top: 40px; color: var(--accent);
+  font-size: 14px; text-transform: uppercase;
   letter-spacing: 2px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: flex; align-items: center; gap: 10px;
 }
-.section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
 /* ── DESKTOP ICONS ── */
-.desktop-icons {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  margin-top: 24px;
-}
-
+.desktop-icons { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 24px; }
 .icon {
-  width: 84px;
-  text-align: center;
-  cursor: pointer;
-  user-select: none;
-  padding: 14px 8px 12px;
-  border-radius: 12px;
-  border: 1px solid transparent;
+  width: 84px; text-align: center; cursor: pointer;
+  user-select: none; padding: 14px 8px 12px;
+  border-radius: 12px; border: 1px solid transparent;
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
-.icon:hover {
-  background: rgba(99,168,255,0.08);
-  border-color: rgba(99,168,255,0.2);
-  transform: translateY(-2px);
-}
+.icon:hover { background: rgba(99,168,255,0.08); border-color: rgba(99,168,255,0.2); transform: translateY(-2px); }
 .icon:active { transform: scale(0.95); }
 .icon i { font-size: 28px; color: var(--accent); display: block; }
-.icon span {
-  font-size: 11px;
-  color: var(--muted);
-  display: block;
-  margin-top: 8px;
-  letter-spacing: 0.3px;
-}
+.icon span { font-size: 11px; color: var(--muted); display: block; margin-top: 8px; letter-spacing: 0.3px; }
 .icon:focus { outline: 2px solid var(--accent); border-radius: 12px; }
 
 /* ── APP WINDOWS ── */
 .app-window {
-  position: absolute;
-  top: 140px;
-  left: 180px;
-  width: 520px;
-  max-width: calc(100% - 32px);
+  position: absolute; top: 140px; left: 180px;
+  width: 520px; max-width: calc(100% - 32px);
   background: var(--window);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 32px 80px rgba(0,0,0,.55), 0 0 0 0.5px rgba(255,255,255,0.04) inset;
-  display: none;
-  flex-direction: column;
-  min-height: 120px;
-  overflow: hidden;
+  display: none; flex-direction: column;
+  min-height: 120px; overflow: hidden;
   backdrop-filter: blur(20px);
 }
-
-/* ── WINDOWS-STYLE TITLE BAR ── */
 .window-header {
   padding: 0 0 0 14px;
   background: rgba(255,255,255,.04);
   cursor: move;
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch;
+  display: flex; justify-content: space-between; align-items: stretch;
   border-bottom: 1px solid var(--border);
-  user-select: none;
-  min-height: 34px;
+  user-select: none; min-height: 34px;
 }
-
 .window-header .title-left {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex: 1;
-  padding: 6px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--fg);
+  display: flex; gap: 8px; align-items: center;
+  flex: 1; padding: 6px 0;
+  font-size: 13px; font-weight: 600; color: var(--fg);
 }
-
-.window-header .title-left i {
-  font-size: 13px;
-  color: var(--accent);
-  opacity: 0.9;
-}
-
-/* Windows 11-style control buttons */
-.window-header .controls {
-  display: flex;
-  align-items: stretch;
-  margin-left: 8px;
-}
-
+.window-header .title-left i { font-size: 13px; color: var(--accent); opacity: 0.9; }
+.window-header .controls { display: flex; align-items: stretch; margin-left: 8px; }
 .win-btn {
-  width: 46px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: var(--fg);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  transition: background 0.15s, color 0.15s;
-  padding: 0;
-  outline: none;
-  border-radius: 0;
-  flex-shrink: 0;
+  width: 46px; height: 100%; border: none;
+  background: transparent; color: var(--fg);
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 11px; transition: background 0.15s, color 0.15s;
+  padding: 0; outline: none; border-radius: 0; flex-shrink: 0;
 }
-
-.win-btn i {
-  pointer-events: none;
-  font-size: 10px;
-}
-
-.win-btn.min:hover {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-}
-
-.win-btn.max:hover {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-}
-
-.win-btn.close:hover {
-  background: #e81123;
-  color: #fff;
-}
-
+.win-btn i { pointer-events: none; font-size: 10px; }
+.win-btn.min:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.win-btn.max:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.win-btn.close:hover { background: #e81123; color: #fff; }
 .win-btn.close:active { background: #c41230; }
 .win-btn.min:active, .win-btn.max:active { background: rgba(255,255,255,0.06); }
-
-/* Light theme adjustments for win buttons */
 :root[data-theme="light"] .win-btn { color: #333; }
 :root[data-theme="light"] .win-btn.min:hover,
 :root[data-theme="light"] .win-btn.max:hover { background: rgba(0,0,0,0.08); color: #000; }
-
 .window-body { padding: 18px; overflow: auto; }
 
 /* ── STATUS PANEL (IoT) ── */
 #statusPanel {
   background: rgba(0,0,0,0.5);
   border: 1px solid rgba(99,168,255,0.3);
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 10px; padding: 12px 16px;
   margin-bottom: 14px;
   box-shadow: 0 0 20px rgba(99,168,255,0.08);
 }
-#statusText {
-  color: var(--accent);
-  font-family: monospace;
-  font-size: 13px;
-  white-space: pre;
-  line-height: 1.7;
-}
+#statusText { color: var(--accent); font-family: monospace; font-size: 13px; white-space: pre; line-height: 1.7; }
 
 /* ── TERMINAL AUTH ── */
 #terminal-auth-overlay {
   background: rgba(0,0,0,0.85);
   border: 1px solid rgba(99,168,255,0.25);
   border-radius: 10px;
-  padding: 20px 18px 16px;
-  margin-bottom: 14px;
+  padding: 20px 18px 16px; margin-bottom: 14px;
 }
-#terminal-auth-overlay p {
-  color: var(--accent);
-  font-size: 13px;
-  margin-bottom: 10px;
-  font-family: monospace;
-}
-#terminal-auth-overlay .auth-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-#terminal-auth-overlay .prompt-label {
-  color: #28c840;
-  font-size: 13px;
-  white-space: nowrap;
-  font-family: monospace;
-}
+#terminal-auth-overlay p { color: var(--accent); font-size: 13px; margin-bottom: 10px; font-family: monospace; }
+#terminal-auth-overlay .auth-row { display: flex; align-items: center; gap: 8px; }
+#terminal-auth-overlay .prompt-label { color: #28c840; font-size: 13px; white-space: nowrap; font-family: monospace; }
 #term-password-input {
-  flex: 1;
-  padding: 8px 12px;
-  border-radius: 7px;
+  flex: 1; padding: 8px 12px; border-radius: 7px;
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.04);
-  color: var(--fg);
-  font-family: monospace;
-  font-size: 13px;
-  outline: none;
-  letter-spacing: 3px;
-  transition: border-color 0.2s;
+  color: var(--fg); font-family: monospace; font-size: 13px;
+  outline: none; letter-spacing: 3px; transition: border-color 0.2s;
 }
 #term-password-input:focus { border-color: rgba(99,168,255,0.4); }
 #term-auth-btn {
-  padding: 8px 14px;
-  border-radius: 7px;
+  padding: 8px 14px; border-radius: 7px;
   border: 1px solid var(--border);
-  background: var(--accent);
-  color: #000;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: filter 0.15s;
+  background: var(--accent); color: #000;
+  font-weight: 700; font-size: 13px;
+  cursor: pointer; font-family: inherit; transition: filter 0.15s;
 }
 #term-auth-btn:hover { filter: brightness(1.1); }
-#term-auth-msg {
-  margin-top: 8px;
-  font-size: 12px;
-  min-height: 16px;
-  font-family: monospace;
+#term-auth-msg { margin-top: 8px; font-size: 12px; min-height: 16px; font-family: monospace; }
+
+/* ── TERMINAL OUTPUT ── */
+#terminal-output {
+  font-size: 13px; color: var(--muted);
+  max-height: 240px; overflow-y: auto;
+  padding: 8px 0; scroll-behavior: smooth;
+}
+#terminal-output p { margin: 3px 0; line-height: 1.6; }
+.term-cursor {
+  display: inline-block; width: 7px; height: 13px;
+  background: var(--accent); vertical-align: middle;
+  margin-left: 2px;
+  animation: cursor-blink 1s step-end infinite;
+}
+@keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.jarvis-line { color: #63a8ff !important; }
+.cmd-echo    { color: #28c840 !important; }
+.err-line    { color: #ff5f57 !important; }
+.wake-line   { color: #febc2e !important; }
+
+/* ── TERMINAL INPUT ── */
+#terminal-input-area { margin-top: 10px; position: relative; }
+.term-prompt-bar {
+  display: flex; align-items: center; gap: 0;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(99,168,255,0.18);
+  border-radius: 8px; padding: 0 10px;
+  transition: border-color 0.2s;
+}
+.term-prompt-bar:focus-within { border-color: rgba(99,168,255,0.45); }
+.term-prompt-label { color: #28c840; font-size: 12px; white-space: nowrap; user-select: none; padding: 9px 0; }
+.term-prompt-label .at   { color: var(--accent); }
+.term-prompt-label .host { color: #febc2e; }
+.term-prompt-label .sep  { color: var(--muted); }
+.term-prompt-label .dollar { color: var(--fg); margin-left: 4px; }
+#term-input {
+  flex: 1; padding: 9px 8px;
+  border: none !important; background: transparent !important;
+  color: var(--fg) !important; font-family: inherit !important;
+  font-size: 13px !important; outline: none !important;
+  caret-color: var(--accent);
 }
 
-/* ── TERMINAL ── */
-#terminal-output {
-  font-size: 13px;
-  color: var(--muted);
+/* ── SUGGESTION BOX ── */
+#term-suggestions {
+  position: absolute; top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: rgba(10,15,22,0.97);
+  border: 1px solid rgba(99,168,255,0.25);
+  border-radius: 8px; overflow: hidden;
+  z-index: 9999;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  display: none;
 }
-#terminal-output p { margin: 4px 0; }
-#terminal-output p::before { content: ''; }
+.term-suggestion-item {
+  padding: 8px 14px; font-size: 12px; color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: background 0.12s, color 0.12s;
+}
+.term-suggestion-item:hover, .term-suggestion-item.active {
+  background: rgba(99,168,255,0.12); color: var(--accent);
+}
+.term-suggestion-item .sug-match { color: var(--accent); font-weight: 600; }
+.term-suggestion-hint { padding: 5px 14px 6px; font-size: 10px; color: rgba(155,170,190,0.4); border-top: 1px solid var(--border); user-select: none; }
 
 /* ── SETTINGS ── */
 .settings-group { margin-bottom: 18px; }
 .settings-group p { font-size: 13px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
 .settings-group button {
-  margin: 0 6px 6px 0;
-  padding: 7px 14px;
-  border-radius: 8px;
+  margin: 0 6px 6px 0; padding: 7px 14px; border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,.05);
-  color: var(--fg);
-  cursor: pointer;
-  font-size: 13px;
-  font-family: inherit;
+  background: rgba(255,255,255,.05); color: var(--fg);
+  cursor: pointer; font-size: 13px; font-family: inherit;
   transition: background 0.15s, border-color 0.15s;
 }
-.settings-group button:hover {
-  background: rgba(99,168,255,0.12);
-  border-color: rgba(99,168,255,0.3);
-}
+.settings-group button:hover { background: rgba(99,168,255,0.12); border-color: rgba(99,168,255,0.3); }
 
 /* ── ATUL AI CHAT ── */
 #ai-chat {
-  flex: 1;
-  padding: 16px;
+  flex: 1; padding: 16px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 300px;
-  max-height: 420px;
+  display: flex; flex-direction: column; gap: 10px;
+  min-height: 300px; max-height: 420px;
   scroll-behavior: smooth;
 }
-
-.ai-bubble-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+.ai-bubble-wrap { display: flex; flex-direction: column; gap: 3px; }
 .ai-bubble-wrap.user { align-items: flex-end; }
 .ai-bubble-wrap.ai   { align-items: flex-start; }
-
 .ai-bubble {
-  max-width: 80%;
-  padding: 10px 14px;
-  font-size: 13px;
-  line-height: 1.65;
-  white-space: pre-wrap;
-  word-break: break-word;
+  max-width: 80%; padding: 10px 14px;
+  font-size: 13px; line-height: 1.65;
+  white-space: pre-wrap; word-break: break-word;
   border: 1px solid var(--border);
 }
 .ai-bubble.user {
-  background: var(--accent);
-  color: #000;
-  border-radius: 14px 14px 4px 14px;
-  border-color: transparent;
+  background: var(--accent); color: #000;
+  border-radius: 14px 14px 4px 14px; border-color: transparent;
 }
 .ai-bubble.ai {
-  background: rgba(255,255,255,0.06);
-  color: var(--fg);
+  background: rgba(255,255,255,0.06); color: var(--fg);
   border-radius: 14px 14px 14px 4px;
 }
-
-.ai-ts {
-  font-size: 10px;
-  color: var(--muted);
-  padding: 0 4px;
-}
-
-/* Typing indicator */
+.ai-ts { font-size: 10px; color: var(--muted); padding: 0 4px; }
 #ai-typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  display: flex; align-items: center; gap: 5px;
   padding: 10px 14px;
   border-radius: 14px 14px 14px 4px;
   background: rgba(255,255,255,0.06);
@@ -467,195 +423,287 @@ body {
 }
 .typing-dot {
   width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--muted);
+  border-radius: 50%; background: var(--muted);
 }
 .typing-dot:nth-child(1) { animation: td 1s infinite 0.0s; }
 .typing-dot:nth-child(2) { animation: td 1s infinite 0.25s; }
 .typing-dot:nth-child(3) { animation: td 1s infinite 0.5s; }
 @keyframes td { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
-
-/* AI input area */
 .ai-input-row {
-  display: flex;
-  padding: 12px;
+  display: flex; padding: 12px;
   border-top: 1px solid var(--border);
   background: rgba(0,0,0,0.2);
-  gap: 8px;
-  align-items: center;
+  gap: 8px; align-items: center;
 }
 #ai-input {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 10px;
+  flex: 1; padding: 10px 14px; border-radius: 10px;
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.05);
-  color: var(--fg);
-  font-family: inherit;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
+  color: var(--fg); font-family: inherit; font-size: 13px;
+  outline: none; transition: border-color 0.2s;
 }
 #ai-input:focus { border-color: rgba(99,168,255,0.4); }
 #ai-input::placeholder { color: var(--muted); }
-
 #mic-btn, #ai-send-btn {
-  padding: 10px 13px;
-  border-radius: 10px;
+  padding: 10px 13px; border-radius: 10px;
   border: 1px solid var(--border);
-  cursor: pointer;
-  font-size: 14px;
-  font-family: inherit;
+  cursor: pointer; font-size: 14px; font-family: inherit;
   transition: background 0.15s, border-color 0.2s;
 }
 #mic-btn { background: rgba(255,255,255,0.05); color: var(--fg); }
 #mic-btn:hover { background: rgba(255,255,255,0.1); }
 #mic-btn.listening { color: #ff5f57; border-color: rgba(255,95,87,0.4); background: rgba(255,95,87,0.08); }
-
 #ai-send-btn {
-  background: var(--accent);
-  color: #000;
-  font-weight: 700;
-  font-size: 13px;
-  border-color: transparent;
-  padding: 10px 18px;
+  background: var(--accent); color: #000;
+  font-weight: 700; font-size: 13px;
+  border-color: transparent; padding: 10px 18px;
 }
 #ai-send-btn:hover { filter: brightness(1.1); }
 
+/* ── TASKBAR ── */
+#taskbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 44px; background: var(--card);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  z-index: 5000; display: none;
+  align-items: center; padding: 0 12px; gap: 6px;
+  overflow-x: auto; overflow-y: hidden;
+}
+#taskbar::-webkit-scrollbar { height: 3px; }
+#taskbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.taskbar-chip {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 7px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--fg); font-size: 12px; font-family: inherit;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+.taskbar-chip:hover { background: rgba(99,168,255,0.12); border-color: rgba(99,168,255,0.35); color: var(--accent); }
+.taskbar-chip i { font-size: 11px; color: var(--accent); opacity: 0.85; }
+
+/* ── JARVIS VOICE BADGE ── */
+#jarvis-voice-badge {
+  position: fixed; bottom: 56px; right: 20px;
+  background: rgba(10,15,22,0.95);
+  border: 1px solid rgba(99,168,255,0.35);
+  border-radius: 20px; padding: 8px 16px;
+  font-size: 12px; color: var(--accent);
+  z-index: 6000; display: none; align-items: center; gap: 8px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  animation: fadeSlideUp 0.25s ease;
+}
+@keyframes fadeSlideUp {
+  from { opacity:0; transform: translateY(8px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.jarvis-mic-pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff5f57; animation: pulse-mic 0.8s infinite;
+}
+@keyframes pulse-mic { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.5} }
+
+/* ── WAKE WORD INDICATOR ── */
+#wake-word-badge {
+  position: fixed; top: 60px; right: 20px;
+  background: rgba(10,15,22,0.95);
+  border: 1px solid rgba(254,188,46,0.4);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 11px; color: #febc2e;
+  z-index: 6000; display: none;
+  align-items: center; gap: 6px;
+  backdrop-filter: blur(12px);
+}
+
+/* ── MIC STATUS BADGE (Task 5 — new) ── */
+#mic-status-badge {
+  position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%);
+  background: rgba(10,15,22,0.97);
+  border: 1px solid rgba(255,95,87,0.4);
+  border-radius: 24px; padding: 8px 20px;
+  font-size: 12px; color: #ff5f57;
+  z-index: 6002; display: none;
+  align-items: center; gap: 10px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  animation: fadeSlideUp 0.2s ease;
+  white-space: nowrap;
+}
+.mic-pulse-ring {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ff5f57; position: relative;
+  animation: pulse-mic 0.7s ease-in-out infinite;
+}
+#mic-status-badge.interim { color: var(--muted); border-color: rgba(99,168,255,0.3); }
+#mic-status-badge.interim .mic-pulse-ring { background: var(--accent); animation-duration: 1.2s; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 700px) {
-  #desktop { padding: 100px 16px 32px; }
+  #desktop { padding: 100px 16px 56px; }
   .app-window { width: calc(100% - 24px); left: 12px; top: 110px; border-radius: 10px; }
   .win-btn { width: 38px; }
 }
-
 .hidden { display: none !important; }
 .small { font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     BOOT SCREEN
-══════════════════════════════════════════ -->
+<!-- ── BOOT SCREEN ── -->
 <div id="bootScreen" role="status" aria-live="polite" aria-label="Boot screen">
   <div class="boot-center">
     <div class="atul-logo">Atul<span>OS</span></div>
     <div class="loader-ring" aria-hidden="true"></div>
-    <div class="boot-text">Starting system...</div>
+    <div class="boot-text" id="boot-text-msg">Starting system...</div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     STATUS BAR
-══════════════════════════════════════════ -->
+<!-- ── STATUS BAR ── -->
 <div id="statusbar" role="status" aria-label="System status bar">
   <div class="status-left">
     <div class="status-dot" title="Online"></div>
     <span>AtulOS &nbsp;·&nbsp; Atul Singh</span>
   </div>
   <div class="status-right">
+    <button id="voice-toggle-btn" class="voice-on" title="Toggle voice output">🔊 Voice ON</button>
+    <button id="voice-settings-open-btn" title="Voice Settings" style="background:transparent;border:none;cursor:pointer;color:var(--fg);font-size:13px;opacity:0.7;padding:2px 4px;" onclick="openVoiceSettings()">⚙️</button>
     <i class="fa-solid fa-wifi" title="WiFi Connected"></i>
     <i class="fa-solid fa-battery-three-quarters" title="Battery 75%"></i>
-    <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" title="GitHub">
-      <i class="fab fa-github"></i>
-    </a>
-    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" rel="noopener noreferrer" title="LinkedIn">
-      <i class="fab fa-linkedin"></i>
-    </a>
+    <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" title="GitHub"><i class="fab fa-github"></i></a>
+    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
     <div id="clock" class="small"></div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     DESKTOP
-══════════════════════════════════════════ -->
+<!-- ── SPEAKING INDICATOR ── -->
+<div id="speaking-indicator">
+  <div class="speak-wave">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  🔊 Speaking...
+</div>
+
+<!-- ── MIC STATUS BADGE (Task 5 — new) ── -->
+<div id="mic-status-badge">
+  <div class="mic-pulse-ring"></div>
+  <span id="mic-status-text">Listening…</span>
+</div>
+
+<!-- ── WAKE WORD BADGE ── -->
+<div id="wake-word-badge">
+  <i class="fa-solid fa-ear-listen" style="font-size:10px;"></i>
+  Hey Atul — Wake mode active
+</div>
+
+<!-- ── VOICE SETTINGS MODAL ── -->
+<div id="voice-settings-overlay" role="dialog" aria-labelledby="vs-title" aria-modal="true">
+  <div id="voice-settings-panel">
+    <div class="vs-header">
+      <h3 id="vs-title"><i class="fa-solid fa-sliders"></i> Voice Settings</h3>
+      <button class="vs-close" onclick="closeVoiceSettings()" aria-label="Close voice settings"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="vs-body">
+      <div class="vs-row">
+        <label>Voice</label>
+        <select id="vs-voice-select" aria-label="Select voice">
+          <option value="">— Loading voices… —</option>
+        </select>
+      </div>
+      <div class="vs-row">
+        <label>Speed &nbsp;<span id="vs-rate-val" style="color:var(--accent);">1.0</span></label>
+        <div class="vs-slider-row">
+          <span style="font-size:11px;color:var(--muted);">0.5</span>
+          <input type="range" id="vs-rate" min="0.5" max="1.5" step="0.05" value="1.0" aria-label="Speech rate" />
+          <span style="font-size:11px;color:var(--muted);">1.5</span>
+        </div>
+      </div>
+      <div class="vs-row">
+        <label>Pitch &nbsp;<span id="vs-pitch-val" style="color:var(--accent);">1.0</span></label>
+        <div class="vs-slider-row">
+          <span style="font-size:11px;color:var(--muted);">0.5</span>
+          <input type="range" id="vs-pitch" min="0.5" max="1.5" step="0.05" value="1.0" aria-label="Speech pitch" />
+          <span style="font-size:11px;color:var(--muted);">1.5</span>
+        </div>
+      </div>
+      <div class="vs-row">
+        <label>Volume &nbsp;<span id="vs-vol-val" style="color:var(--accent);">0.9</span></label>
+        <div class="vs-slider-row">
+          <span style="font-size:11px;color:var(--muted);">0</span>
+          <input type="range" id="vs-vol" min="0" max="1" step="0.05" value="0.9" aria-label="Speech volume" />
+          <span style="font-size:11px;color:var(--muted);">1</span>
+        </div>
+      </div>
+      <button class="vs-test-btn" onclick="vsTestVoice()">
+        <i class="fa-solid fa-play"></i> Test Voice
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DESKTOP ── -->
 <main id="desktop" role="main" aria-label="Desktop">
   <h1 class="brand-title">Atul Singh</h1>
   <p class="brand-sub">Electronics &nbsp;·&nbsp; Systems &nbsp;·&nbsp; Programming</p>
-
   <h2 class="section-title">
     <i class="fa-solid fa-terminal" style="font-size:13px;"></i>
     Main Console
   </h2>
-
   <div class="desktop-icons" role="list">
     <div class="icon" role="button" tabindex="0" aria-label="Open Projects"
          onclick="openWindow('projects')" onkeydown="if(event.key==='Enter') openWindow('projects')">
-      <i class="fa-solid fa-folder-open"></i>
-      <span>Projects</span>
+      <i class="fa-solid fa-folder-open"></i><span>Projects</span>
     </div>
     <div class="icon" role="button" tabindex="0" aria-label="Open About"
          onclick="openWindow('about')" onkeydown="if(event.key==='Enter') openWindow('about')">
-      <i class="fa-solid fa-circle-info"></i>
-      <span>About</span>
+      <i class="fa-solid fa-circle-info"></i><span>About</span>
     </div>
     <div class="icon" role="button" tabindex="0" aria-label="Open Skills"
          onclick="openWindow('skills')" onkeydown="if(event.key==='Enter') openWindow('skills')">
-      <i class="fa-solid fa-microchip"></i>
-      <span>Skills</span>
+      <i class="fa-solid fa-microchip"></i><span>Skills</span>
     </div>
     <div class="icon" role="button" tabindex="0" aria-label="Open Terminal"
          onclick="openWindow('terminal')" onkeydown="if(event.key==='Enter') openWindow('terminal')">
-      <i class="fa-solid fa-terminal"></i>
-      <span>Terminal</span>
+      <i class="fa-solid fa-terminal"></i><span>Terminal</span>
     </div>
     <div class="icon" role="button" tabindex="0" aria-label="Open Settings"
          onclick="openWindow('settings')" onkeydown="if(event.key==='Enter') openWindow('settings')">
-      <i class="fa-solid fa-gear"></i>
-      <span>Settings</span>
+      <i class="fa-solid fa-gear"></i><span>Settings</span>
     </div>
     <div class="icon" role="button" tabindex="0" aria-label="Open Atul AI"
          onclick="openWindow('atulAI')" onkeydown="if(event.key==='Enter') openWindow('atulAI')">
-      <i class="fa-solid fa-robot"></i>
-      <span>Atul AI</span>
+      <i class="fa-solid fa-robot"></i><span>Atul AI</span>
     </div>
   </div>
 </main>
 
 
-<!-- ══════════════════════════════════════════
-     WINDOW: PROJECTS
-══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════
+     WINDOWS
+══════════════════════════════════ -->
+
+<!-- ── PROJECTS ── -->
 <div class="app-window" id="projects" role="dialog" aria-labelledby="projects-title" tabindex="0" data-window-id="projects">
   <div class="window-header" data-drag-handle>
-    <div class="title-left">
-      <i class="fa-solid fa-folder-open"></i>
-      <span id="projects-title">Projects</span>
-    </div>
+    <div class="title-left"><i class="fa-solid fa-folder-open"></i><span id="projects-title">Projects</span></div>
     <div class="controls">
-      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Projects">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Projects">
-        <i class="fa-regular fa-square"></i>
-      </button>
-      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Projects">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Projects"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Projects"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Projects"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
   <div class="window-body">
-
-    <!-- Featured -->
     <div style="padding:16px;margin-bottom:22px;border-radius:12px;border:1px solid rgba(99,168,255,0.25);background:linear-gradient(145deg,rgba(99,168,255,0.07),rgba(99,168,255,0.02));">
       <h3 style="margin:0 0 8px;color:var(--accent);font-size:15px;">🚗 Smart Parking Management System</h3>
-      <p style="margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.6;">
-        Real-time IoT parking system built using ESP32, Firebase and a live web dashboard.
-        Displays slot availability dynamically with cloud integration.
-      </p>
+      <p style="margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.6;">Real-time IoT parking system built using ESP32, Firebase and a live web dashboard. Displays slot availability dynamically with cloud integration.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <a href="https://atul-singh-07.github.io/Smart-Parking-Dashboard/" target="_blank" rel="noopener noreferrer"
-           style="padding:8px 14px;background:var(--accent);color:#000;font-weight:700;border-radius:8px;text-decoration:none;font-size:13px;">
-          Open Live Dashboard →
-        </a>
-        <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer"
-           style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;text-decoration:none;font-size:13px;color:var(--fg);">
-          View GitHub
-        </a>
+        <a href="https://atul-singh-07.github.io/Smart-Parking-Dashboard/" target="_blank" rel="noopener noreferrer" style="padding:8px 14px;background:var(--accent);color:#000;font-weight:700;border-radius:8px;text-decoration:none;font-size:13px;">Open Live Dashboard →</a>
+        <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;text-decoration:none;font-size:13px;color:var(--fg);">View GitHub</a>
       </div>
     </div>
-
     <h3 style="color:var(--accent);margin-bottom:14px;font-size:14px;text-transform:uppercase;letter-spacing:1px;">Arduino Mini Projects</h3>
     <ul style="list-style:none;padding:0;">
       <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/01_led_blink" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">01. LED Blink</a></li>
@@ -670,26 +718,14 @@ body {
   </div>
 </div>
 
-
-<!-- ══════════════════════════════════════════
-     WINDOW: ABOUT
-══════════════════════════════════════════ -->
+<!-- ── ABOUT ── -->
 <div class="app-window" id="about" role="dialog" aria-labelledby="about-title" tabindex="0" data-window-id="about">
   <div class="window-header" data-drag-handle>
-    <div class="title-left">
-      <i class="fa-solid fa-circle-info"></i>
-      <span id="about-title">About</span>
-    </div>
+    <div class="title-left"><i class="fa-solid fa-circle-info"></i><span id="about-title">About</span></div>
     <div class="controls">
-      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize About">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize About">
-        <i class="fa-regular fa-square"></i>
-      </button>
-      <button class="win-btn close" data-action="close" title="Close" aria-label="Close About">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize About"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize About"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close About"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
   <div class="window-body">
@@ -697,33 +733,21 @@ body {
       <img src="assets/atul-profile.jpeg" alt="Atul Singh"
            style="width:130px;height:130px;border-radius:50%;object-fit:cover;object-position:center 20%;border:3px solid var(--accent);box-shadow:0 8px 30px rgba(0,0,0,.4);">
     </div>
-    <p style="margin-bottom:12px;font-size:14px;line-height:1.7;">I build systems where <strong>electronics and code</strong> work together. My interest lies in understanding how software controls and interacts with real-world hardware.</p>
+    <p style="margin-bottom:12px;font-size:14px;line-height:1.7;">I build systems where <strong>electronics and code</strong> work together.</p>
     <p style="margin-bottom:12px;font-size:14px;line-height:1.7;">I work with <strong>C and C++</strong> for embedded systems and microcontrollers, and I'm exploring <strong>Python</strong> to strengthen problem-solving and automation skills.</p>
     <p style="margin-bottom:12px;font-size:14px;line-height:1.7;">I enjoy hands-on learning — writing code, testing it on hardware, debugging, and improving systems step by step.</p>
-    <p style="font-size:14px;line-height:1.7;">Outside of tech, I enjoy playing <strong>cricket and badminton</strong> — sports help me stay active, focused, and reset my mind.</p>
+    <p style="font-size:14px;line-height:1.7;">Outside of tech, I enjoy playing <strong>cricket and badminton</strong>.</p>
   </div>
 </div>
 
-
-<!-- ══════════════════════════════════════════
-     WINDOW: SKILLS
-══════════════════════════════════════════ -->
+<!-- ── SKILLS ── -->
 <div class="app-window" id="skills" role="dialog" aria-labelledby="skills-title" tabindex="0" data-window-id="skills">
   <div class="window-header" data-drag-handle>
-    <div class="title-left">
-      <i class="fa-solid fa-microchip"></i>
-      <span id="skills-title">Skills</span>
-    </div>
+    <div class="title-left"><i class="fa-solid fa-microchip"></i><span id="skills-title">Skills</span></div>
     <div class="controls">
-      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Skills">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Skills">
-        <i class="fa-regular fa-square"></i>
-      </button>
-      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Skills">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Skills"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Skills"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Skills"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
   <div class="window-body">
@@ -762,31 +786,17 @@ body {
   </div>
 </div>
 
-
-<!-- ══════════════════════════════════════════
-     WINDOW: TERMINAL
-══════════════════════════════════════════ -->
+<!-- ── TERMINAL ── -->
 <div class="app-window" id="terminal" role="dialog" aria-labelledby="terminal-title" tabindex="0" data-window-id="terminal">
   <div class="window-header" data-drag-handle>
-    <div class="title-left">
-      <i class="fa-solid fa-terminal"></i>
-      <span id="terminal-title">Terminal</span>
-    </div>
+    <div class="title-left"><i class="fa-solid fa-terminal"></i><span id="terminal-title">Terminal — AtulAI</span></div>
     <div class="controls">
-      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Terminal">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Terminal">
-        <i class="fa-regular fa-square"></i>
-      </button>
-      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Terminal">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Terminal"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Terminal"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Terminal"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
   <div class="window-body">
-
-    <!-- Auth Overlay -->
     <div id="terminal-auth-overlay">
       <p>🔐 AtulOS Terminal — Authentication Required</p>
       <div class="auth-row">
@@ -796,7 +806,6 @@ body {
       </div>
       <div id="term-auth-msg"></div>
     </div>
-
     <div id="statusPanel" style="display:none;">
       <pre id="statusText">━━━━━━━━━━━━━━━━━━━━━━
  DEVICES STATUS
@@ -806,41 +815,30 @@ body {
 🔊 Buzzer  : OFF
 ━━━━━━━━━━━━━━━━━━━━━━</pre>
     </div>
-    <div id="terminal-output" class="small" aria-live="polite" style="display:none;">
-      <p style="color:#28c840;">$ whoami → Atul Singh</p>
-      <p style="color:#28c840;">$ focus  → Systems &amp; Hardware</p>
-      <p style="color:#28c840;">$ status → Learning and building</p>
-    </div>
-    <div id="terminal-input-area" style="margin-top:12px;display:none;">
-      <label for="term-input" style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Command</label>
-      <input id="term-input" type="text"
-             style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--fg);font-family:inherit;font-size:13px;outline:none;"
-             aria-label="Terminal command input"
-             placeholder="Type a command... (try: light on, fan off, open projects)" />
+    <div id="terminal-output" class="small" aria-live="polite" style="display:none;"></div>
+    <div id="terminal-input-area" style="display:none;">
+      <div class="term-prompt-bar">
+        <span class="term-prompt-label">
+          <span style="color:#28c840;">atul</span><span class="at">@</span><span class="host">AtulOS</span><span class="sep">:~</span><span class="dollar">$</span>
+        </span>
+        <input id="term-input" type="text"
+               aria-label="Terminal command input"
+               placeholder="type a command or speak naturally…"
+               autocomplete="off" spellcheck="false" />
+      </div>
+      <div id="term-suggestions"></div>
     </div>
   </div>
 </div>
 
-
-<!-- ══════════════════════════════════════════
-     WINDOW: SETTINGS
-══════════════════════════════════════════ -->
+<!-- ── SETTINGS ── -->
 <div class="app-window" id="settings" role="dialog" aria-labelledby="settings-title" tabindex="0" data-window-id="settings">
   <div class="window-header" data-drag-handle>
-    <div class="title-left">
-      <i class="fa-solid fa-gear"></i>
-      <span id="settings-title">System Settings</span>
-    </div>
+    <div class="title-left"><i class="fa-solid fa-gear"></i><span id="settings-title">System Settings</span></div>
     <div class="controls">
-      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Settings">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Settings">
-        <i class="fa-regular fa-square"></i>
-      </button>
-      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Settings">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Settings"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Settings"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Settings"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
   <div class="window-body">
@@ -851,28 +849,37 @@ body {
     </div>
     <div class="settings-group">
       <p>Accent Color</p>
-      <button onclick="setAccent('#63a8ff')" aria-label="Blue accent" style="border-left:3px solid #63a8ff;">Blue</button>
-      <button onclick="setAccent('#28c840')" aria-label="Green accent" style="border-left:3px solid #28c840;">Green</button>
-      <button onclick="setAccent('#ff5f57')" aria-label="Red accent" style="border-left:3px solid #ff5f57;">Red</button>
-      <button onclick="setAccent('#febc2e')" aria-label="Yellow accent" style="border-left:3px solid #febc2e;">Yellow</button>
-      <button onclick="setAccent('#bf5af2')" aria-label="Purple accent" style="border-left:3px solid #bf5af2;">Purple</button>
+      <button onclick="setAccent('#63a8ff')" style="border-left:3px solid #63a8ff;">Blue</button>
+      <button onclick="setAccent('#28c840')" style="border-left:3px solid #28c840;">Green</button>
+      <button onclick="setAccent('#ff5f57')" style="border-left:3px solid #ff5f57;">Red</button>
+      <button onclick="setAccent('#febc2e')" style="border-left:3px solid #febc2e;">Yellow</button>
+      <button onclick="setAccent('#bf5af2')" style="border-left:3px solid #bf5af2;">Purple</button>
+    </div>
+    <div class="settings-group">
+      <p>Voice</p>
+      <button onclick="jarvisTTSOn(); updateVoiceToggleUI();">🔊 Enable Voice</button>
+      <button onclick="jarvisTTSOff(); updateVoiceToggleUI();">🔇 Disable Voice</button>
+      <button onclick="openVoiceSettings()">⚙️ Voice Settings</button>
+    </div>
+    <div class="settings-group">
+      <p>Wake Word</p>
+      <button onclick="enableWakeWord()">🎙️ Enable "Hey Atul"</button>
+      <button onclick="disableWakeWord()">🔕 Disable Wake Word</button>
     </div>
     <div class="settings-group">
       <p>System Info</p>
       <div style="padding:12px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px;color:var(--muted);line-height:1.8;">
-        OS: AtulOS v2.0<br>
+        OS: AtulOS v2.1<br>
         Build: 2025.stable<br>
-        AI: Atul AI Engine v2<br>
-        Firebase: Connected
+        AI: AtulAI Engine v2 + JARVIS NLU<br>
+        Firebase: Connected<br>
+        Wake Word: "Hey Atul"
       </div>
     </div>
   </div>
 </div>
 
-
-<!-- ══════════════════════════════════════════
-     WINDOW: ATUL AI
-══════════════════════════════════════════ -->
+<!-- ── ATUL AI ── -->
 <div class="app-window" id="atulAI" role="dialog" aria-labelledby="atulai-title" tabindex="0" data-window-id="atulAI" style="width:480px;">
   <div class="window-header" data-drag-handle>
     <div class="title-left">
@@ -881,34 +888,32 @@ body {
       <span style="font-size:11px;color:var(--muted);background:rgba(40,200,64,0.12);border:1px solid rgba(40,200,64,0.25);padding:2px 8px;border-radius:20px;">● Online</span>
     </div>
     <div class="controls">
-      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize Atul AI">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize Atul AI">
-        <i class="fa-regular fa-square"></i>
-      </button>
-      <button class="win-btn close" data-action="close" title="Close" aria-label="Close Atul AI">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Atul AI"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Atul AI"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Atul AI"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
-
   <div id="ai-chat" aria-live="polite"></div>
-
   <div class="ai-input-row">
     <input id="ai-input" type="text" placeholder="Ask me anything or give a command..." aria-label="AI chat input" />
-    <button id="mic-btn" title="Voice input" aria-label="Voice input">🎤</button>
+    <button id="mic-btn" title="Voice input (click to start/stop)" aria-label="Voice input">🎤</button>
     <button id="ai-send-btn" onclick="aiSendMessage()" aria-label="Send message">Send</button>
   </div>
 </div>
 
+<!-- ── TASKBAR ── -->
+<div id="taskbar" role="toolbar" aria-label="Minimized windows taskbar"></div>
 
-<!-- ══════════════════════════════════════════
-     FIREBASE SDK
-══════════════════════════════════════════ -->
+<!-- ── JARVIS VOICE BADGE ── -->
+<div id="jarvis-voice-badge">
+  <div class="jarvis-mic-pulse"></div>
+  <span id="jarvis-badge-text">Listening…</span>
+</div>
+
+
+<!-- ── FIREBASE SDK ── -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSy...",
@@ -919,14 +924,13 @@ const firebaseConfig = {
   messagingSenderId: "910811873112",
   appId: "1:910811873112:web:a9398353af0ab257c66f2d"
 };
-
-firebase.initializeApp(firebaseConfig);
-
-function updateStatus(data) {
-  const light  = (data.light  || 'off').toUpperCase();
-  const fan    = (data.fan    || 'off').toUpperCase();
-  const buzzer = (data.buzzer || 'off').toUpperCase();
-  document.getElementById('statusText').textContent =
+try {
+  firebase.initializeApp(firebaseConfig);
+  function updateStatus(data) {
+    const light  = (data.light  || 'off').toUpperCase();
+    const fan    = (data.fan    || 'off').toUpperCase();
+    const buzzer = (data.buzzer || 'off').toUpperCase();
+    document.getElementById('statusText').textContent =
 `━━━━━━━━━━━━━━━━━━━━━━
  DEVICES STATUS
 ━━━━━━━━━━━━━━━━━━━━━━
@@ -934,27 +938,391 @@ function updateStatus(data) {
 🌀 Fan     : ${fan}
 🔊 Buzzer  : ${buzzer}
 ━━━━━━━━━━━━━━━━━━━━━━`;
+  }
+  firebase.database().ref('devices').on('value', (snap) => {
+    const data = snap.val();
+    if (data) updateStatus(data);
+  });
+} catch(e) { console.warn('Firebase init skipped (demo mode):', e.message); }
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 1 — VOICE STATE MANAGER
+     Centralised TTS state: enabled flag,
+     selected voice, rate, pitch, volume.
+══════════════════════════════════════════ -->
+<script>
+/* ── Voice State ── */
+const VoiceState = (function() {
+  'use strict';
+
+  // Load from localStorage or use defaults
+  let ttsEnabled   = localStorage.getItem('tts_enabled')   !== 'false';
+  let selectedVoiceURI = localStorage.getItem('tts_voice') || '';
+  let rate         = parseFloat(localStorage.getItem('tts_rate'))   || 1.0;
+  let pitch        = parseFloat(localStorage.getItem('tts_pitch'))  || 1.0;
+  let volume       = parseFloat(localStorage.getItem('tts_volume')) || 0.9;
+  let availableVoices = [];
+
+  function save() {
+    localStorage.setItem('tts_enabled', ttsEnabled);
+    localStorage.setItem('tts_voice',   selectedVoiceURI);
+    localStorage.setItem('tts_rate',    rate);
+    localStorage.setItem('tts_pitch',   pitch);
+    localStorage.setItem('tts_volume',  volume);
+  }
+
+  /* ── TASK 3: Smart voice selection with priority ranking ── */
+  function getBestVoice() {
+    const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+
+    // 1. Try user-selected voice URI (persisted preference)
+    if (selectedVoiceURI) {
+      const found = voices.find(v => v.voiceURI === selectedVoiceURI);
+      if (found) return found;
+    }
+
+    // 2. Prefer Google Neural / Microsoft Neural (highest quality)
+    const neural = voices.find(v =>
+      /google us english/i.test(v.name)
+    );
+    if (neural) return neural;
+
+    // 3. Google UK English second
+    const googleUK = voices.find(v => /google uk english/i.test(v.name));
+    if (googleUK) return googleUK;
+
+    // 4. Any Google voice
+    const anyGoogle = voices.find(v => /google/i.test(v.name) && v.lang.startsWith('en'));
+    if (anyGoogle) return anyGoogle;
+
+    // 5. Microsoft neural voices (Edge)
+    const msNeural = voices.find(v =>
+      /microsoft.*neural|microsoft.*(aria|jenny|guy|ryan|james|mark|david)/i.test(v.name)
+    );
+    if (msNeural) return msNeural;
+
+    // 6. Any Microsoft English
+    const msEn = voices.find(v => /microsoft/i.test(v.name) && v.lang.startsWith('en'));
+    if (msEn) return msEn;
+
+    // 7. Any English non-compact voice
+    const english = voices.find(v =>
+      v.lang.startsWith('en') && !v.name.toLowerCase().includes('compact')
+    );
+    if (english) return english;
+
+    // 8. Any available voice
+    return voices[0] || null;
+  }
+
+  function loadVoices() {
+    if (!window.speechSynthesis) return;
+    availableVoices = window.speechSynthesis.getVoices();
+    if (availableVoices.length) populateVoiceDropdown(availableVoices);
+  }
+
+  function populateVoiceDropdown(voices) {
+    const sel = document.getElementById('vs-voice-select');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Auto (Best Available) —</option>';
+    voices.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.voiceURI;
+      opt.textContent = `${v.name} (${v.lang})`;
+      if (v.voiceURI === selectedVoiceURI) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  // Init voices — handle async loading for Chrome/Edge
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices(); // prime the list
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    setTimeout(loadVoices, 300); // fallback for Chrome
+  }
+
+  return {
+    get enabled()  { return ttsEnabled; },
+    get rate()     { return rate; },
+    get pitch()    { return pitch; },
+    get volume()   { return volume; },
+    get voiceURI() { return selectedVoiceURI; },
+    enable()       { ttsEnabled = true;  save(); },
+    disable()      { ttsEnabled = false; save(); },
+    setRate(v)     { rate = v;    save(); },
+    setPitch(v)    { pitch = v;   save(); },
+    setVolume(v)   { volume = v;  save(); },
+    setVoiceURI(u) { selectedVoiceURI = u; save(); },
+    getBestVoice,
+    loadVoices,
+    populateVoiceDropdown
+  };
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 2 — UI TOGGLE (Status Bar Button)
+     Voice ON/OFF toggle in the status bar +
+     syncs with VoiceState.
+══════════════════════════════════════════ -->
+<script>
+/* ── Update voice toggle button UI ── */
+function updateVoiceToggleUI() {
+  const btn = document.getElementById('voice-toggle-btn');
+  if (!btn) return;
+  if (VoiceState.enabled) {
+    btn.textContent = '🔊 Voice ON';
+    btn.className   = 'voice-on';
+    btn.title       = 'Click to turn voice OFF';
+  } else {
+    btn.textContent = '🔇 Voice OFF';
+    btn.className   = 'voice-off';
+    btn.title       = 'Click to turn voice ON';
+  }
 }
 
-firebase.database().ref('devices').on('value', (snap) => {
-  const data = snap.val();
-  if (data) updateStatus(data);
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('voice-toggle-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      if (VoiceState.enabled) { jarvisTTSOff(); }
+      else                    { jarvisTTSOn();  }
+      updateVoiceToggleUI();
+    });
+  }
+  updateVoiceToggleUI();
 });
 </script>
 
 
 <!-- ══════════════════════════════════════════
-     MAIN SCRIPT
+     SECTION 3 — VOICE SETTINGS PANEL
+     Modal with voice selector, rate, pitch,
+     volume sliders. Reads/writes VoiceState.
+══════════════════════════════════════════ -->
+<script>
+/* ── Open / Close panel ── */
+function openVoiceSettings() {
+  const overlay = document.getElementById('voice-settings-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+
+  // Sync slider values from VoiceState
+  const rateEl  = document.getElementById('vs-rate');
+  const pitchEl = document.getElementById('vs-pitch');
+  const volEl   = document.getElementById('vs-vol');
+  const rateVal = document.getElementById('vs-rate-val');
+  const pitchVal= document.getElementById('vs-pitch-val');
+  const volVal  = document.getElementById('vs-vol-val');
+
+  if (rateEl)  { rateEl.value  = VoiceState.rate;   if (rateVal)  rateVal.textContent  = VoiceState.rate.toFixed(1); }
+  if (pitchEl) { pitchEl.value = VoiceState.pitch;  if (pitchVal) pitchVal.textContent = VoiceState.pitch.toFixed(1); }
+  if (volEl)   { volEl.value   = VoiceState.volume; if (volVal)   volVal.textContent   = VoiceState.volume.toFixed(1); }
+
+  // Re-populate voices
+  VoiceState.loadVoices();
+
+  // Sync voice select
+  const sel = document.getElementById('vs-voice-select');
+  if (sel && VoiceState.voiceURI) {
+    const opt = sel.querySelector(`option[value="${VoiceState.voiceURI}"]`);
+    if (opt) opt.selected = true;
+  }
+}
+
+function closeVoiceSettings() {
+  const overlay = document.getElementById('voice-settings-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+/* Close when clicking backdrop */
+document.getElementById('voice-settings-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeVoiceSettings();
+});
+
+/* Keyboard close */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeVoiceSettings();
+});
+
+/* ── Slider live update ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const rateEl  = document.getElementById('vs-rate');
+  const pitchEl = document.getElementById('vs-pitch');
+  const volEl   = document.getElementById('vs-vol');
+
+  if (rateEl) rateEl.addEventListener('input', function() {
+    const v = parseFloat(this.value);
+    VoiceState.setRate(v);
+    const el = document.getElementById('vs-rate-val');
+    if (el) el.textContent = v.toFixed(1);
+  });
+  if (pitchEl) pitchEl.addEventListener('input', function() {
+    const v = parseFloat(this.value);
+    VoiceState.setPitch(v);
+    const el = document.getElementById('vs-pitch-val');
+    if (el) el.textContent = v.toFixed(1);
+  });
+  if (volEl) volEl.addEventListener('input', function() {
+    const v = parseFloat(this.value);
+    VoiceState.setVolume(v);
+    const el = document.getElementById('vs-vol-val');
+    if (el) el.textContent = v.toFixed(1);
+  });
+
+  const selEl = document.getElementById('vs-voice-select');
+  if (selEl) selEl.addEventListener('change', function() {
+    VoiceState.setVoiceURI(this.value);
+  });
+});
+
+/* ── Test voice ── */
+function vsTestVoice() {
+  jarvisSpeak("Hello, I am AtulAI. Your personal assistant. Ready to help, Atul.");
+}
+
+window.openVoiceSettings  = openVoiceSettings;
+window.closeVoiceSettings = closeVoiceSettings;
+window.vsTestVoice        = vsTestVoice;
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 4 — ENHANCED jarvisSpeak()
+     TASK 4: Improved speak() with VoiceState,
+     speaking indicator, smart voice selection,
+     cancel-before-play, emoji stripping.
+══════════════════════════════════════════ -->
+<script>
+(function setupTTS() {
+  'use strict';
+
+  /* ── Show/hide speaking indicator ── */
+  function showSpeakingIndicator() {
+    const el = document.getElementById('speaking-indicator');
+    if (el) el.style.display = 'flex';
+  }
+  function hideSpeakingIndicator() {
+    const el = document.getElementById('speaking-indicator');
+    if (el) el.style.display = 'none';
+  }
+
+  /* ── Stop any current speech ── */
+  function stopSpeaking() {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    hideSpeakingIndicator();
+  }
+
+  /* ══════════════════════════════════════════
+     TASK 4: IMPROVED speak() FUNCTION
+     - Uses VoiceState for all settings
+     - Smart voice selection via getBestVoice()
+     - Cancels previous utterance cleanly
+     - Strips emoji for clean audio
+     - Handles voiceschanged timing (Chrome fix)
+  ══════════════════════════════════════════ */
+  function jarvisSpeak(text) {
+    if (!VoiceState.enabled) return;
+    if (!window.speechSynthesis) return;
+
+    // Strip emoji and control characters for cleaner speech
+    const clean = text
+      .replace(/[\u{1F300}-\u{1FAFF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+      .replace(/[★✓✔✗✘•◦→←↑↓]/g, '')
+      .replace(/━+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!clean) return;
+
+    stopSpeaking(); // cancel any in-progress utterance
+
+    /* Inner function that builds and fires the utterance.
+       Called directly when voices are ready, or deferred
+       via voiceschanged if the list is empty (Chrome). */
+    function fireUtterance() {
+      const utt   = new SpeechSynthesisUtterance(clean);
+      utt.lang    = 'en-US';
+      utt.rate    = VoiceState.rate;
+      utt.pitch   = VoiceState.pitch;
+      utt.volume  = VoiceState.volume;
+
+      const voice = VoiceState.getBestVoice();
+      if (voice) utt.voice = voice;
+
+      utt.onstart = showSpeakingIndicator;
+      utt.onend   = hideSpeakingIndicator;
+      utt.onerror = (e) => {
+        hideSpeakingIndicator();
+        // 'interrupted' is normal (user triggered stopSpeaking), suppress it
+        if (e.error !== 'interrupted') {
+          console.warn('SpeechSynthesis error:', e.error);
+        }
+      };
+
+      window.speechSynthesis.speak(utt);
+    }
+
+    // Chrome: voices may not be ready on first call — wait for them
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      fireUtterance();
+    } else {
+      window.speechSynthesis.addEventListener('voiceschanged', function onReady() {
+        window.speechSynthesis.removeEventListener('voiceschanged', onReady);
+        fireUtterance();
+      });
+    }
+  }
+
+  /* ── TTS toggle functions ── */
+  function jarvisTTSOn() {
+    VoiceState.enable();
+    updateVoiceToggleUI();
+  }
+  function jarvisTTSOff() {
+    stopSpeaking();
+    VoiceState.disable();
+    updateVoiceToggleUI();
+  }
+
+  // Expose globally
+  window.jarvisSpeak   = jarvisSpeak;
+  window.jarvisTTSOn   = jarvisTTSOn;
+  window.jarvisTTSOff  = jarvisTTSOff;
+  window.stopSpeaking  = stopSpeaking;
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     MAIN SCRIPT — WINDOW MANAGER + AUTH
 ══════════════════════════════════════════ -->
 <script>
 (function () {
   'use strict';
 
-  /* ─────────────────────────────────────────
-     BOOT SCREEN
-  ───────────────────────────────────────── */
+  /* ── BOOT SCREEN with typing messages ── */
+  const bootMessages = [
+    'Initializing AtulOS…',
+    'Loading AtulAI engine…',
+    'Connecting to Firebase…',
+    'Mounting file system…',
+    'Starting system…'
+  ];
+  let bmIdx = 0;
+  const bootMsgEl = document.getElementById('boot-text-msg');
+  const bmInterval = setInterval(() => {
+    bmIdx = (bmIdx + 1) % bootMessages.length;
+    if (bootMsgEl) bootMsgEl.textContent = bootMessages[bmIdx];
+  }, 600);
+
   window.addEventListener('load', () => {
     setTimeout(() => {
+      clearInterval(bmInterval);
       const boot = document.getElementById('bootScreen');
       boot.style.opacity = '0';
       boot.setAttribute('aria-hidden', 'true');
@@ -962,9 +1330,7 @@ firebase.database().ref('devices').on('value', (snap) => {
     }, 3000);
   });
 
-  /* ─────────────────────────────────────────
-     CLOCK
-  ───────────────────────────────────────── */
+  /* ── CLOCK ── */
   function updateClock() {
     document.getElementById('clock').textContent =
       new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -972,23 +1338,16 @@ firebase.database().ref('devices').on('value', (snap) => {
   setInterval(updateClock, 1000);
   updateClock();
 
-  /* ─────────────────────────────────────────
-     THEME & ACCENT
-  ───────────────────────────────────────── */
+  /* ── THEME & ACCENT ── */
   function setTheme(mode) {
-    if (mode === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
+    if (mode === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
     localStorage.setItem('theme', mode);
   }
-
   function setAccent(color) {
     document.documentElement.style.setProperty('--accent', color);
     localStorage.setItem('accent', color);
   }
-
   window.addEventListener('load', () => {
     const t = localStorage.getItem('theme');
     const a = localStorage.getItem('accent');
@@ -996,12 +1355,52 @@ firebase.database().ref('devices').on('value', (snap) => {
     if (a) setAccent(a);
   });
 
-  /* ─────────────────────────────────────────
-     WINDOW MANAGER
-  ───────────────────────────────────────── */
+  /* ── TASKBAR MODULE ── */
+  const Taskbar = (function () {
+    const bar   = document.getElementById('taskbar');
+    const chips = {};
+    function getWindowMeta(win) {
+      const titleLeft = win.querySelector('.title-left');
+      const iconEl    = titleLeft ? titleLeft.querySelector('i') : null;
+      const labelEl   = titleLeft ? titleLeft.querySelector('span') : null;
+      return {
+        iconClass: iconEl  ? iconEl.className  : 'fa-solid fa-window-maximize',
+        label    : labelEl ? labelEl.textContent.trim() : (win.id || 'Window')
+      };
+    }
+    function syncVisibility() {
+      bar.style.display = Object.keys(chips).length > 0 ? 'flex' : 'none';
+    }
+    function add(win) {
+      const id = win.dataset.windowId || win.id;
+      if (chips[id]) return;
+      const meta = getWindowMeta(win);
+      const chip = document.createElement('button');
+      chip.className = 'taskbar-chip';
+      chip.setAttribute('aria-label', `Restore ${meta.label}`);
+      chip.innerHTML = `<i class="${meta.iconClass}" aria-hidden="true"></i>${meta.label}`;
+      chip.addEventListener('click', () => restore(id));
+      bar.appendChild(chip);
+      chips[id] = chip;
+      syncVisibility();
+    }
+    function remove(id) {
+      if (!chips[id]) return;
+      chips[id].remove();
+      delete chips[id];
+      syncVisibility();
+    }
+    function restore(id) {
+      remove(id);
+      if (typeof window.openWindow === 'function') window.openWindow(id);
+    }
+    return { add, remove };
+  })();
+  window._Taskbar = Taskbar;
+
+  /* ── WINDOW MANAGER ── */
   const STORAGE_KEY = 'atul_windows_v2';
   let highestZ = 100;
-
   function loadWindowState() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
     catch(e) { return {}; }
@@ -1010,7 +1409,6 @@ firebase.database().ref('devices').on('value', (snap) => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
     catch(e) {}
   }
-
   const windowState = loadWindowState();
 
   function bringToFront(win) {
@@ -1027,9 +1425,10 @@ firebase.database().ref('devices').on('value', (snap) => {
   function openWindow(id) {
     const win = document.getElementById(id);
     if (!win) return;
+    Taskbar.remove(id);
     const state = windowState[id] || {};
-    if (state.left !== undefined) win.style.left = state.left + 'px';
-    if (state.top  !== undefined) win.style.top  = state.top  + 'px';
+    if (state.left   !== undefined) win.style.left   = state.left   + 'px';
+    if (state.top    !== undefined) win.style.top    = state.top    + 'px';
     if (state.width  !== undefined) win.style.width  = state.width  + 'px';
     if (state.height !== undefined) win.style.height = state.height + 'px';
     if (state.z !== undefined) {
@@ -1044,16 +1443,13 @@ firebase.database().ref('devices').on('value', (snap) => {
     windowState[id].open = true;
     windowState[id].minimized = false;
     saveWindowState(windowState);
-
-    /* Reset terminal auth when reopened */
-    if (id === 'terminal') {
-      termResetAuth();
-    }
+    if (id === 'terminal') termResetAuth();
   }
 
   function closeWindow(id) {
     const win = document.getElementById(id);
     if (!win) return;
+    Taskbar.remove(id);
     win.style.display = 'none';
     win.setAttribute('aria-hidden', 'true');
     windowState[id] = windowState[id] || {};
@@ -1063,10 +1459,12 @@ firebase.database().ref('devices').on('value', (snap) => {
 
   function minimizeWindow(win) {
     win.style.display = 'none';
-    const id = win.dataset.windowId;
+    win.setAttribute('aria-hidden', 'true');
+    const id = win.dataset.windowId || win.id;
     windowState[id] = windowState[id] || {};
     windowState[id].minimized = true;
     saveWindowState(windowState);
+    Taskbar.add(win);
   }
 
   function maximizeWindow(win) {
@@ -1083,8 +1481,7 @@ firebase.database().ref('devices').on('value', (snap) => {
       win.style.width  = (window.innerWidth - 16) + 'px';
       win.style.height = (window.innerHeight - bar.offsetHeight - 24) + 'px';
       win.dataset.maximized = 'true';
-      /* Switch icon to restore icon */
-      if (maxBtn) { maxBtn.className = 'fa-regular fa-window-restore'; }
+      if (maxBtn) maxBtn.className = 'fa-regular fa-window-restore';
     } else {
       const prev = windowState[id] && windowState[id].prev;
       if (prev) {
@@ -1094,41 +1491,35 @@ firebase.database().ref('devices').on('value', (snap) => {
         win.style.height = prev.height + 'px';
       }
       win.dataset.maximized = 'false';
-      /* Restore square icon */
-      if (maxBtn) { maxBtn.className = 'fa-regular fa-square'; }
+      if (maxBtn) maxBtn.className = 'fa-regular fa-square';
     }
     windowState[id] = windowState[id] || {};
     windowState[id].maximized = win.dataset.maximized === 'true';
     saveWindowState(windowState);
   }
 
-  /* Expose globals */
   window.openWindow  = openWindow;
   window.closeWindow = closeWindow;
   window.setTheme    = setTheme;
   window.setAccent   = setAccent;
 
-  /* Init all windows */
+  /* Init all windows hidden */
   document.querySelectorAll('.app-window').forEach(win => {
-    const id = win.dataset.windowId;
+    const id    = win.dataset.windowId;
     const state = windowState[id] || {};
     if (state.left   !== undefined) win.style.left   = state.left   + 'px';
     if (state.top    !== undefined) win.style.top    = state.top    + 'px';
     if (state.width  !== undefined) win.style.width  = state.width  + 'px';
     if (state.height !== undefined) win.style.height = state.height + 'px';
-    if (state.z      !== undefined) {
-      win.style.zIndex = state.z;
-      highestZ = Math.max(highestZ, state.z);
-    }
+    if (state.z      !== undefined) { win.style.zIndex = state.z; highestZ = Math.max(highestZ, state.z); }
     win.style.display = 'none';
     win.setAttribute('aria-hidden', 'true');
   });
 
-  /* Dragging */
+  /* ── Dragging ── */
   document.querySelectorAll('.app-window').forEach(win => {
     const header = win.querySelector('[data-drag-handle]') || win.querySelector('.window-header');
     let dragging = false, ox = 0, oy = 0;
-
     function startDrag(cx, cy) {
       dragging = true;
       const r = win.getBoundingClientRect();
@@ -1141,7 +1532,7 @@ firebase.database().ref('devices').on('value', (snap) => {
       dragging = false;
       document.body.style.userSelect = '';
       const id = win.dataset.windowId;
-      const r = win.getBoundingClientRect();
+      const r  = win.getBoundingClientRect();
       windowState[id] = windowState[id] || {};
       windowState[id].left   = Math.round(r.left);
       windowState[id].top    = Math.round(r.top);
@@ -1154,21 +1545,17 @@ firebase.database().ref('devices').on('value', (snap) => {
       const bar = document.getElementById('statusbar');
       const vw = window.innerWidth, vh = window.innerHeight;
       let left = cx - ox, top = cy - oy;
-      left = Math.max(8, Math.min(left, vw - win.offsetWidth - 8));
+      left = Math.max(8, Math.min(left, vw - win.offsetWidth  - 8));
       top  = Math.max(bar.offsetHeight + 8, Math.min(top, vh - win.offsetHeight - 8));
       win.style.left = left + 'px';
       win.style.top  = top  + 'px';
     }
-
     header.addEventListener('mousedown', e => {
-      /* Don't start drag if clicking a button */
       if (e.target.closest('.win-btn')) return;
-      e.preventDefault();
-      startDrag(e.clientX, e.clientY);
+      e.preventDefault(); startDrag(e.clientX, e.clientY);
     });
     document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
     document.addEventListener('mouseup', stopDrag);
-
     header.addEventListener('touchstart', e => {
       if (e.target.closest('.win-btn')) return;
       const t = e.touches[0]; startDrag(t.clientX, t.clientY);
@@ -1178,10 +1565,7 @@ firebase.database().ref('devices').on('value', (snap) => {
       const t = e.touches[0]; onMove(t.clientX, t.clientY);
     }, { passive: true });
     document.addEventListener('touchend', stopDrag);
-
     win.addEventListener('mousedown', () => bringToFront(win));
-
-    /* Window controls */
     win.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
         const a = btn.dataset.action;
@@ -1190,34 +1574,33 @@ firebase.database().ref('devices').on('value', (snap) => {
         if (a === 'maximize') maximizeWindow(win);
       });
     });
-
     win.addEventListener('keydown', e => {
       if (e.key === 'Escape') closeWindow(win.id);
       if (e.key === 'F11')    maximizeWindow(win);
     });
   });
 
-  /* Global Esc closes topmost */
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
+      if (document.getElementById('voice-settings-overlay').style.display === 'flex') {
+        closeVoiceSettings(); return;
+      }
       const wins = Array.from(document.querySelectorAll('.app-window'))
         .filter(w => w.style.display !== 'none')
-        .sort((a, b) => (parseInt(b.style.zIndex || 0) - parseInt(a.style.zIndex || 0)));
+        .sort((a, b) => parseInt(b.style.zIndex || 0) - parseInt(a.style.zIndex || 0));
       if (wins.length) closeWindow(wins[0].id);
     }
   });
 
-  /* Resize constraint */
   window.addEventListener('resize', () => {
     document.querySelectorAll('.app-window').forEach(win => {
       if (win.style.display === 'none') return;
-      const r = win.getBoundingClientRect();
+      const r   = win.getBoundingClientRect();
       const bar = document.getElementById('statusbar');
       const vw = window.innerWidth, vh = window.innerHeight;
       let left = Math.max(8, Math.min(r.left, vw - r.width - 8));
       let top  = Math.max(bar.offsetHeight + 8, Math.min(r.top, vh - r.height - 8));
-      win.style.left = left + 'px';
-      win.style.top  = top  + 'px';
+      win.style.left = left + 'px'; win.style.top = top + 'px';
       const id = win.dataset.windowId;
       windowState[id] = windowState[id] || {};
       windowState[id].left = Math.round(left);
@@ -1226,499 +1609,819 @@ firebase.database().ref('devices').on('value', (snap) => {
     });
   });
 
-  /* ─────────────────────────────────────────
-     TERMINAL AUTHENTICATION
-  ───────────────────────────────────────── */
+  /* ── TERMINAL AUTH ── */
   const TERMINAL_PASSWORD = 'atul0775';
   let isAuthenticated = false;
 
   function termResetAuth() {
     isAuthenticated = false;
-    const overlay    = document.getElementById('terminal-auth-overlay');
-    const statusPnl  = document.getElementById('statusPanel');
-    const termOut    = document.getElementById('terminal-output');
-    const termInArea = document.getElementById('terminal-input-area');
-    const authMsg    = document.getElementById('term-auth-msg');
-    const pwInput    = document.getElementById('term-password-input');
-
-    if (overlay)    overlay.style.display = 'block';
-    if (statusPnl)  statusPnl.style.display = 'none';
-    if (termOut)    termOut.style.display = 'none';
-    if (termInArea) termInArea.style.display = 'none';
-    if (authMsg)    { authMsg.textContent = ''; authMsg.style.color = ''; }
-    if (pwInput)    pwInput.value = '';
+    document.getElementById('terminal-auth-overlay').style.display = 'block';
+    document.getElementById('statusPanel').style.display      = 'none';
+    document.getElementById('terminal-output').style.display  = 'none';
+    document.getElementById('terminal-input-area').style.display = 'none';
+    const authMsg = document.getElementById('term-auth-msg');
+    const pwInput = document.getElementById('term-password-input');
+    if (authMsg) { authMsg.textContent = ''; authMsg.style.color = ''; }
+    if (pwInput) { pwInput.value = ''; }
     setTimeout(() => { if (pwInput) pwInput.focus(); }, 100);
   }
 
   function termUnlock() {
-    const overlay    = document.getElementById('terminal-auth-overlay');
-    const statusPnl  = document.getElementById('statusPanel');
-    const termOut    = document.getElementById('terminal-output');
-    const termInArea = document.getElementById('terminal-input-area');
-    const termIn     = document.getElementById('term-input');
-
     isAuthenticated = true;
-    if (overlay)    overlay.style.display = 'none';
-    if (statusPnl)  statusPnl.style.display = 'block';
-    if (termOut)    termOut.style.display = 'block';
-    if (termInArea) termInArea.style.display = 'block';
-    setTimeout(() => { if (termIn) termIn.focus(); }, 100);
+    document.getElementById('terminal-auth-overlay').style.display = 'none';
+    document.getElementById('statusPanel').style.display      = 'block';
+    document.getElementById('terminal-output').style.display  = 'block';
+    document.getElementById('terminal-input-area').style.display = 'block';
+    setTimeout(() => {
+      termPrintLine('AI', 'AtulOS Terminal v2.1 — AtulAI Active.', 'jarvis-line');
+      termPrintLine('AI', 'Welcome back, Atul. Type "help" for all commands.', 'jarvis-line');
+    }, 300);
+    setTimeout(() => {
+      const termIn = document.getElementById('term-input');
+      if (termIn) termIn.focus();
+    }, 100);
   }
 
   function termTryAuth() {
     const pwInput = document.getElementById('term-password-input');
     const authMsg = document.getElementById('term-auth-msg');
     if (!pwInput || !authMsg) return;
-
-    const entered = pwInput.value;
-    if (entered === TERMINAL_PASSWORD) {
+    if (pwInput.value === TERMINAL_PASSWORD) {
       authMsg.textContent = '✔ Access granted. Welcome, Atul.';
       authMsg.style.color = '#28c840';
       setTimeout(termUnlock, 500);
     } else {
-      authMsg.textContent = '✖ Incorrect password. Please try again.';
+      authMsg.textContent = '✖ Incorrect password. Try again.';
       authMsg.style.color = '#ff5f57';
       pwInput.value = '';
       pwInput.focus();
-      /* Shake animation */
       pwInput.style.transition = 'transform 0.1s';
-      pwInput.style.transform = 'translateX(-6px)';
+      pwInput.style.transform  = 'translateX(-6px)';
       setTimeout(() => { pwInput.style.transform = 'translateX(6px)'; }, 100);
-      setTimeout(() => { pwInput.style.transform = 'translateX(0)'; }, 200);
+      setTimeout(() => { pwInput.style.transform = 'translateX(0)'; },  200);
     }
   }
 
-  /* Wire up auth button and Enter key */
   document.addEventListener('DOMContentLoaded', () => {
     const authBtn = document.getElementById('term-auth-btn');
     const pwInput = document.getElementById('term-password-input');
     if (authBtn) authBtn.addEventListener('click', termTryAuth);
-    if (pwInput) {
-      pwInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter') termTryAuth();
-      });
-    }
+    if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') termTryAuth(); });
   });
 
-  /* ─────────────────────────────────────────
-     TERMINAL COMMANDS
-  ───────────────────────────────────────── */
-  const termInput  = document.getElementById('term-input');
-  const termOutput = document.getElementById('terminal-output');
-  const termHistory = [];
-  let termHistIdx = -1;
-
-  if (termInput) {
-    termInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        if (!isAuthenticated) return; /* Block if not authenticated */
-        const cmd = termInput.value.trim();
-        if (!cmd) return;
-        termHistory.push(cmd);
-        termHistIdx = termHistory.length;
-        const p = document.createElement('p');
-        const response = window.atulAIEngine ? atulAIEngine(cmd) : '—';
-        p.innerHTML = `<span style="color:#63a8ff;">$</span> ${cmd} → <span style="color:#28c840;">${response}</span>`;
-        termOutput.appendChild(p);
-        termInput.value = '';
-        termOutput.scrollTop = termOutput.scrollHeight;
-      } else if (e.key === 'ArrowUp') {
-        if (termHistory.length && termHistIdx > 0) {
-          termHistIdx--;
-          termInput.value = termHistory[termHistIdx];
-        }
-        e.preventDefault();
-      } else if (e.key === 'ArrowDown') {
-        if (termHistIdx < termHistory.length - 1) {
-          termHistIdx++;
-          termInput.value = termHistory[termHistIdx];
-        } else {
-          termHistIdx = termHistory.length;
-          termInput.value = '';
-        }
-        e.preventDefault();
-      }
-    });
-  }
-
-  /* Expose termResetAuth globally for openWindow hook */
-  window.termResetAuth = termResetAuth;
-
-})(); /* end IIFE */
+  window.termResetAuth    = termResetAuth;
+  window.isAuthenticated  = () => isAuthenticated;
+})();
 </script>
 
 
 <!-- ══════════════════════════════════════════
-     ATUL AI ENGINE — Full OS Assistant
+     TERMINAL ENHANCEMENT ENGINE
 ══════════════════════════════════════════ -->
 <script>
-/* ================================================================
-   SECTION 1: AI ENGINE
-   Intent detection, fuzzy scoring, random responses
-================================================================ */
+/* ── typeText: character-by-character animation ── */
+function typeText(el, text, speed) {
+  speed = speed || 18;
+  return new Promise(resolve => {
+    let i = 0;
+    el.textContent = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'term-cursor';
+    el.parentNode && el.parentNode.insertBefore(cursor, el.nextSibling);
+    const tick = setInterval(() => {
+      el.textContent += text[i];
+      i++;
+      const out = document.getElementById('terminal-output');
+      if (out) out.scrollTop = out.scrollHeight;
+      if (i >= text.length) {
+        clearInterval(tick);
+        cursor.remove();
+        resolve();
+      }
+    }, speed);
+  });
+}
 
-const ATUL_AI = {
+/* ── Terminal print helper ── */
+function termPrintLine(role, text, cssClass, animated) {
+  const out = document.getElementById('terminal-output');
+  if (!out) return;
+  const p = document.createElement('p');
+  if (cssClass) p.classList.add(cssClass);
+  let prefix = '';
+  if (role === 'AI' || role === 'JARVIS') prefix = 'AtulAI › ';
+  out.appendChild(p);
+  out.scrollTop = out.scrollHeight;
+  if (animated !== false) {
+    typeText(p, prefix + text, 14);
+  } else {
+    p.textContent = prefix + text;
+    out.scrollTop = out.scrollHeight;
+  }
+}
 
-  intents: [
+/* ── Master command list (for suggestions & TAB) ── */
+const TERM_COMMANDS = [
+  'help', 'clear', 'whoami', 'status',
+  'open terminal', 'open projects', 'open about',
+  'open skills',   'open settings', 'open ai',
+  'close terminal','close projects','close about',
+  'close skills',  'close settings',
+  'light on',  'light off',
+  'fan on',    'fan off',
+  'buzzer on', 'buzzer off',
+  'dark mode', 'light mode',
+  'joke', 'date', 'time',
+  'skills', 'projects', 'about atul',
+  'voice on', 'voice off',
+  'hey atul', 'stop',
+];
 
-    /* ── Greetings ── */
-    {
-      tags: ['greet'],
-      patterns: ['hello','hi','hey','sup','yo','howdy','hiya','good morning','good evening','good afternoon','what up','greetings'],
-      responses: [
-        "Hey! 👋 AtulOS AI online. What can I do for you?",
-        "Hello! I'm your OS assistant. Try asking me to open an app or control a device.",
-        "Hi there! Say 'help' to see all my commands. 🤖",
-        "Hey, good to see you! What are we building today? ⚡"
-      ]
-    },
+/* ── Render suggestion dropdown ── */
+function termRenderSuggestions(query) {
+  const box = document.getElementById('term-suggestions');
+  if (!box) return;
+  if (!query || query.length < 1) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const q = query.toLowerCase();
+  const matches = TERM_COMMANDS.filter(c => c.includes(q) && c !== q).slice(0, 4);
+  if (!matches.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = '';
+  matches.forEach(cmd => {
+    const item = document.createElement('div');
+    item.className = 'term-suggestion-item';
+    item.dataset.cmd = cmd;
+    const matchStart = cmd.indexOf(q);
+    const before = cmd.slice(0, matchStart);
+    const match  = cmd.slice(matchStart, matchStart + q.length);
+    const after  = cmd.slice(matchStart + q.length);
+    item.innerHTML =
+      `<i class="fa-solid fa-chevron-right" style="font-size:9px;opacity:0.5;"></i>` +
+      `${before}<span class="sug-match">${match}</span>${after}`;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const inp = document.getElementById('term-input');
+      if (inp) { inp.value = cmd; inp.focus(); }
+      box.style.display = 'none'; box.innerHTML = '';
+    });
+    box.appendChild(item);
+  });
+  const hint = document.createElement('div');
+  hint.className = 'term-suggestion-hint';
+  hint.textContent = 'TAB to complete · Click to fill';
+  box.appendChild(hint);
+  box.style.display = 'block';
+}
 
-    /* ── Identity ── */
-    {
-      tags: ['identity'],
-      patterns: ['who are you','what are you','your name','introduce yourself','tell me about yourself','what is your name','are you an ai'],
-      responses: [
-        "I'm Atul AI — a built-in OS assistant running entirely in your browser. No cloud, no API keys. 🤖",
-        "AtulOS AI at your service. I can open apps, control IoT devices, and answer questions about Atul.",
-        "I'm Atul AI — think of me as your personal OS co-pilot. I run offline, right in your browser!"
-      ]
-    },
+/* ── Command History ── */
+const termHistory = [];
+let   termHistIdx = -1;
 
-    /* ── Creator ── */
-    {
-      tags: ['creator'],
-      patterns: ['who made you','who built you','who created you','who is your creator','who wrote you','who programmed you','who designed you'],
-      responses: [
-        "I was built by Atul Singh — an embedded systems enthusiast who also writes web code. 🛠️",
-        "Atul Singh created me as part of AtulOS. He works with C, C++, Python, ESP32, and Arduino.",
-        "My creator is Atul Singh. He's into hardware-software systems and built this entire OS simulation!"
-      ]
-    },
+/* ── TAB Autocomplete ── */
+function termTabComplete(input) {
+  const q = input.value.toLowerCase().trim();
+  if (!q) return;
+  const match = TERM_COMMANDS.find(c => c.startsWith(q) && c !== q);
+  if (match) input.value = match;
+  const box = document.getElementById('term-suggestions');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+}
 
-    /* ── Capabilities ── */
-    {
-      tags: ['capabilities'],
-      patterns: ['what can you do','help','commands','features','capabilities','list commands','what do you support','how do i use you','show me commands'],
-      responses: [
-        "Here's what I can do:\n\n🖥️  Apps: \"open terminal\", \"close projects\", \"minimize settings\"\n💡  Devices: \"turn on light\", \"turn off fan\", \"start buzzer\"\n🎨  UI: \"dark mode\", \"light mode\"\n📁  Info: \"show skills\", \"about atul\", \"tell me a joke\"\n🎤  Voice: tap the mic button to speak!"
-      ]
-    },
+/* ── Wire terminal input ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const termInput = document.getElementById('term-input');
+  const sugBox    = document.getElementById('term-suggestions');
+  if (!termInput) return;
 
-    /* ── About Atul ── */
-    {
-      tags: ['about_atul'],
-      patterns: ['about atul','tell me about atul','who is atul','atul singh','tell me about the creator'],
-      responses: [
-        "Atul Singh builds systems where code meets hardware. He's into embedded systems, C/C++, Python, and IoT. Open the About window for the full story! 📖",
-        "Atul is an electronics and systems enthusiast who built this entire OS simulation. He loves real-world hardware projects. 💻⚡"
-      ],
-      action: () => openWindow('about')
-    },
+  termInput.addEventListener('input', () => {
+    termRenderSuggestions(termInput.value.trim());
+  });
 
-    /* ── Skills ── */
-    {
-      tags: ['skills'],
-      patterns: ['skills','what does atul know','technologies','languages','atul skills','tech stack','what languages','what tools'],
-      responses: [
-        "Atul's skills:\n\n• C / C++ (primary)\n• Python\n• Arduino & ESP32\n• Embedded Systems\n• HTML & CSS\n• Firebase / IoT\n\nOpening Skills window now! 🧠",
-        "He's strong in C, C++, Python, Arduino, ESP32, and web tech. Opening Skills window..."
-      ],
-      action: () => openWindow('skills')
-    },
+  termInput.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (sugBox) { sugBox.style.display = 'none'; sugBox.innerHTML = ''; }
+    }, 180);
+  });
 
-    /* ── Projects ── */
-    {
-      tags: ['projects'],
-      patterns: ['projects','what has atul built','show projects','portfolio','smart parking','arduino projects','his work'],
-      responses: [
-        "Atul's flagship project is a Smart Parking System using ESP32 + Firebase with a live web dashboard. He also has 8 Arduino mini-projects! Opening Projects now. 📁",
-        "Check out the Projects window — live IoT dashboard, LED experiments, radar system and more!"
-      ],
-      action: () => openWindow('projects')
-    },
-
-    /* ── Open windows ── */
-    {
-      tags: ['open_terminal'],
-      patterns: ['open terminal','launch terminal','start terminal','show terminal','terminal please','pls open terminal','give me terminal'],
-      responses: ["Terminal launched! 💻","Opening terminal for you.","Terminal is up! Type a command."],
-      action: () => openWindow('terminal')
-    },
-    {
-      tags: ['open_projects'],
-      patterns: ['open projects','launch projects','show projects window','go to projects'],
-      responses: ["Projects window opened! 📁","Here are all of Atul's projects."],
-      action: () => openWindow('projects')
-    },
-    {
-      tags: ['open_about'],
-      patterns: ['open about','show about','launch about','go to about','about window'],
-      responses: ["About window opened! ℹ️","Here's Atul's profile."],
-      action: () => openWindow('about')
-    },
-    {
-      tags: ['open_skills'],
-      patterns: ['open skills','show skills','launch skills','go to skills','skills window'],
-      responses: ["Skills window opened! 🧠","Have a look at Atul's tech stack."],
-      action: () => openWindow('skills')
-    },
-    {
-      tags: ['open_settings'],
-      patterns: ['open settings','launch settings','show settings','go to settings','settings window'],
-      responses: ["Settings opened! ⚙️","Here you can change theme and accent."],
-      action: () => openWindow('settings')
-    },
-    {
-      tags: ['open_ai'],
-      patterns: ['open atul ai','launch atul ai','open ai','ai window'],
-      responses: ["I'm already here! 😄"],
-    },
-
-    /* ── Close windows ── */
-    {
-      tags: ['close_terminal'],
-      patterns: ['close terminal','hide terminal','shut terminal','exit terminal'],
-      responses: ["Terminal closed. ✓","Done, terminal is hidden."],
-      action: () => closeWindow('terminal')
-    },
-    {
-      tags: ['close_projects'],
-      patterns: ['close projects','hide projects','exit projects'],
-      responses: ["Projects closed. ✓"],
-      action: () => closeWindow('projects')
-    },
-    {
-      tags: ['close_about'],
-      patterns: ['close about','hide about','exit about'],
-      responses: ["About window closed. ✓"],
-      action: () => closeWindow('about')
-    },
-    {
-      tags: ['close_skills'],
-      patterns: ['close skills','hide skills','exit skills'],
-      responses: ["Skills closed. ✓"],
-      action: () => closeWindow('skills')
-    },
-    {
-      tags: ['close_settings'],
-      patterns: ['close settings','hide settings','exit settings'],
-      responses: ["Settings closed. ✓"],
-      action: () => closeWindow('settings')
-    },
-
-    /* ── Theme control ── */
-    {
-      tags: ['dark_theme'],
-      patterns: ['dark mode','dark theme','switch to dark','enable dark','turn on dark','go dark'],
-      responses: ["Dark mode activated. 🌑","Switched to dark theme!"],
-      action: () => setTheme('dark')
-    },
-    {
-      tags: ['light_theme'],
-      patterns: ['light mode','light theme','switch to light','enable light','turn on light mode','go light'],
-      responses: ["Light mode activated. ☀️","Switched to light theme!"],
-      action: () => setTheme('light')
-    },
-
-    /* ── Device: Light ── */
-    {
-      tags: ['light_on'],
-      patterns: ['turn on light','light on','switch on light','enable light','lights on','on the light','light please on','put light on','turn the light on'],
-      responses: ["Light turned ON 💡","Switching light on!","Done — light is ON.","Got it, light is on! 💡"],
-      action: () => { try { firebase.database().ref('devices/light').set('on'); } catch(e){} }
-    },
-    {
-      tags: ['light_off'],
-      patterns: ['turn off light','light off','switch off light','disable light','lights off','off the light','turn the light off','put light off'],
-      responses: ["Light turned OFF 🌑","Light is now off.","Done — light is OFF."],
-      action: () => { try { firebase.database().ref('devices/light').set('off'); } catch(e){} }
-    },
-
-    /* ── Device: Fan ── */
-    {
-      tags: ['fan_on'],
-      patterns: ['turn on fan','fan on','start fan','switch on fan','enable fan','fan please on','run fan'],
-      responses: ["Fan started! 🌀","Fan is running.","Fan ON — staying cool! 🌀"],
-      action: () => { try { firebase.database().ref('devices/fan').set('on'); } catch(e){} }
-    },
-    {
-      tags: ['fan_off'],
-      patterns: ['turn off fan','fan off','stop fan','switch off fan','disable fan','fan please off'],
-      responses: ["Fan stopped. 🛑","Fan is OFF.","Done — fan stopped."],
-      action: () => { try { firebase.database().ref('devices/fan').set('off'); } catch(e){} }
-    },
-
-    /* ── Device: Buzzer ── */
-    {
-      tags: ['buzzer_on'],
-      patterns: ['start buzzer','buzzer on','turn on buzzer','enable buzzer','activate buzzer','sound buzzer'],
-      responses: ["Buzzer activated! 🔊","Buzzer is ON.","Alert! Buzzer is running. 🔊"],
-      action: () => { try { firebase.database().ref('devices/buzzer').set('on'); } catch(e){} }
-    },
-    {
-      tags: ['buzzer_off'],
-      patterns: ['stop buzzer','buzzer off','turn off buzzer','disable buzzer','deactivate buzzer','silence buzzer'],
-      responses: ["Buzzer stopped. 🔇","Buzzer is OFF.","Silence restored. 🔇"],
-      action: () => { try { firebase.database().ref('devices/buzzer').set('off'); } catch(e){} }
-    },
-
-    /* ── System status ── */
-    {
-      tags: ['status'],
-      patterns: ['status','system status','os status','check system','all good','how is the system','system check'],
-      responses: [
-        "All systems operational 🚀",
-        "AtulOS is running normally. No issues detected. ✅",
-        "System check: ✅ All clear. Firebase connected, AI online, windows ready."
-      ]
-    },
-
-    /* ── Time ── */
-    {
-      tags: ['time'],
-      patterns: ['what time','current time','tell me the time','what is the time','time please','what time is it'],
-      responses: [],
-      dynamicResponse: () => `Current time: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} 🕐`
-    },
-
-    /* ── Date ── */
-    {
-      tags: ['date'],
-      patterns: ['what date','today date','what day is it','what is today','current date','tell me date'],
-      responses: [],
-      dynamicResponse: () => `Today is ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} 📅`
-    },
-
-    /* ── Jokes ── */
-    {
-      tags: ['joke'],
-      patterns: ['tell me a joke','joke','make me laugh','say something funny','funny','humor'],
-      responses: [
-        "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
-        "A SQL query walks into a bar, walks up to two tables and asks: 'Can I join you?' 😄",
-        "Why did the developer go broke? He used up all his cache. 💸",
-        "How many programmers does it take to change a light bulb? None — that's a hardware problem! 💡",
-        "Why do Java developers wear glasses? Because they don't C#. 🤓"
-      ]
-    },
-
-    /* ── Thanks ── */
-    {
-      tags: ['thanks'],
-      patterns: ['thanks','thank you','thx','ty','thank u','cheers','great','awesome'],
-      responses: [
-        "You're welcome! 😊 Anything else?",
-        "Happy to help! Let me know if you need anything.",
-        "Anytime! That's what I'm here for. 🤖",
-        "No problem! Fire away if you have more commands."
-      ]
-    },
-
-    /* ── Bye ── */
-    {
-      tags: ['bye'],
-      patterns: ['bye','goodbye','see you','later','cya','take care','good night'],
-      responses: [
-        "See you later! AtulOS will be here when you return. 👋",
-        "Goodbye! Come back anytime. 🤖",
-        "Later! The OS stays running for you. 👋"
-      ]
-    },
-
-    /* ── Weather (fun) ── */
-    {
-      tags: ['weather'],
-      patterns: ['weather','what is the weather','how is the weather outside'],
-      responses: [
-        "I don't have sensor data for outside weather, but inside AtulOS it's always a perfect 72°F! 😄",
-        "Ask your phone for that one — I'm an embedded OS, not a weather station! ⛅"
-      ]
-    },
-
-  ],
-
-  /* ── Fuzzy scorer ── */
-  score(input, patterns) {
-    const norm = input.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
-    let best = 0;
-    for (const pat of patterns) {
-      if (norm === pat) { best = 1; break; }
-      if (norm.includes(pat)) { best = Math.max(best, 0.9); continue; }
-      const pWords = pat.split(' ');
-      const iWords = norm.split(' ');
-      const overlap = pWords.filter(pw => iWords.some(iw => iw.includes(pw) || pw.includes(iw)));
-      const ratio = overlap.length / pWords.length;
-      if (ratio > 0.55) best = Math.max(best, 0.45 + ratio * 0.35);
+  termInput.addEventListener('keydown', e => {
+    if (e.key === 'Tab') {
+      e.preventDefault(); termTabComplete(termInput); return;
     }
-    return best;
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (termHistory.length && termHistIdx > 0) {
+        termHistIdx--;
+        termInput.value = termHistory[termHistIdx];
+        termRenderSuggestions(termInput.value.trim());
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (termHistIdx < termHistory.length - 1) {
+        termHistIdx++;
+        termInput.value = termHistory[termHistIdx];
+      } else {
+        termHistIdx = termHistory.length;
+        termInput.value = '';
+      }
+      termRenderSuggestions(termInput.value.trim());
+      return;
+    }
+    if (e.key === 'Enter') {
+      if (typeof window.isAuthenticated === 'function' && !window.isAuthenticated()) return;
+      const raw = termInput.value.trim();
+      if (!raw) return;
+      termHistory.push(raw);
+      termHistIdx = termHistory.length;
+      if (sugBox) { sugBox.style.display = 'none'; sugBox.innerHTML = ''; }
+      const out = document.getElementById('terminal-output');
+      if (out) {
+        const echo = document.createElement('p');
+        echo.className = 'cmd-echo';
+        echo.textContent = `atul@AtulOS:~$ ${raw}`;
+        out.appendChild(echo);
+      }
+      termInput.value = '';
+      const response = (typeof window.jarvisProcess === 'function')
+        ? window.jarvisProcess(raw)
+        : '—';
+      if (response) {
+        termPrintLine('AI', response, 'jarvis-line', true);
+        if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(response);
+      }
+    }
+  });
+});
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 5 — INTENT PARSER (NLU ENGINE)
+     Enhanced parseIntent() with confidence
+     scoring and natural language normalizer.
+══════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════
+   Intent → pattern → action map
+═══════════════════════════════════════════ */
+const JARVIS_INTENTS = {
+  greeting: {
+    patterns: ['hello','hi','hey','sup','yo','howdy','hiya','good morning','good evening','good afternoon','greetings','what up','hi there','hello atul','hey atul'],
+    action: null
+  },
+  identity: {
+    patterns: ['who are you','what are you','your name','introduce yourself','are you an ai','are you atulai','are you jarvis','tell me about yourself'],
+    action: null
+  },
+  capabilities: {
+    patterns: ['help','commands','what can you do','features','list commands','capabilities','show commands','show help'],
+    action: null
   },
 
-  /* ── Main process ── */
-  process(rawInput) {
-    if (!rawInput || !rawInput.trim()) return null;
+  /* Open windows */
+  open_terminal: {
+    patterns: ['open terminal','launch terminal','start terminal','show terminal','terminal please','give me terminal','go to terminal'],
+    action: () => openWindow('terminal')
+  },
+  open_projects: {
+    patterns: ['open projects','show projects','launch projects','go to projects','projects window','my projects','view projects'],
+    action: () => openWindow('projects')
+  },
+  open_about: {
+    patterns: ['open about','show about','launch about','go to about','about window','about atul','who is atul'],
+    action: () => openWindow('about')
+  },
+  open_skills: {
+    patterns: ['open skills','show skills','launch skills','go to skills','skills window','my skills','what are your skills'],
+    action: () => openWindow('skills')
+  },
+  open_settings: {
+    patterns: ['open settings','show settings','launch settings','go to settings','settings','preferences','open preferences'],
+    action: () => openWindow('settings')
+  },
+  open_ai: {
+    patterns: ['open ai','open atul ai','launch ai','ai window','open assistant','chat with ai','open chat'],
+    action: () => openWindow('atulAI')
+  },
 
-    let bestScore = 0;
-    let bestIntent = null;
+  /* Close windows */
+  close_terminal:  { patterns: ['close terminal','exit terminal','hide terminal','shut terminal'],   action: () => closeWindow('terminal') },
+  close_projects:  { patterns: ['close projects','exit projects','hide projects','shut projects'],   action: () => closeWindow('projects') },
+  close_about:     { patterns: ['close about','exit about','hide about'],                           action: () => closeWindow('about') },
+  close_skills:    { patterns: ['close skills','exit skills','hide skills'],                        action: () => closeWindow('skills') },
+  close_settings:  { patterns: ['close settings','exit settings','hide settings','close preferences'], action: () => closeWindow('settings') },
 
-    for (const intent of this.intents) {
-      const s = this.score(rawInput, intent.patterns);
-      if (s > bestScore) { bestScore = s; bestIntent = intent; }
-    }
+  /* IoT Devices */
+  light_on: {
+    patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'],
+    action: () => { try { firebase.database().ref('devices/light').set('on'); } catch(e){} }
+  },
+  light_off: {
+    patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],
+    action: () => { try { firebase.database().ref('devices/light').set('off'); } catch(e){} }
+  },
+  fan_on: {
+    patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],
+    action: () => { try { firebase.database().ref('devices/fan').set('on'); } catch(e){} }
+  },
+  fan_off: {
+    patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],
+    action: () => { try { firebase.database().ref('devices/fan').set('off'); } catch(e){} }
+  },
+  buzzer_on: {
+    patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],
+    action: () => { try { firebase.database().ref('devices/buzzer').set('on'); } catch(e){} }
+  },
+  buzzer_off: {
+    patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],
+    action: () => { try { firebase.database().ref('devices/buzzer').set('off'); } catch(e){} }
+  },
 
-    if (bestIntent && bestScore >= 0.44) {
-      if (bestIntent.action) {
-        try { bestIntent.action(); } catch(e) { console.warn('AI action error:', e); }
-      }
-      if (bestIntent.dynamicResponse) return bestIntent.dynamicResponse();
-      const pool = bestIntent.responses;
-      return pool[Math.floor(Math.random() * pool.length)];
-    }
+  /* Theme */
+  dark_mode:  { patterns: ['dark mode','dark theme','switch to dark','go dark','enable dark','nighttime'],  action: () => setTheme('dark') },
+  light_mode: { patterns: ['light mode','light theme','switch to light','go light','enable light mode','daytime'], action: () => setTheme('light') },
 
-    const fallbacks = [
-      "I didn't quite get that. Try 'help' to see what I can do. 🤔",
-      "Hmm, not sure about that one. Try: 'open terminal', 'turn on light', or 'tell me a joke'.",
-      "I'm still learning! Try rephrasing or say 'commands' for a list. 🧠",
-      "That one stumped me. Can you try a different phrasing? 🤖"
-    ];
-    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-  }
+  /* Voice control */
+  voice_on:  { patterns: ['voice on','enable voice','turn on voice','speak','enable speech','tts on'],  action: () => { jarvisTTSOn(); updateVoiceToggleUI(); } },
+  voice_off: { patterns: ['voice off','disable voice','turn off voice','mute','disable speech','tts off','be quiet','shut up'], action: () => { jarvisTTSOff(); updateVoiceToggleUI(); } },
+  voice_settings: { patterns: ['voice settings','open voice settings','adjust voice','change voice','voice options'], action: () => openVoiceSettings() },
+
+  /* Info */
+  system_status: { patterns: ['status','system status','system check','all good','how is the system','diagnostics','health check'], action: null },
+  time:  { patterns: ['what time','current time','tell me the time','time please','what time is it','show time'], action: null },
+  date:  { patterns: ['what date','today date','what day is it','current date','tell me date','show date'],       action: null },
+  joke:  { patterns: ['joke','tell me a joke','make me laugh','funny','humor','say something funny','entertain me'], action: null },
+  clear: { patterns: ['clear','cls','clear terminal','clear screen','reset terminal'],
+    action: () => { const out = document.getElementById('terminal-output'); if (out) out.innerHTML = ''; }
+  },
+  whoami:   { patterns: ['whoami','who am i','show identity','my profile'],     action: null },
+  thanks:   { patterns: ['thanks','thank you','thx','ty','great','awesome','cheers','well done'], action: null },
+  bye:      { patterns: ['bye','goodbye','see you','later','cya','take care','good night'],        action: null },
+  stop:     { patterns: ['stop','stop talking','quiet','silence','stop speaking','cancel'],         action: () => { if(window.stopSpeaking) stopSpeaking(); } },
 };
 
-/* ── Global engine function ── */
-function atulAIEngine(input) {
-  return ATUL_AI.process(input);
+/* ── Natural Language Normaliser ── */
+function jarvisNormalise(input) {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\b(please|can you|could you|would you|i want to|i need to|pls|plz|hey|atul|jarvis|ai)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
-window.atulAIEngine = atulAIEngine;
 
-/* Override legacy terminal function */
-window.atulAI = atulAIEngine;
+/* ── Fuzzy scorer ── */
+function jarvisScore(norm, pattern) {
+  if (norm === pattern) return 1;
+  if (norm.includes(pattern)) return 0.92;
+  if (pattern.includes(norm) && norm.length > 3) return 0.80;
+  const pWords = pattern.split(' ');
+  const iWords = norm.split(' ');
+  const overlap = pWords.filter(pw => iWords.some(iw => iw.includes(pw) || pw.includes(iw)));
+  const ratio   = overlap.length / pWords.length;
+  if (ratio > 0.55) return 0.45 + ratio * 0.35;
+  return 0;
+}
+
+/* ── parseIntent: main NLU function ── */
+function parseIntent(rawInput) {
+  const norm = jarvisNormalise(rawInput);
+  let bestScore = 0;
+  let bestKey   = null;
+  for (const [key, def] of Object.entries(JARVIS_INTENTS)) {
+    for (const pat of def.patterns) {
+      const s = jarvisScore(norm, pat);
+      if (s > bestScore) { bestScore = s; bestKey = key; }
+    }
+  }
+  if (bestKey && bestScore >= 0.44) {
+    return { intent: bestKey, confidence: bestScore, raw: rawInput };
+  }
+  return { intent: 'fallback', confidence: 0, raw: rawInput };
+}
+
+/* ── Personality response pools ── */
+const JARVIS_RESPONSES = {
+  greeting: [
+    "Welcome back, Atul. All systems nominal. 🤖",
+    "Hello! AtulAI online. Ready to execute commands.",
+    "Hey there, Atul. What would you like me to do?",
+    "Greetings. AtulOS is fully operational."
+  ],
+  identity: [
+    "I'm AtulAI — your personal intelligent assistant built into AtulOS by Atul Singh.",
+    "AtulAI, upgraded with JARVIS-level intelligence. I control windows, IoT, and anything in this OS.",
+    "I'm Atul AI — offline, no APIs, fully self-contained. How can I help?"
+  ],
+  capabilities: [
+    `Available commands:
+
+🖥  Apps  : open/close terminal, projects, about, skills, settings
+💡  IoT   : light on/off, fan on/off, buzzer on/off
+🎨  UI    : dark mode, light mode
+🔊  Voice : voice on/off, voice settings
+⏰  Info  : time, date, status, whoami, joke
+🧹  Util  : clear, help, stop
+
+You can speak naturally — I understand full sentences!
+Say "Hey Atul" to activate voice mode.`
+  ],
+  light_on:     ["Light is ON. 💡", "Done — activating the light, Atul.", "Light turned on."],
+  light_off:    ["Light is OFF. 🌑", "Done — light deactivated.", "Lights out."],
+  fan_on:       ["Fan is running. 🌀", "Fan activated. Staying cool!", "Fan ON."],
+  fan_off:      ["Fan stopped. 🛑", "Fan deactivated.", "Stopping the fan."],
+  buzzer_on:    ["Buzzer activated! 🔊", "Alert — buzzer is on.", "Buzzer running."],
+  buzzer_off:   ["Buzzer silenced. 🔇", "Silence restored.", "Buzzer OFF."],
+  dark_mode:    ["Dark mode engaged. 🌑", "Switching to dark theme."],
+  light_mode:   ["Light mode active. ☀️", "Switching to light theme."],
+  voice_on:     ["Voice enabled. I'll speak my responses. 🔊", "Voice output ON."],
+  voice_off:    ["Voice muted. Silent mode active. 🔇", "Voice output OFF."],
+  voice_settings: ["Opening voice settings. 🎚️"],
+  system_status:  ["All systems operational. ✅", "AtulOS running normally — no issues detected.", "System check complete — all clear. 🚀"],
+  time:           [],   // dynamic
+  date:           [],   // dynamic
+  joke: [
+    "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
+    "A SQL query walks into a bar and asks two tables: 'Can I join you?' 😄",
+    "Why did the developer go broke? Used up all his cache. 💸",
+    "How many programmers to change a bulb? None — that's a hardware problem. 💡",
+    "Why do Java devs wear glasses? They don't C#. 🤓"
+  ],
+  open_terminal:  ["Opening terminal, Atul. 💻", "Terminal launched."],
+  open_projects:  ["Opening projects. 📁", "Here are all your projects."],
+  open_about:     ["Opening the about window. ℹ️", "Here's Atul's profile."],
+  open_skills:    ["Skills window open. 🧠", "Here are all your skills."],
+  open_settings:  ["Settings window open. ⚙️", "Configure AtulOS here."],
+  open_ai:        ["I'm already here, Atul! 😄", "AtulAI chat is open."],
+  close_terminal: ["Terminal closed. ✓", "Closing terminal."],
+  close_projects: ["Projects closed. ✓"],
+  close_about:    ["About window closed. ✓"],
+  close_skills:   ["Skills closed. ✓"],
+  close_settings: ["Settings closed. ✓"],
+  clear:          ["Terminal cleared. 🧹", "Screen cleared."],
+  whoami:         ["You are Atul Singh — embedded systems enthusiast, builder of AtulOS. 🛠️"],
+  thanks:         ["You're welcome, Atul. 😊", "Happy to help!", "Anytime!"],
+  bye:            ["Goodbye, Atul. AtulOS will be here when you return. 👋", "Later! 🤖"],
+  stop:           ["Stopping. 🔇", "Got it — going quiet."],
+  fallback: [
+    "I didn't quite catch that. Try 'help' to see all commands.",
+    "Hmm, not sure about that one. Can you rephrase?",
+    "Command not recognised. Say 'help' for the full list.",
+    "I'm still learning that. Try a different phrasing."
+  ]
+};
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+/* ── Main JARVIS/AtulAI process function ── */
+function jarvisProcess(rawInput) {
+  if (!rawInput || !rawInput.trim()) return null;
+
+  // Check for wake word (also handled by continuous listener)
+  const lower = rawInput.toLowerCase().trim();
+  if (lower.startsWith('hey atul')) {
+    const rest = lower.replace(/^hey\s+atul\s*/,'').trim();
+    if (!rest) {
+      return "AtulAI listening. What can I do for you, Atul? 👂";
+    }
+    return jarvisProcess(rest); // route the rest of the command
+  }
+
+  const { intent } = parseIntent(rawInput);
+
+  // Execute side-effect
+  const def = JARVIS_INTENTS[intent];
+  if (def && def.action) {
+    try { def.action(); } catch(e) { console.warn('AtulAI action error:', e); }
+  }
+
+  // Dynamic responses
+  if (intent === 'time') {
+    return `Current time: ${new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' })} 🕐`;
+  }
+  if (intent === 'date') {
+    return `Today is ${new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' })} 📅`;
+  }
+
+  const pool = JARVIS_RESPONSES[intent];
+  if (pool && pool.length) return pick(pool);
+  return pick(JARVIS_RESPONSES.fallback);
+}
+
+window.jarvisProcess = jarvisProcess;
+window.parseIntent   = parseIntent;
+window.atulAIEngine  = (input) => jarvisProcess(input);
+</script>
 
 
-/* ================================================================
-   SECTION 2: CHAT UI INTEGRATION
-================================================================ */
+<!-- ══════════════════════════════════════════
+     SECTION 6 — WAKE WORD SYSTEM
+     Continuous background listener.
+     Activates on "Hey Atul" phrase.
+══════════════════════════════════════════ -->
+<script>
+(function setupWakeWord() {
+  'use strict';
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
 
+  let wakeWordEnabled = false;
+  let wakeRecognition = null;
+  let wakeActive = false;
+  const wakeBadge = document.getElementById('wake-word-badge');
+
+  function showWakeBadge() {
+    if (wakeBadge) wakeBadge.style.display = 'flex';
+  }
+  function hideWakeBadge() {
+    if (wakeBadge) wakeBadge.style.display = 'none';
+    setTimeout(() => { if (wakeBadge) wakeBadge.style.display = 'none'; }, 3000);
+  }
+
+  function startWakeListener() {
+    if (!wakeWordEnabled || wakeActive) return;
+    try {
+      wakeRecognition = new SR();
+      wakeRecognition.lang            = 'en-US';
+      wakeRecognition.continuous      = false;
+      wakeRecognition.interimResults  = false;
+      wakeRecognition.maxAlternatives = 3;
+
+      wakeRecognition.addEventListener('result', e => {
+        for (let r of e.results) {
+          for (let a of r) {
+            const t = a.transcript.toLowerCase().trim();
+            if (t.includes('hey atul') || t.includes('hey atul')) {
+              showWakeBadge();
+              // Feed into AI chat
+              const resp = jarvisProcess('hey atul');
+              if (resp) {
+                aiAppendMessage('ai', resp, true);
+                jarvisSpeak(resp);
+              }
+              setTimeout(hideWakeBadge, 3000);
+              return;
+            }
+          }
+        }
+      });
+
+      wakeRecognition.addEventListener('end', () => {
+        wakeActive = false;
+        if (wakeWordEnabled) {
+          setTimeout(startWakeListener, 500); // restart loop
+        }
+      });
+
+      wakeRecognition.addEventListener('error', () => {
+        wakeActive = false;
+        if (wakeWordEnabled) setTimeout(startWakeListener, 2000);
+      });
+
+      wakeActive = true;
+      wakeRecognition.start();
+    } catch(e) {
+      wakeActive = false;
+      console.warn('Wake word listener error:', e);
+    }
+  }
+
+  function enableWakeWord() {
+    wakeWordEnabled = true;
+    showWakeBadge();
+    startWakeListener();
+    const resp = "Wake word enabled. Say 'Hey Atul' to activate me anytime, Atul. 🎙️";
+    aiAppendMessage && aiAppendMessage('ai', resp, true);
+    jarvisSpeak && jarvisSpeak(resp);
+  }
+
+  function disableWakeWord() {
+    wakeWordEnabled = false;
+    if (wakeRecognition) { try { wakeRecognition.stop(); } catch(e){} }
+    wakeActive = false;
+    hideWakeBadge();
+    const resp = "Wake word disabled. 🔕";
+    aiAppendMessage && aiAppendMessage('ai', resp, true);
+  }
+
+  window.enableWakeWord  = enableWakeWord;
+  window.disableWakeWord = disableWakeWord;
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 7 — VOICE INPUT HANDLER
+     ✅ TASK 1 FIX: Single persistent
+     SpeechRecognition instance — permission
+     requested ONCE per session.
+     ✅ TASK 5: Improved mic status badge UI.
+══════════════════════════════════════════ -->
+<script>
+(function setupVoice() {
+  'use strict';
+
+  const SR     = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = document.getElementById('mic-btn');
+
+  /* ── Mic status badge helpers (Task 5) ── */
+  const micBadge    = document.getElementById('mic-status-badge');
+  const micBadgeTxt = document.getElementById('mic-status-text');
+
+  function showMicBadge(msg, isInterim) {
+    if (!micBadge) return;
+    micBadge.className = isInterim ? 'interim' : '';
+    micBadgeTxt.textContent = msg || 'Listening…';
+    micBadge.style.display = 'flex';
+  }
+  function hideMicBadge() {
+    if (micBadge) micBadge.style.display = 'none';
+  }
+
+  /* ── Disable mic button if SR unsupported ── */
+  if (!SR) {
+    if (micBtn) {
+      micBtn.title   = 'Voice input not supported in this browser';
+      micBtn.style.opacity = '0.35';
+      micBtn.style.cursor  = 'not-allowed';
+      micBtn.disabled = true;
+    }
+    console.warn('SpeechRecognition not supported. Use Chrome or Edge.');
+    return;
+  }
+
+  /* ══════════════════════════════════════════
+     TASK 1: SINGLE PERSISTENT INSTANCE
+     Created ONCE here — never recreated.
+     Permission is therefore requested only
+     the first time .start() is called.
+  ══════════════════════════════════════════ */
+  let recognition = null;   // the one instance
+  let isListening = false;  // track mic state
+
+  function initRecognition() {
+    if (recognition) return; // guard — never recreate
+
+    recognition = new SR();
+    recognition.lang            = 'en-US';
+    recognition.continuous      = false;  // single result then auto-stops
+    recognition.interimResults  = true;   // show live text while speaking
+    recognition.maxAlternatives = 1;
+
+    /* ── onstart: mic is now capturing ── */
+    recognition.addEventListener('start', () => {
+      isListening = true;
+      if (micBtn) {
+        micBtn.textContent = '⏹';
+        micBtn.title       = 'Listening… click to stop';
+        micBtn.classList.add('listening');
+      }
+      showMicBadge('🎤 Listening…', false);
+    });
+
+    /* ── onresult: interim text AND final result ── */
+    recognition.addEventListener('result', e => {
+      const transcript = Array.from(e.results)
+        .map(r => r[0].transcript)
+        .join('');
+
+      if (!e.results[e.results.length - 1].isFinal) {
+        // Interim — show live preview in badge
+        showMicBadge(`Hearing: "${transcript}"`, true);
+        return;
+      }
+
+      // Final result
+      const final = transcript.trim();
+      showMicBadge(`✓ Heard: "${final}"`, false);
+
+      // Feed into AI chat input and trigger send
+      const aiInput = document.getElementById('ai-input');
+      if (aiInput) {
+        aiInput.value = final;
+        aiSendMessage();
+      }
+
+      // Also echo in terminal if terminal window is visible and authenticated
+      if (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) {
+        const termWin = document.getElementById('terminal');
+        if (termWin && termWin.style.display !== 'none') {
+          const termOut = document.getElementById('terminal-output');
+          if (termOut) {
+            const echo = document.createElement('p');
+            echo.className   = 'cmd-echo';
+            echo.textContent = `atul@AtulOS:~$ [voice] ${final}`;
+            termOut.appendChild(echo);
+            const resp = jarvisProcess(final);
+            if (resp) {
+              termPrintLine('AI', resp, 'jarvis-line', true);
+            }
+          }
+        }
+      }
+
+      // Auto-hide badge after 2.5s
+      setTimeout(hideMicBadge, 2500);
+    });
+
+    /* ── onend: mic stopped (result received or user stopped) ── */
+    recognition.addEventListener('end', () => {
+      isListening = false;
+      if (micBtn) {
+        micBtn.textContent = '🎤';
+        micBtn.title       = 'Voice input (click to start)';
+        micBtn.classList.remove('listening');
+      }
+      // Badge stays until setTimeout above clears it
+      setTimeout(hideMicBadge, 2000);
+    });
+
+    /* ── onerror: handle errors cleanly ── */
+    recognition.addEventListener('error', e => {
+      isListening = false;
+      if (micBtn) {
+        micBtn.textContent = '🎤';
+        micBtn.classList.remove('listening');
+      }
+      hideMicBadge();
+
+      // 'no-speech' is normal (user didn't speak) — silent
+      if (e.error === 'no-speech') return;
+      // 'aborted' happens when we call .stop() — silent
+      if (e.error === 'aborted') return;
+
+      // Show other errors in AI chat
+      if (typeof aiAppendMessage === 'function') {
+        const msgs = {
+          'not-allowed'  : "Microphone access denied. Please allow mic access in browser settings. 🎤",
+          'audio-capture': "No microphone found. Please connect a mic and try again. 🎤",
+          'network'      : "Network error during voice recognition. Check your connection. 🌐",
+        };
+        const msg = msgs[e.error] || `Voice error: "${e.error}". Please try again. 🎤`;
+        aiAppendMessage('ai', msg, false);
+      }
+    });
+  }
+
+  /* ══════════════════════════════════════════
+     TASK 1: MIC BUTTON — toggle on single click
+     Start if not listening, stop if listening.
+     Instance is reused — permission asked once.
+  ══════════════════════════════════════════ */
+  if (micBtn) {
+    micBtn.addEventListener('click', () => {
+      // Lazily init recognition on first click (not on page load)
+      // This is important: the browser prompts for permission on .start(),
+      // not on new SR(). By creating the instance lazily, we avoid any
+      // edge cases in browsers that prompt on construction.
+      initRecognition();
+
+      if (isListening) {
+        // User wants to cancel — stop the current session
+        try { recognition.stop(); } catch(e) {}
+      } else {
+        // Start a new listening session on the SAME instance
+        try { recognition.start(); } catch(err) {
+          // 'InvalidStateError' can happen if .end hasn't fired yet —
+          // give it a tick and retry once
+          setTimeout(() => {
+            try { recognition.start(); } catch(e2) {
+              console.warn('Could not start recognition:', e2.message);
+            }
+          }, 120);
+        }
+      }
+    });
+  }
+
+  /* Also expose for potential external use */
+  window._micRecognition = () => recognition;
+
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 8 — ATUL AI CHAT UI
+══════════════════════════════════════════ -->
+<script>
 const aiCmdHistory = [];
-let aiHistIdx = -1;
+let   aiHistIdx    = -1;
 
 function aiTimestamp() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
 }
 
 function aiAppendMessage(role, text, animate) {
   const chat = document.getElementById('ai-chat');
   if (!chat) return;
-
-  const wrap = document.createElement('div');
+  const wrap   = document.createElement('div');
   wrap.className = `ai-bubble-wrap ${role}`;
-
   const bubble = document.createElement('div');
   bubble.className = `ai-bubble ${role}`;
-
   const ts = document.createElement('span');
-  ts.className = 'ai-ts';
+  ts.className  = 'ai-ts';
   ts.textContent = aiTimestamp();
-
   wrap.appendChild(bubble);
   wrap.appendChild(ts);
   chat.appendChild(wrap);
@@ -1728,9 +2431,8 @@ function aiAppendMessage(role, text, animate) {
     bubble.textContent = '';
     let i = 0;
     const speed = Math.max(10, Math.min(28, 1200 / Math.max(text.length, 1)));
-    const tick = setInterval(() => {
-      bubble.textContent += text[i];
-      i++;
+    const tick  = setInterval(() => {
+      bubble.textContent += text[i]; i++;
       chat.scrollTop = chat.scrollHeight;
       if (i >= text.length) clearInterval(tick);
     }, speed);
@@ -1749,7 +2451,6 @@ function aiShowTyping() {
   chat.appendChild(el);
   chat.scrollTop = chat.scrollHeight;
 }
-
 function aiHideTyping() {
   const el = document.getElementById('ai-typing-indicator');
   if (el) el.remove();
@@ -1760,119 +2461,44 @@ function aiSendMessage() {
   if (!inputEl) return;
   const text = inputEl.value.trim();
   if (!text) return;
-
   aiCmdHistory.push(text);
   aiHistIdx = aiCmdHistory.length;
-
   aiAppendMessage('user', text, false);
   inputEl.value = '';
-
   aiShowTyping();
-  const delay = 350 + Math.random() * 400;
+  const delay = 300 + Math.random() * 350;
   setTimeout(() => {
     aiHideTyping();
-    const resp = atulAIEngine(text) || "I have no response for that. 🤔";
+    const resp = jarvisProcess(text) || "I didn't get that. Try 'help'. 🤔";
     aiAppendMessage('ai', resp, true);
+    if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
   }, delay);
 }
+window.aiSendMessage    = aiSendMessage;
+window.aiAppendMessage  = aiAppendMessage;
 
-window.aiSendMessage = aiSendMessage;
-
-/* Input keyboard handling */
 document.addEventListener('DOMContentLoaded', () => {
-  /* Boot greeting */
+  // Welcome message after boot
   setTimeout(() => {
-    aiAppendMessage('ai', "Hello! I'm Atul AI 👋\nI can control OS windows, IoT devices, and answer questions.\nType 'help' to see all commands, or tap 🎤 to speak!", false);
-  }, 3500); /* after boot screen */
+    aiAppendMessage('ai',
+      "Hello, Atul! I'm AtulAI — your personal AI assistant. 👋\n\nI can control OS windows, IoT devices, and answer questions.\n\nType 'help' for all commands, or tap 🎤 to speak.\nSay 'Hey Atul' to activate wake word mode!", false);
+  }, 3600);
 
   const input = document.getElementById('ai-input');
   if (!input) return;
-
   input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      aiSendMessage();
-    } else if (e.key === 'ArrowUp') {
-      if (aiCmdHistory.length && aiHistIdx > 0) {
-        aiHistIdx--;
-        input.value = aiCmdHistory[aiHistIdx];
-      }
+    if (e.key === 'Enter') { aiSendMessage(); }
+    else if (e.key === 'ArrowUp') {
+      if (aiCmdHistory.length && aiHistIdx > 0) { aiHistIdx--; input.value = aiCmdHistory[aiHistIdx]; }
       e.preventDefault();
     } else if (e.key === 'ArrowDown') {
-      if (aiHistIdx < aiCmdHistory.length - 1) {
-        aiHistIdx++;
-        input.value = aiCmdHistory[aiHistIdx];
-      } else {
-        aiHistIdx = aiCmdHistory.length;
-        input.value = '';
-      }
+      if (aiHistIdx < aiCmdHistory.length - 1) { aiHistIdx++; input.value = aiCmdHistory[aiHistIdx]; }
+      else { aiHistIdx = aiCmdHistory.length; input.value = ''; }
       e.preventDefault();
     }
   });
 });
-
-
-/* ================================================================
-   SECTION 3: VOICE CONTROL (Web Speech API)
-================================================================ */
-
-(function setupVoice() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const micBtn = document.getElementById('mic-btn');
-  if (!micBtn) return;
-
-  if (!SR) {
-    micBtn.title = 'Voice not supported in this browser';
-    micBtn.style.opacity = '0.35';
-    micBtn.style.cursor = 'not-allowed';
-    micBtn.disabled = true;
-    return;
-  }
-
-  const recognition = new SR();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-  let listening = false;
-
-  micBtn.addEventListener('click', () => {
-    if (listening) { recognition.stop(); return; }
-    try { recognition.start(); }
-    catch(e) { console.warn('Speech start error:', e); }
-  });
-
-  recognition.addEventListener('start', () => {
-    listening = true;
-    micBtn.textContent = '⏹';
-    micBtn.title = 'Listening… click to stop';
-    micBtn.classList.add('listening');
-  });
-
-  recognition.addEventListener('result', e => {
-    const transcript = e.results[0][0].transcript;
-    const input = document.getElementById('ai-input');
-    if (input) {
-      input.value = transcript;
-      aiSendMessage();
-    }
-  });
-
-  recognition.addEventListener('end', () => {
-    listening = false;
-    micBtn.textContent = '🎤';
-    micBtn.title = 'Voice input';
-    micBtn.classList.remove('listening');
-  });
-
-  recognition.addEventListener('error', e => {
-    listening = false;
-    micBtn.textContent = '🎤';
-    micBtn.classList.remove('listening');
-    if (e.error !== 'no-speech') {
-      aiAppendMessage('ai', `Voice error: "${e.error}". Please try again. 🎤`, false);
-    }
-  });
-})();
-
 </script>
+
 </body>
 </html>
