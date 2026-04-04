@@ -1056,9 +1056,9 @@ body {
 </main>
 
 
-<!-- ══════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════════════════
      WINDOWS
-════════════════════════════════════════════════════ -->
+════════════════════════════════════════════════════════════════ -->
 
 <!-- ── PROJECTS ── -->
 <div class="app-window" id="projects" role="dialog" aria-labelledby="projects-title" tabindex="0" data-window-id="projects">
@@ -1094,9 +1094,9 @@ body {
 </div>
 
 
-<!-- ══════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════════════════
      ABOUT — JARVIS HOLOGRAPHIC PROFILE PANEL
-════════════════════════════════════════════════════ -->
+════════════════════════════════════════════════════════════════ -->
 <div class="app-window" id="about" role="dialog" aria-labelledby="about-title" tabindex="0" data-window-id="about">
   <div class="window-header" data-drag-handle>
     <div class="title-left"><i class="fa-solid fa-circle-info"></i><span id="about-title">About</span></div>
@@ -1424,25 +1424,128 @@ const firebaseConfig = {
   messagingSenderId: "910811873112",
   appId:             "1:910811873112:web:a9398353af0ab257c66f2d"
 };
+
 try {
   firebase.initializeApp(firebaseConfig);
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     FIREBASE MIGRATION — OLD flat strings → NEW object schema
+     Runs once on load. Safe to run on already-migrated data.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  /**
+   * Returns the GPIO pin for a known device name.
+   * Falls back to pin 21 for any unrecognised device.
+   * @param {string} deviceName
+   * @returns {number}
+   */
+  function getDefaultPin(deviceName) {
+    const PIN_MAP = { light: 5, fan: 18, buzzer: 19 };
+    return PIN_MAP[String(deviceName).toLowerCase()] ?? 21;
+  }
+
+  /**
+   * Detects the current /devices structure in Firebase.
+   * If OLD (flat string values) → converts and saves the NEW structure.
+   * If NEW (object values with 'state') → does nothing.
+   * If empty or corrupted → logs and exits safely.
+   */
+  async function migrateFirebaseStructure() {
+    try {
+      const snap = await firebase.database().ref('devices').once('value');
+      const data = snap.val();
+
+      // Empty database — nothing to migrate
+      if (data === null || data === undefined) {
+        console.log('[AtulOS Migration] /devices is empty — skipping.');
+        return;
+      }
+
+      const firstValue = Object.values(data)[0];
+
+      // NEW structure already in place — first child is an object with a 'state' key
+      if (firstValue !== null && typeof firstValue === 'object' && 'state' in firstValue) {
+        console.log('[AtulOS Migration] Structure already up-to-date — no action needed.');
+        return;
+      }
+
+      // Unexpected / corrupted structure — bail out safely
+      if (typeof firstValue !== 'string') {
+        console.warn('[AtulOS Migration] Unrecognised structure — skipping to avoid data loss.', data);
+        return;
+      }
+
+      // OLD structure confirmed — build the new one
+      console.log('[AtulOS Migration] Old flat structure detected — migrating…', data);
+
+      const newDevices = {};
+      let idx = 1;
+
+      for (const [name, rawState] of Object.entries(data)) {
+        if (typeof rawState !== 'string') continue; // skip any corrupted entries
+        const state = rawState.trim().toLowerCase() === 'on' ? 1 : 0;
+        const pin   = getDefaultPin(name);
+        newDevices[`device${idx}`] = { name, pin, state };
+        idx++;
+      }
+
+      if (Object.keys(newDevices).length === 0) {
+        console.warn('[AtulOS Migration] No valid entries found — skipping write.');
+        return;
+      }
+
+      // Atomic write — replaces old /devices with new schema
+      await firebase.database().ref('devices').set(newDevices);
+      console.log('[AtulOS Migration] ✅ Migration complete. New structure:', newDevices);
+
+    } catch (err) {
+      console.error('[AtulOS Migration] ❌ Migration failed:', err.message);
+    }
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     STATUS DISPLAY — reads NEW object structure
+     Also handles a brief transition window where old strings
+     might still be in the snapshot during live migration.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   function updateStatus(data) {
-    const light  = (data.light  || 'off').toUpperCase();
-    const fan    = (data.fan    || 'off').toUpperCase();
-    const buzzer = (data.buzzer || 'off').toUpperCase();
+    // Start with defaults
+    const states = { light: 'OFF', fan: 'OFF', buzzer: 'OFF' };
+
+    for (const entry of Object.values(data)) {
+      // NEW structure: { name, pin, state }
+      if (entry && typeof entry === 'object' && 'name' in entry) {
+        const n = String(entry.name).toLowerCase();
+        if (n in states) {
+          states[n] = (entry.state === 1 || entry.state === 'on') ? 'ON' : 'OFF';
+        }
+      }
+      // OLD string values are ignored here — migration handles conversion
+    }
+
     document.getElementById('statusText').textContent =
 `━━━━━━━━━━━━━━━━━━━━━━
  DEVICES STATUS
 ━━━━━━━━━━━━━━━━━━━━━━
-💡 Light   : ${light}
-🌀 Fan     : ${fan}
-🔊 Buzzer  : ${buzzer}
+💡 Light   : ${states.light}
+🌀 Fan     : ${states.fan}
+🔊 Buzzer  : ${states.buzzer}
 ━━━━━━━━━━━━━━━━━━━━━━`;
   }
-  firebase.database().ref('devices').on('value', snap => {
-    const data = snap.val();
-    if (data) updateStatus(data);
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     BOOT SEQUENCE:
+     1. Run migration (async, awaited)
+     2. Then attach the live listener
+     This guarantees the listener always sees the new schema.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  migrateFirebaseStructure().then(() => {
+    firebase.database().ref('devices').on('value', snap => {
+      const data = snap.val();
+      if (data) updateStatus(data);
+    });
   });
+
 } catch (e) {
   console.warn('Firebase init skipped (demo mode):', e.message);
 }
@@ -2042,12 +2145,12 @@ const JARVIS_INTENTS = {
   close_skills:   { patterns: ['close skills','exit skills','hide skills'],                               action: () => closeWindow('skills')   },
   close_settings: { patterns: ['close settings','exit settings','hide settings','close preferences'],     action: () => closeWindow('settings') },
 
-  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], action: () => { try { firebase.database().ref('devices/light').set('on');  } catch(e){} } },
-  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           action: () => { try { firebase.database().ref('devices/light').set('off'); } catch(e){} } },
-  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    action: () => { try { firebase.database().ref('devices/fan').set('on');    } catch(e){} } },
-  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         action: () => { try { firebase.database().ref('devices/fan').set('off');   } catch(e){} } },
-  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   action: () => { try { firebase.database().ref('devices/buzzer').set('on');  } catch(e){} } },
-  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             action: () => { try { firebase.database().ref('devices/buzzer').set('off'); } catch(e){} } },
+  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
 
   dark_mode:  { patterns: ['dark mode','dark theme','switch to dark','go dark','enable dark','nighttime'], action: () => setTheme('dark')  },
   light_mode: { patterns: ['light mode','light theme','switch to light','go light','enable light mode','daytime'], action: () => setTheme('light') },
