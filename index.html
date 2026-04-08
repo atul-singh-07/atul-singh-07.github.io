@@ -1428,101 +1428,45 @@ const firebaseConfig = {
 try {
   firebase.initializeApp(firebaseConfig);
 
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     FIREBASE MIGRATION — OLD flat strings → NEW object schema
-     Runs once on load. Safe to run on already-migrated data.
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-  /**
-   * Returns the GPIO pin for a known device name.
-   * Falls back to pin 21 for any unrecognised device.
-   * @param {string} deviceName
-   * @returns {number}
-   */
   function getDefaultPin(deviceName) {
     const PIN_MAP = { light: 5, fan: 18, buzzer: 19 };
     return PIN_MAP[String(deviceName).toLowerCase()] ?? 21;
   }
 
-  /**
-   * Detects the current /devices structure in Firebase.
-   * If OLD (flat string values) → converts and saves the NEW structure.
-   * If NEW (object values with 'state') → does nothing.
-   * If empty or corrupted → logs and exits safely.
-   */
   async function migrateFirebaseStructure() {
     try {
       const snap = await firebase.database().ref('devices').once('value');
       const data = snap.val();
-
-      // Empty database — nothing to migrate
-      if (data === null || data === undefined) {
-        console.log('[AtulOS Migration] /devices is empty — skipping.');
-        return;
-      }
-
+      if (data === null || data === undefined) { console.log('[AtulOS Migration] /devices is empty — skipping.'); return; }
       const firstValue = Object.values(data)[0];
-
-      // NEW structure already in place — first child is an object with a 'state' key
-      if (firstValue !== null && typeof firstValue === 'object' && 'state' in firstValue) {
-        console.log('[AtulOS Migration] Structure already up-to-date — no action needed.');
-        return;
-      }
-
-      // Unexpected / corrupted structure — bail out safely
-      if (typeof firstValue !== 'string') {
-        console.warn('[AtulOS Migration] Unrecognised structure — skipping to avoid data loss.', data);
-        return;
-      }
-
-      // OLD structure confirmed — build the new one
+      if (firstValue !== null && typeof firstValue === 'object' && 'state' in firstValue) { console.log('[AtulOS Migration] Structure already up-to-date — no action needed.'); return; }
+      if (typeof firstValue !== 'string') { console.warn('[AtulOS Migration] Unrecognised structure — skipping to avoid data loss.', data); return; }
       console.log('[AtulOS Migration] Old flat structure detected — migrating…', data);
-
       const newDevices = {};
       let idx = 1;
-
       for (const [name, rawState] of Object.entries(data)) {
-        if (typeof rawState !== 'string') continue; // skip any corrupted entries
+        if (typeof rawState !== 'string') continue;
         const state = rawState.trim().toLowerCase() === 'on' ? 1 : 0;
         const pin   = getDefaultPin(name);
         newDevices[`device${idx}`] = { name, pin, state };
         idx++;
       }
-
-      if (Object.keys(newDevices).length === 0) {
-        console.warn('[AtulOS Migration] No valid entries found — skipping write.');
-        return;
-      }
-
-      // Atomic write — replaces old /devices with new schema
+      if (Object.keys(newDevices).length === 0) { console.warn('[AtulOS Migration] No valid entries found — skipping write.'); return; }
       await firebase.database().ref('devices').set(newDevices);
       console.log('[AtulOS Migration] ✅ Migration complete. New structure:', newDevices);
-
     } catch (err) {
       console.error('[AtulOS Migration] ❌ Migration failed:', err.message);
     }
   }
 
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     STATUS DISPLAY — reads NEW object structure
-     Also handles a brief transition window where old strings
-     might still be in the snapshot during live migration.
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   function updateStatus(data) {
-    // Start with defaults
     const states = { light: 'OFF', fan: 'OFF', buzzer: 'OFF' };
-
     for (const entry of Object.values(data)) {
-      // NEW structure: { name, pin, state }
       if (entry && typeof entry === 'object' && 'name' in entry) {
         const n = String(entry.name).toLowerCase();
-        if (n in states) {
-          states[n] = (entry.state === 1 || entry.state === 'on') ? 'ON' : 'OFF';
-        }
+        if (n in states) { states[n] = (entry.state === 1 || entry.state === 'on') ? 'ON' : 'OFF'; }
       }
-      // OLD string values are ignored here — migration handles conversion
     }
-
     document.getElementById('statusText').textContent =
 `━━━━━━━━━━━━━━━━━━━━━━
  DEVICES STATUS
@@ -1533,12 +1477,6 @@ try {
 ━━━━━━━━━━━━━━━━━━━━━━`;
   }
 
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     BOOT SEQUENCE:
-     1. Run migration (async, awaited)
-     2. Then attach the live listener
-     This guarantees the listener always sees the new schema.
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   migrateFirebaseStructure().then(() => {
     firebase.database().ref('devices').on('value', snap => {
       const data = snap.val();
@@ -1778,7 +1716,6 @@ function updateVoiceToggleUI() {
     btn.className   = 'voice-off';
     btn.title       = 'Click to turn voice ON';
   }
-  // Also update voice metric in About panel if visible
   const voiceVal = document.getElementById('jap-voice-val');
   const voiceBar = document.getElementById('jap-voice-bar');
   if (voiceVal) {
@@ -2095,7 +2032,7 @@ const SpeechEngine = (function () {
       }
       wakeModeEnabled = true;
       enterWakeMode();
-      const resp = 'Wake word enabled. Say "Hey AtulOS" or "Hello AtulOS" to activate me. 🎙️';
+      const resp = 'Wake word enabled. Say "Hey AtulOS" or "Hello AtulOS" to activate me anytime. 🎙️';
       if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', resp, true);
       if (typeof jarvisSpeak     === 'function') jarvisSpeak(resp);
     },
@@ -2145,12 +2082,13 @@ const JARVIS_INTENTS = {
   close_skills:   { patterns: ['close skills','exit skills','hide skills'],                               action: () => closeWindow('skills')   },
   close_settings: { patterns: ['close settings','exit settings','hide settings','close preferences'],     action: () => closeWindow('settings') },
 
-  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
-  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
-  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  // ── IoT DEVICE CONTROL — flagged as requiresAuth: true ──
+  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
 
   dark_mode:  { patterns: ['dark mode','dark theme','switch to dark','go dark','enable dark','nighttime'], action: () => setTheme('dark')  },
   light_mode: { patterns: ['light mode','light theme','switch to light','go light','enable light mode','daytime'], action: () => setTheme('light') },
@@ -2784,8 +2722,88 @@ window.termPrintLine = termPrintLine;
 
 <!-- ══════════════════════════════════════════════════════════════
      MODULE 8 — ATUL AI CHAT UI
+     ⚡ EXTENDED with session-based device control authentication
 ════════════════════════════════════════════════════════════════ -->
 <script>
+// ══════════════════════════════════════════════════════════════
+// DEVICE AUTH STATE — Session-based password gate for IoT commands
+// Only resets on page unload. Normal chat is completely unaffected.
+// ══════════════════════════════════════════════════════════════
+const DeviceAuth = (function () {
+  'use strict';
+
+  const DEVICE_PASSWORD    = 'atul0775';   // password to unlock device control
+  let   isAuthenticated    = false;        // persists for the lifetime of the tab
+  let   waitingForPassword = false;        // true when AI is expecting the next input as a password
+  let   pendingCommand     = null;         // the raw command string to execute after auth succeeds
+
+  // Reset on tab/window close — session-only authentication
+  window.addEventListener('beforeunload', () => {
+    isAuthenticated    = false;
+    waitingForPassword = false;
+    pendingCommand     = null;
+  });
+
+  /**
+   * Check whether the resolved intent requires device auth.
+   * Only IoT control intents have requiresAuth: true in JARVIS_INTENTS.
+   */
+  function intentRequiresAuth(intentKey) {
+    const def = JARVIS_INTENTS[intentKey];
+    return !!(def && def.requiresAuth);
+  }
+
+  /**
+   * Call this before executing any AI command.
+   * Returns an object:
+   *   { proceed: true }               — run the command normally
+   *   { proceed: false, reply: str }  — return `reply` to the user and halt
+   */
+  function gate(rawInput) {
+    // ── STEP 1: If we're waiting for a password, treat this input as the password attempt
+    if (waitingForPassword) {
+      if (rawInput.trim() === DEVICE_PASSWORD) {
+        isAuthenticated    = true;
+        waitingForPassword = false;
+        const cmd          = pendingCommand;
+        pendingCommand     = null;
+        return {
+          proceed:        false,                          // we'll handle execution ourselves
+          isAuthSuccess:  true,
+          resolvedCommand: cmd,
+          reply:          '🔓 Access granted. Executing command...',
+        };
+      } else {
+        // Wrong password — stay in waiting state so user can retry
+        return {
+          proceed: false,
+          reply:   '❌ Incorrect password. Try again:',
+        };
+      }
+    }
+
+    // ── STEP 2: Not waiting for a password — check if this command needs auth
+    const { intent } = parseIntent(rawInput);
+    if (intentRequiresAuth(intent) && !isAuthenticated) {
+      waitingForPassword = true;
+      pendingCommand     = rawInput;
+      return {
+        proceed: false,
+        reply:   '🔐 Enter password to control devices:',
+      };
+    }
+
+    // ── STEP 3: No auth needed (or already authenticated) — proceed normally
+    return { proceed: true };
+  }
+
+  return { gate };
+})();
+
+
+// ══════════════════════════════════════════════════════════════
+// EXISTING CHAT UI HELPERS — unchanged
+// ══════════════════════════════════════════════════════════════
 const aiCmdHistory = [];
 let   aiHistIdx    = -1;
 
@@ -2841,6 +2859,14 @@ function aiHideTyping() {
   if (el) el.remove();
 }
 
+// ══════════════════════════════════════════════════════════════
+// aiSendMessage — EXTENDED with DeviceAuth gate
+// Logic flow:
+//   1. Read input, append user bubble (unchanged)
+//   2. Run DeviceAuth.gate() before processing
+//      a. If gate returns proceed:false with reply → show reply, optionally execute pending command
+//      b. If gate returns proceed:true → run jarvisProcess normally
+// ══════════════════════════════════════════════════════════════
 function aiSendMessage() {
   const inputEl = document.getElementById('ai-input');
   if (!inputEl) return;
@@ -2849,15 +2875,44 @@ function aiSendMessage() {
 
   aiCmdHistory.push(text);
   aiHistIdx = aiCmdHistory.length;
+
+  // Always show the user's message bubble first
   aiAppendMessage('user', text, false);
   inputEl.value = '';
 
   aiShowTyping();
+
   setTimeout(() => {
     aiHideTyping();
+
+    // ── Run the device auth gate ──────────────────────────────
+    const authResult = DeviceAuth.gate(text);
+
+    if (!authResult.proceed) {
+      // Auth gate intercepted this message
+      aiAppendMessage('ai', authResult.reply, true);
+      if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(authResult.reply);
+
+      // If password was correct, also execute the originally pending command
+      if (authResult.isAuthSuccess && authResult.resolvedCommand) {
+        setTimeout(() => {
+          aiShowTyping();
+          setTimeout(() => {
+            aiHideTyping();
+            const resp = jarvisProcess(authResult.resolvedCommand) || "Done! 🤖";
+            aiAppendMessage('ai', resp, true);
+            if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
+          }, 300 + Math.random() * 200);
+        }, 600);
+      }
+      return; // Stop — do not run jarvisProcess on this input
+    }
+
+    // ── Auth cleared — normal command processing ──────────────
     const resp = jarvisProcess(text) || "I didn't get that. Try 'help'. 🤔";
     aiAppendMessage('ai', resp, true);
     if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
+
   }, 300 + Math.random() * 350);
 }
 
@@ -2867,7 +2922,7 @@ window.aiAppendMessage = aiAppendMessage;
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     aiAppendMessage('ai',
-      "Hello, Atul! I'm AtulAI — your personal AI assistant. 👋\n\nI can control OS windows, IoT devices, and answer questions.\n\nType 'help' for all commands, or tap 🎤 to speak.\nSay 'Hey AtulOS' after enabling wake mode in Settings!",
+      "Hello, Atul! I'm AtulAI — your personal AI assistant. 👋\n\nI can control OS windows, IoT devices, and answer questions.\n\nType 'help' for all commands, or tap 🎤 to speak.\nSay 'Hey AtulOS' after enabling wake mode in Settings!\n\n🔐 Device control requires password authentication.",
       false
     );
   }, 3600);
