@@ -2062,8 +2062,14 @@ window.disableWakeWord = () => SpeechEngine.disableWakeMode();
 
 <!-- ══════════════════════════════════════════════════════════════
      MODULE 5 — NLU / INTENT ENGINE
+     ⚡ ENHANCED: friends, device_status, lock_system intents added
 ════════════════════════════════════════════════════════════════ -->
 <script>
+
+// ── FEATURE 3: CONTEXT MEMORY — tracks last device used ──────
+// ADD THIS BEFORE JARVIS_INTENTS
+let lastDevice = null;  // stores 'light', 'fan', or 'buzzer' after each device command
+
 const JARVIS_INTENTS = {
   greeting:     { patterns: ['hello','hi','hey','sup','yo','howdy','hiya','good morning','good evening','good afternoon','greetings','what up','hi there'], action: null },
   identity:     { patterns: ['who are you','what are you','your name','introduce yourself','are you an ai','are you atulai','tell me about yourself'], action: null },
@@ -2083,12 +2089,12 @@ const JARVIS_INTENTS = {
   close_settings: { patterns: ['close settings','exit settings','hide settings','close preferences'],     action: () => closeWindow('settings') },
 
   // ── IoT DEVICE CONTROL — flagged as requiresAuth: true ──
-  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
-  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
-  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             requiresAuth: true, action: () => { try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], requiresAuth: true, action: () => { lastDevice = 'light'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           requiresAuth: true, action: () => { lastDevice = 'light'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    requiresAuth: true, action: () => { lastDevice = 'fan';   try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         requiresAuth: true, action: () => { lastDevice = 'fan';   try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   requiresAuth: true, action: () => { lastDevice = 'buzzer'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
+  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             requiresAuth: true, action: () => { lastDevice = 'buzzer'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
 
   dark_mode:  { patterns: ['dark mode','dark theme','switch to dark','go dark','enable dark','nighttime'], action: () => setTheme('dark')  },
   light_mode: { patterns: ['light mode','light theme','switch to light','go light','enable light mode','daytime'], action: () => setTheme('light') },
@@ -2111,6 +2117,51 @@ const JARVIS_INTENTS = {
   bye:    { patterns: ['bye','goodbye','see you','later','cya','take care','good night'],        action: null },
   stop:   { patterns: ['stop','stop talking','quiet','silence','stop speaking','cancel'],
             action: () => { if (window.stopSpeaking) stopSpeaking(); } },
+
+  // ── FEATURE 1: FRIENDS COMMAND (AUTH REQUIRED) ────────────
+  // ADD THIS INSIDE JARVIS_INTENTS
+  friends: {
+    patterns: [
+      'my friends',
+      'friends list',
+      'who are my friends',
+      'show my friends',
+      'tell my friends',
+      'show friends',
+      'list my friends',
+    ],
+    requiresAuth: true,
+    action: null,
+  },
+
+  // ── FEATURE 2: DEVICE STATUS COMMAND ──────────────────────
+  // ADD THIS INSIDE JARVIS_INTENTS
+  device_status: {
+    patterns: [
+      'device status',
+      'status of devices',
+      'is light on',
+      'fan status',
+      'check devices',
+      'all devices',
+      'show device status',
+      'devices status',
+    ],
+    action: null,  // handled async in jarvisProcess
+  },
+
+  // ── FEATURE 5: LOCK COMMAND (RESET AUTH) ──────────────────
+  // ADD THIS INSIDE JARVIS_INTENTS
+  lock_system: {
+    patterns: [
+      'lock device control',
+      'logout device control',
+      'reset access',
+      'lock devices',
+      'lock access',
+    ],
+    action: null,  // handled in jarvisProcess — resets DeviceAuth
+  },
 };
 
 function jarvisNormalise(input) {
@@ -2152,7 +2203,7 @@ function parseIntent(rawInput) {
 const JARVIS_RESPONSES = {
   greeting:      ["Welcome back, Atul. All systems nominal. 🤖","Hello! AtulAI online. Ready to execute commands.","Hey there, Atul. What would you like me to do?"],
   identity:      ["I'm AtulAI — your personal intelligent assistant built into AtulOS by Atul Singh.","AtulAI v3, powered by a unified speech engine. I control windows, IoT, and everything in this OS."],
-  capabilities:  [`Available commands:\n\n🖥  Apps     : open/close terminal, projects, about, skills, settings\n💡  IoT      : light on/off, fan on/off, buzzer on/off\n🎨  UI       : dark mode, light mode\n🔊  Voice    : voice on/off, voice settings\n🎙️  Wake     : hey atulos / hello atulos\n⏰  Info     : time, date, status, whoami, joke\n🧹  Util     : clear, help, stop\n\nYou can speak naturally — I understand full sentences!`],
+  capabilities:  [`Available commands:\n\n🖥  Apps     : open/close terminal, projects, about, skills, settings\n💡  IoT      : light on/off, fan on/off, buzzer on/off\n🎨  UI       : dark mode, light mode\n🔊  Voice    : voice on/off, voice settings\n🎙️  Wake     : hey atulos / hello atulos\n⏰  Info     : time, date, status, whoami, joke\n👥  Social   : my friends (auth required)\n📡  Devices  : device status, check devices\n🔒  Security : lock device control\n🧹  Util     : clear, help, stop\n\nYou can speak naturally — I understand full sentences!`],
   light_on:      ["Light is ON. 💡","Done — activating the light.","Light turned on."],
   light_off:     ["Light is OFF. 🌑","Done — light deactivated.","Lights out."],
   fan_on:        ["Fan is running. 🌀","Fan activated. Staying cool!","Fan ON."],
@@ -2192,9 +2243,58 @@ const JARVIS_RESPONSES = {
   bye:            ["Goodbye, Atul. AtulOS will be here when you return. 👋"],
   stop:           ["Stopping. 🔇","Got it — going quiet."],
   fallback:       ["I didn't quite catch that. Try 'help' to see all commands.","Hmm, not sure about that one. Can you rephrase?","Command not recognised. Say 'help' for the full list."],
+
+  // ── FEATURE 1: FRIENDS RESPONSE ───────────────────────────
+  // ADD THIS INSIDE JARVIS_RESPONSES
+  friends: [
+    "Your close friends are:\n\n👥 Aayush\n👥 Sameer\n👥 Muskan\n👥 Kushal\n👥 Lucky"
+  ],
+
+  // ── FEATURE 5: LOCK RESPONSE ──────────────────────────────
+  // ADD THIS INSIDE JARVIS_RESPONSES
+  lock_system: [
+    "🔒 Device control locked. Password required again."
+  ],
 };
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ── FEATURE 2: DEVICE STATUS — async Firebase fetch helper ───
+// ADD THIS BEFORE jarvisProcess
+function getDeviceStatusFromFirebase() {
+  return new Promise((resolve) => {
+    try {
+      firebase.database().ref('devices').once('value').then(snap => {
+        const data = snap.val();
+        if (!data) { resolve("⚠️ Unable to fetch device status. Check Firebase connection."); return; }
+        const states = { light: 'OFF', fan: 'OFF', buzzer: 'OFF' };
+        for (const entry of Object.values(data)) {
+          if (entry && typeof entry === 'object' && 'name' in entry) {
+            const n = String(entry.name).toLowerCase();
+            if (n in states) { states[n] = (entry.state === 1 || entry.state === 'on') ? 'ON' : 'OFF'; }
+          }
+        }
+        resolve(`📡 Device Status:\n\n💡 Light : ${states.light}\n🌀 Fan   : ${states.fan}\n🔊 Buzzer: ${states.buzzer}`);
+      }).catch(() => resolve("⚠️ Firebase read error. Check your connection."));
+    } catch (e) {
+      resolve("⚠️ Device status unavailable (demo mode).");
+    }
+  });
+}
+
+// ── FEATURE 3: CONTEXT MEMORY — "turn it off / switch it on" ─
+// ADD THIS BEFORE jarvisProcess
+function resolveContextCommand(raw) {
+  if (!lastDevice) return null;
+  const norm = jarvisNormalise(raw);
+  const isOn  = /\b(turn it on|switch it on|on it|it on|start it)\b/.test(norm);
+  const isOff = /\b(turn it off|switch it off|off it|it off|stop it)\b/.test(norm);
+  if (!isOn && !isOff) return null;
+  const syntheticCmd = isOn
+    ? `turn on ${lastDevice}`
+    : `turn off ${lastDevice}`;
+  return syntheticCmd;
+}
 
 function jarvisProcess(rawInput) {
   if (!rawInput || !rawInput.trim()) return null;
@@ -2203,7 +2303,52 @@ function jarvisProcess(rawInput) {
     input = input.replace(r, '');
   });
   if (!input && rawInput.trim()) return "AtulAI listening. What can I do for you, Atul? 👂";
+
+  // ── FEATURE 4: MULTI-COMMAND SUPPORT ──────────────────────
+  // ADD THIS INSIDE jarvisProcess, BEFORE parseIntent
+  // Split on " and " to handle compound commands like "turn on light and fan"
+  if (/ and /.test(input)) {
+    const parts = input.split(/ and /);
+    if (parts.length >= 2) {
+      const results = parts
+        .map(p => p.trim())
+        .filter(p => p.length > 0)
+        .map(p => jarvisProcess(p));
+      // Combine non-null responses, filter duplicates
+      const combined = [...new Set(results.filter(Boolean))].join('\n');
+      return combined || pick(JARVIS_RESPONSES.fallback);
+    }
+  }
+
+  // ── FEATURE 3: CONTEXT MEMORY — resolve "it" references ──
+  const contextResolved = resolveContextCommand(input);
+  if (contextResolved) {
+    return jarvisProcess(contextResolved);
+  }
+
   const { intent } = parseIntent(input);
+
+  // ── FEATURE 2: DEVICE STATUS — async, injects into chat ──
+  if (intent === 'device_status') {
+    getDeviceStatusFromFirebase().then(statusMsg => {
+      if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', statusMsg, true);
+      if (typeof jarvisSpeak     === 'function') jarvisSpeak(statusMsg);
+    });
+    return "Fetching device status from Firebase… 📡";
+  }
+
+  // ── FEATURE 5: LOCK COMMAND — resets DeviceAuth session ──
+  if (intent === 'lock_system') {
+    if (typeof DeviceAuth !== 'undefined' && DeviceAuth._resetAuth) {
+      DeviceAuth._resetAuth();
+    } else {
+      // Directly reset via the DeviceAuth internal mechanism
+      // We expose a reset function from DeviceAuth (see Module 8)
+      if (typeof window._deviceAuthReset === 'function') window._deviceAuthReset();
+    }
+    return pick(JARVIS_RESPONSES.lock_system);
+  }
+
   const def = JARVIS_INTENTS[intent];
   if (def && def.action) {
     try { def.action(); } catch (e) { console.warn('AtulAI action error:', e); }
@@ -2617,6 +2762,8 @@ const TERM_COMMANDS = [
   'light on','light off','fan on','fan off','buzzer on','buzzer off',
   'dark mode','light mode','joke','date','time',
   'voice on','voice off','wake word on','wake word off','stop',
+  // ── FEATURE additions to autocomplete ──
+  'my friends','device status','check devices','lock device control',
 ];
 
 function termRenderSuggestions(query) {
@@ -2723,6 +2870,7 @@ window.termPrintLine = termPrintLine;
 <!-- ══════════════════════════════════════════════════════════════
      MODULE 8 — ATUL AI CHAT UI
      ⚡ EXTENDED with session-based device control authentication
+     ⚡ EXTENDED with lock_system reset exposure
 ════════════════════════════════════════════════════════════════ -->
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -2743,6 +2891,16 @@ const DeviceAuth = (function () {
     waitingForPassword = false;
     pendingCommand     = null;
   });
+
+  // ── FEATURE 5: Expose reset function for lock_system ──────
+  // ADD THIS INSIDE DeviceAuth IIFE
+  function resetAuth() {
+    isAuthenticated    = false;
+    waitingForPassword = false;
+    pendingCommand     = null;
+  }
+  // Expose on window so jarvisProcess (Module 5) can call it
+  window._deviceAuthReset = resetAuth;
 
   /**
    * Check whether the resolved intent requires device auth.
@@ -2797,7 +2955,7 @@ const DeviceAuth = (function () {
     return { proceed: true };
   }
 
-  return { gate };
+  return { gate, _resetAuth: resetAuth };
 })();
 
 
