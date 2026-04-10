@@ -922,6 +922,42 @@ body {
   0%,100% { transform: translateY(0px); }
   50%      { transform: translateY(-3px); }
 }
+
+/* ===== UPGRADE START: UPGRADE 2 — WINDOW RESIZE HANDLES CSS ===== */
+/* These styles are purely additive and do NOT touch any existing styles */
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+  /* Prevents resize handles from blocking inner content interactions */
+  pointer-events: auto;
+}
+
+.resize-handle.right {
+  right: 0;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.resize-handle.bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.resize-handle.corner {
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+}
+/* ===== UPGRADE END: UPGRADE 2 — WINDOW RESIZE HANDLES CSS ===== */
+
 </style>
 </head>
 <body>
@@ -1916,7 +1952,9 @@ const SpeechEngine = (function () {
 
       if (currentMode === MODE.WAKE) {
         const combined  = (finalText + interimText).toLowerCase().trim();
-        const triggered = WAKE_PHRASES.some(p => combined.includes(p));
+        // ===== UPGRADE START: UPGRADE 1 — Use isWakeWord() for strict matching =====
+        const triggered = isWakeWord(combined);
+        // ===== UPGRADE END: UPGRADE 1 =====
         if (triggered) handleWakeWord(combined);
         return;
       }
@@ -1930,7 +1968,6 @@ const SpeechEngine = (function () {
         const text = finalText.trim();
         showMicBadge(`✓ Heard: "${text}"`, false);
         setTimeout(hideMicBadge, 2500);
-        // ===== AI UPGRADE: Route voice to executeCommand =====
         if (text) executeCommand(text);
         returnFromCommand();
       }
@@ -1977,7 +2014,6 @@ const SpeechEngine = (function () {
     let remainder = transcript;
     WAKE_PHRASES.forEach(p => { remainder = remainder.replace(p, '').trim(); });
     if (remainder.length > 2) {
-      // ===== AI UPGRADE: Route wake word inline command to executeCommand =====
       const result = executeCommand(remainder);
       if (!result) {
         const resp = 'Ready, Atul.';
@@ -1992,14 +2028,12 @@ const SpeechEngine = (function () {
     }
   }
 
-  // ===== AI UPGRADE: submitCommand now delegates to executeCommand =====
   function submitCommand(text) {
     const aiInput = document.getElementById('ai-input');
     if (aiInput) {
       aiInput.value = text;
       if (typeof aiSendMessage === 'function') aiSendMessage();
     }
-    // Also echo into terminal if it's open and authenticated
     if (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) {
       const termWin = document.getElementById('terminal');
       if (termWin && termWin.style.display !== 'none') {
@@ -2068,51 +2102,91 @@ window.disableWakeWord = () => SpeechEngine.disableWakeMode();
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     ===== AI UPGRADE START =====
-     MODULE 4.5 — CONTEXT-AWARE MEMORY SYSTEM
-     Provides global AI_MEMORY for cross-command context tracking.
-     - Stores full command history
-     - Tracks last device & action for pronoun resolution ("turn it off")
-     - Detects device and action from any natural-language input
+     ===== UPGRADE START: UPGRADE 1 — STRICT WAKE WORD DETECTION =====
+     MODULE 4.1 — isWakeWord()
+     Replaces loose .includes() matching with strict exact-phrase
+     matching. Only the three specified phrases trigger wake mode.
+     Does NOT break voice system or command flow — it is a pure
+     drop-in filter used inside SpeechEngine's onresult handler.
 ════════════════════════════════════════════════════════════════ -->
 <script>
-// ── GLOBAL AI MEMORY ─────────────────────────────────────────
 /**
- * AI_MEMORY persists for the duration of the session.
- * Every command run through executeCommand() is recorded here.
+ * isWakeWord(input) — Strict wake word detector.
+ *
+ * Returns true ONLY when the normalised transcript exactly equals
+ * one of the three approved wake phrases, or starts with one of
+ * them followed by a space (so inline commands like
+ * "atul open terminal" are still routed through handleWakeWord).
+ *
+ * Approved wake words:
+ *   "atul"
+ *   "hey atul"
+ *   "atul ai"
+ *
+ * IMPORTANT: Uses strict equality / startsWith — NOT .includes().
+ * This prevents casual words like "hello", "hey", or partial
+ * matches from accidentally triggering wake mode.
+ *
+ * @param  {string} input  — raw transcript, will be normalised internally
+ * @returns {boolean}
  */
+function isWakeWord(input) {
+  if (!input || typeof input !== 'string') return false;
+
+  // Normalise: lowercase, collapse whitespace, strip leading/trailing space
+  const norm = input.toLowerCase().replace(/\s+/g, ' ').trim();
+
+  // The only three accepted wake phrases (strict list — do NOT expand with .includes())
+  const STRICT_WAKE_WORDS = [
+    'atul',
+    'hey atul',
+    'atul ai',
+  ];
+
+  for (const phrase of STRICT_WAKE_WORDS) {
+    // Exact match (user said only the wake word)
+    if (norm === phrase) return true;
+
+    // Wake word followed by a command: "atul open terminal"
+    // We accept "phrase " + anything but NOT a phrase buried mid-sentence
+    if (norm.startsWith(phrase + ' ')) return true;
+  }
+
+  return false;
+}
+
+window.isWakeWord = isWakeWord;
+</script>
+<!-- ===== UPGRADE END: UPGRADE 1 — STRICT WAKE WORD DETECTION ===== -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.5 — CONTEXT-AWARE MEMORY SYSTEM
+════════════════════════════════════════════════════════════════ -->
+<script>
 const AI_MEMORY = {
-  lastCommand: '',         // raw text of last user command
-  lastDevice:  null,       // 'light' | 'fan' | 'buzzer' | 'terminal' | etc.
-  lastAction:  null,       // 'on' | 'off' | 'open' | 'close' | 'toggle'
-  history:     [],         // [ { input, intent, response, timestamp } ]
-  maxHistory:  50,         // cap to avoid unbounded growth
+  lastCommand: '',
+  lastDevice:  null,
+  lastAction:  null,
+  history:     [],
+  maxHistory:  50,
 };
 
-/**
- * Record a command execution into AI_MEMORY.
- * @param {string} input    - the raw user input
- * @param {string} intent   - resolved intent key
- * @param {string} response - the text response sent back
- */
 function aiMemoryRecord(input, intent, response) {
   AI_MEMORY.lastCommand = input;
 
-  // Detect device from intent key (e.g. "light_on" → "light")
   const deviceMatch = intent.match(/^(light|fan|buzzer)_(on|off)$/);
   if (deviceMatch) {
     AI_MEMORY.lastDevice = deviceMatch[1];
     AI_MEMORY.lastAction = deviceMatch[2];
   }
 
-  // Detect window-related action
   const windowMatch = intent.match(/^(open|close)_(.+)$/);
   if (windowMatch) {
-    AI_MEMORY.lastAction = windowMatch[1];         // 'open' or 'close'
-    AI_MEMORY.lastDevice = windowMatch[2];         // e.g. 'terminal'
+    AI_MEMORY.lastAction = windowMatch[1];
+    AI_MEMORY.lastDevice = windowMatch[2];
   }
 
-  // Push to history, trim if needed
   AI_MEMORY.history.push({
     input,
     intent,
@@ -2124,35 +2198,21 @@ function aiMemoryRecord(input, intent, response) {
   }
 }
 
-/**
- * Resolve context pronouns ("it", "that", "this") against AI_MEMORY.
- * Returns a rewritten input string, or null if no context pronoun found.
- *
- * Examples:
- *   "turn it off"   → "turn light off"   (if lastDevice = 'light')
- *   "switch it on"  → "turn fan on"      (if lastDevice = 'fan')
- *   "open it"       → "open terminal"    (if lastDevice = 'terminal')
- */
 function resolveContextPronoun(input) {
   const norm = input.toLowerCase().trim();
 
-  // Patterns that contain a context pronoun referencing a device/app
   const pronounPatterns = [
-    // Device state toggles
     { regex: /\b(turn|switch|put)\s+it\s+on\b/,  replacement: `turn ${AI_MEMORY.lastDevice} on` },
     { regex: /\b(turn|switch|put)\s+it\s+off\b/, replacement: `turn ${AI_MEMORY.lastDevice} off` },
     { regex: /\bit\s+on\b/,                       replacement: `turn ${AI_MEMORY.lastDevice} on` },
     { regex: /\bit\s+off\b/,                      replacement: `turn ${AI_MEMORY.lastDevice} off` },
     { regex: /\bstart\s+it\b/,                    replacement: `turn ${AI_MEMORY.lastDevice} on` },
     { regex: /\bstop\s+it\b/,                     replacement: `turn ${AI_MEMORY.lastDevice} off` },
-    // "toggle it" — flip last action
     { regex: /\btoggle\s+it\b/, replacement: AI_MEMORY.lastAction === 'on'
         ? `turn ${AI_MEMORY.lastDevice} off`
         : `turn ${AI_MEMORY.lastDevice} on` },
-    // Window open/close
     { regex: /\bopen\s+it\b/,  replacement: `open ${AI_MEMORY.lastDevice}` },
     { regex: /\bclose\s+it\b/, replacement: `close ${AI_MEMORY.lastDevice}` },
-    // "same again" / "do it again"
     { regex: /\b(do\s+it\s+again|same\s+again|repeat\s+that)\b/, replacement: AI_MEMORY.lastCommand },
   ];
 
@@ -2164,7 +2224,7 @@ function resolveContextPronoun(input) {
     }
   }
 
-  return null; // no pronoun found — proceed normally
+  return null;
 }
 
 window.AI_MEMORY            = AI_MEMORY;
@@ -2174,47 +2234,25 @@ window.resolveContextPronoun = resolveContextPronoun;
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     ===== AI UPGRADE CONTINUE =====
      MODULE 4.6 — ADVANCED INTENT PARSER (NATURAL LANGUAGE)
-     Replaces strict keyword matching with flexible NLU.
-     Supports 100+ command variations through synonym maps.
 ════════════════════════════════════════════════════════════════ -->
 <script>
-/**
- * INTENT_MAP — maps every intent key to a set of trigger words/phrases.
- * Matching is done with flexible includes() scoring, not exact match.
- *
- * Structure:
- *   intent_key: {
- *     keywords:  string[]   — words to look for in the normalised input
- *     phrases:   string[]   — longer phrase fragments for higher-confidence match
- *     score:     number     — base confidence boost (0..1)
- *   }
- */
 const INTENT_MAP = {
-
-  // ── GREETINGS ──────────────────────────────────────────────
   greeting: {
     keywords: ['hello','hi','hey','howdy','hiya','sup','yo','greetings'],
     phrases:  ['good morning','good evening','good afternoon','what up','hi there'],
     score: 0.85,
   },
-
-  // ── IDENTITY ───────────────────────────────────────────────
   identity: {
     keywords: ['who are you','what are you','your name','introduce yourself','are you an ai'],
     phrases:  ['tell me about yourself','are you atulai'],
     score: 0.90,
   },
-
-  // ── HELP / CAPABILITIES ────────────────────────────────────
   capabilities: {
     keywords: ['help','commands','capabilities','features'],
     phrases:  ['what can you do','list commands','show commands','show help','how do i use'],
     score: 0.85,
   },
-
-  // ── OPEN WINDOWS ───────────────────────────────────────────
   open_terminal: {
     keywords: ['terminal'],
     phrases:  ['open terminal','launch terminal','start terminal','show terminal','give me terminal',
@@ -2251,8 +2289,6 @@ const INTENT_MAP = {
                'chat with ai','open chat'],
     score: 0.85,
   },
-
-  // ── CLOSE WINDOWS ──────────────────────────────────────────
   close_terminal: {
     keywords: [],
     phrases:  ['close terminal','exit terminal','hide terminal','shut terminal','dismiss terminal'],
@@ -2278,8 +2314,6 @@ const INTENT_MAP = {
     phrases:  ['close settings','exit settings','hide settings','close preferences'],
     score: 0.90,
   },
-
-  // ── IoT DEVICE CONTROL ─────────────────────────────────────
   light_on: {
     keywords: ['light'],
     phrases:  ['light on','turn on light','switch on light','lights on','enable light',
@@ -2324,8 +2358,6 @@ const INTENT_MAP = {
     score: 0.90,
     requiresAuth: true,
   },
-
-  // ── THEME / UI ─────────────────────────────────────────────
   dark_mode: {
     keywords: ['dark'],
     phrases:  ['dark mode','dark theme','switch to dark','go dark','enable dark','night mode',
@@ -2338,8 +2370,6 @@ const INTENT_MAP = {
                'daytime','make it light','bright mode'],
     score: 0.88,
   },
-
-  // ── VOICE CONTROL ──────────────────────────────────────────
   voice_on: {
     keywords: [],
     phrases:  ['voice on','enable voice','turn on voice','speak','enable speech','tts on',
@@ -2358,8 +2388,6 @@ const INTENT_MAP = {
                'voice config','configure voice'],
     score: 0.88,
   },
-
-  // ── WAKE WORD ──────────────────────────────────────────────
   wake_enable: {
     keywords: [],
     phrases:  ['wake word on','enable wake word','activate wake mode','hey atulos','hello atulos',
@@ -2371,8 +2399,6 @@ const INTENT_MAP = {
     phrases:  ['wake word off','disable wake word','disable wake mode','stop listening'],
     score: 0.90,
   },
-
-  // ── SYSTEM / INFO ──────────────────────────────────────────
   system_status: {
     keywords: ['status','diagnostics'],
     phrases:  ['system status','system check','all good','how is the system','health check',
@@ -2421,8 +2447,6 @@ const INTENT_MAP = {
     phrases:  ['stop talking','stop speaking','be quiet','shut up','stop voice'],
     score: 0.88,
   },
-
-  // ── FRIENDS (AUTH REQUIRED) ────────────────────────────────
   friends: {
     keywords: ['friends'],
     phrases:  ['my friends','friends list','who are my friends','show my friends',
@@ -2430,16 +2454,12 @@ const INTENT_MAP = {
     requiresAuth: true,
     score: 0.88,
   },
-
-  // ── DEVICE STATUS ──────────────────────────────────────────
   device_status: {
     keywords: [],
     phrases:  ['device status','status of devices','is light on','fan status','check devices',
                'all devices','show device status','devices status','iot status'],
     score: 0.88,
   },
-
-  // ── LOCK SYSTEM ────────────────────────────────────────────
   lock_system: {
     keywords: [],
     phrases:  ['lock device control','logout device control','reset access',
@@ -2448,9 +2468,6 @@ const INTENT_MAP = {
   },
 };
 
-/**
- * Normalise input: lowercase, strip punctuation & filler words.
- */
 function nlNormalise(input) {
   return input
     .toLowerCase()
@@ -2460,17 +2477,6 @@ function nlNormalise(input) {
     .trim();
 }
 
-/**
- * parseIntent(input) — Natural-language intent detection.
- *
- * Scoring strategy:
- *   1. Exact phrase match   → score 1.0
- *   2. Phrase substring     → score 0.92
- *   3. All phrase words in input → score 0.80
- *   4. Keyword present      → score base 0.55
- *
- * Returns: { intent: string, confidence: number, raw: string }
- */
 function parseIntent(rawInput) {
   const norm = nlNormalise(rawInput);
   let bestScore  = 0;
@@ -2478,15 +2484,13 @@ function parseIntent(rawInput) {
 
   for (const [intentKey, def] of Object.entries(INTENT_MAP)) {
     let score = 0;
-    const baseBoost = (def.score || 0.80) - 0.80; // normalised boost
+    const baseBoost = (def.score || 0.80) - 0.80;
 
-    // 1. Exact phrase match
     for (const phrase of (def.phrases || [])) {
       if (norm === phrase)          { score = Math.max(score, 1.00); break; }
       if (norm.includes(phrase))    { score = Math.max(score, 0.92 + baseBoost); }
       if (phrase.includes(norm) && norm.length > 3) { score = Math.max(score, 0.78 + baseBoost); }
 
-      // 2. All words of phrase found in input
       const phraseWords  = phrase.split(' ');
       const inputWords   = norm.split(' ');
       const allPresent   = phraseWords.every(pw =>
@@ -2497,7 +2501,6 @@ function parseIntent(rawInput) {
       }
     }
 
-    // 3. Keyword match (lower confidence)
     for (const kw of (def.keywords || [])) {
       if (kw.length >= 3 && norm.includes(kw)) {
         score = Math.max(score, 0.55 + baseBoost);
@@ -2524,17 +2527,9 @@ window.INTENT_MAP    = INTENT_MAP;
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     ===== AI UPGRADE CONTINUE =====
      MODULE 4.7 — SMART RESPONSE GENERATOR
-     Natural, varied responses keyed by intent.
-     generateResponse(intent, context?) → string
 ════════════════════════════════════════════════════════════════ -->
 <script>
-
-/**
- * RESPONSE_BANK — pools of natural response strings per intent.
- * pick() selects randomly for variety.
- */
 const RESPONSE_BANK = {
   greeting:      [
     "Welcome back, Atul! All systems nominal. 🤖",
@@ -2550,77 +2545,22 @@ const RESPONSE_BANK = {
   capabilities:  [
     `Here's what I can do:\n\n🖥  Apps     : open/close terminal, projects, about, skills, settings\n💡  IoT      : light on/off, fan on/off, buzzer on/off\n🎨  UI       : dark mode, light mode\n🔊  Voice    : voice on/off, voice settings\n🎙️  Wake     : hey atulos / hello atulos\n⏰  Info     : time, date, status, whoami, joke\n👥  Social   : my friends (auth required)\n📡  Devices  : device status, check devices\n🔒  Security : lock device control\n🧹  Util     : clear, help, stop\n\nYou can speak naturally — I understand full sentences!`,
   ],
-  light_on:      [
-    "Light is ON. 💡",
-    "Done — activating the light.",
-    "Light turned on. Brightening up! ☀️",
-    "Sure, light's on.",
-  ],
-  light_off:     [
-    "Light is OFF. 🌑",
-    "Done — light deactivated.",
-    "Lights out. 🌙",
-    "Light switched off.",
-  ],
-  fan_on:        [
-    "Fan is running. 🌀",
-    "Fan activated. Staying cool!",
-    "Fan ON. Breezy! 🌬️",
-    "Starting the fan now.",
-  ],
-  fan_off:       [
-    "Fan stopped. 🛑",
-    "Fan deactivated.",
-    "Stopping the fan.",
-    "Fan is OFF.",
-  ],
-  buzzer_on:     [
-    "Buzzer activated! 🔊",
-    "Alert — buzzer is on.",
-    "Buzzer is ringing. 🔔",
-  ],
-  buzzer_off:    [
-    "Buzzer silenced. 🔇",
-    "Silence restored.",
-    "Buzzer is OFF.",
-  ],
-  dark_mode:     [
-    "Dark mode engaged. 🌑",
-    "Switching to dark theme. Easy on the eyes.",
-    "Going dark. 🌙",
-  ],
-  light_mode:    [
-    "Light mode active. ☀️",
-    "Switching to light theme. Bright and clear.",
-    "Light theme enabled.",
-  ],
-  voice_on:      [
-    "Voice enabled. I'll speak my responses. 🔊",
-    "Voice output is ON. You'll hear me now.",
-  ],
-  voice_off:     [
-    "Voice muted. Silent mode active. 🔇",
-    "Going quiet. Text-only mode.",
-  ],
-  voice_settings:[
-    "Opening voice settings. 🎚️",
-    "Sure, let's configure your voice.",
-  ],
-  wake_enable:   [
-    'Wake word enabled. Say "Hey AtulOS" to activate me anytime. 🎙️',
-    'Always-on listening is active. Just say "Hey AtulOS".',
-  ],
-  wake_disable:  [
-    "Wake word disabled. 🔕",
-    "Always-on listening turned off.",
-  ],
-  system_status: [
-    "All systems operational. ✅",
-    "AtulOS running normally — no issues detected.",
-    "Everything looks good, Atul. Systems nominal.",
-  ],
-  time:  [], // generated dynamically
-  date:  [], // generated dynamically
+  light_on:      ["Light is ON. 💡","Done — activating the light.","Light turned on. Brightening up! ☀️","Sure, light's on."],
+  light_off:     ["Light is OFF. 🌑","Done — light deactivated.","Lights out. 🌙","Light switched off."],
+  fan_on:        ["Fan is running. 🌀","Fan activated. Staying cool!","Fan ON. Breezy! 🌬️","Starting the fan now."],
+  fan_off:       ["Fan stopped. 🛑","Fan deactivated.","Stopping the fan.","Fan is OFF."],
+  buzzer_on:     ["Buzzer activated! 🔊","Alert — buzzer is on.","Buzzer is ringing. 🔔"],
+  buzzer_off:    ["Buzzer silenced. 🔇","Silence restored.","Buzzer is OFF."],
+  dark_mode:     ["Dark mode engaged. 🌑","Switching to dark theme. Easy on the eyes.","Going dark. 🌙"],
+  light_mode:    ["Light mode active. ☀️","Switching to light theme. Bright and clear.","Light theme enabled."],
+  voice_on:      ["Voice enabled. I'll speak my responses. 🔊","Voice output is ON. You'll hear me now."],
+  voice_off:     ["Voice muted. Silent mode active. 🔇","Going quiet. Text-only mode."],
+  voice_settings:["Opening voice settings. 🎚️","Sure, let's configure your voice."],
+  wake_enable:   ['Wake word enabled. Say "Hey AtulOS" to activate me anytime. 🎙️','Always-on listening is active. Just say "Hey AtulOS".'],
+  wake_disable:  ["Wake word disabled. 🔕","Always-on listening turned off."],
+  system_status: ["All systems operational. ✅","AtulOS running normally — no issues detected.","Everything looks good, Atul. Systems nominal."],
+  time:  [],
+  date:  [],
   joke:  [
     "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
     "A SQL query walks into a bar and asks two tables: 'Can I join you?' 😄",
@@ -2629,22 +2569,22 @@ const RESPONSE_BANK = {
     "Why do Java devs wear glasses? They don't C#. 🤓",
     "I tried to write a joke about recursion, but... I tried to write a joke about recursion. 😅",
   ],
-  open_terminal:  ["Opening terminal, Atul. 💻", "Terminal is up.", "Launching terminal..."],
-  open_projects:  ["Opening projects. 📁", "Here are your projects.", "Launching projects..."],
-  open_about:     ["Opening the about window. ℹ️", "Displaying profile info.", "About window — here you go."],
-  open_skills:    ["Skills window is open. 🧠", "Displaying your skills.", "Launching skills..."],
-  open_settings:  ["Settings window open. ⚙️", "Opening system settings.", "Here are the settings."],
-  open_ai:        ["I'm already here, Atul! 😄", "The AI window is right here.", "You're already talking to me!"],
-  close_terminal: ["Terminal closed. ✓", "Terminal window dismissed."],
-  close_projects: ["Projects closed. ✓", "Projects window dismissed."],
+  open_terminal:  ["Opening terminal, Atul. 💻","Terminal is up.","Launching terminal..."],
+  open_projects:  ["Opening projects. 📁","Here are your projects.","Launching projects..."],
+  open_about:     ["Opening the about window. ℹ️","Displaying profile info.","About window — here you go."],
+  open_skills:    ["Skills window is open. 🧠","Displaying your skills.","Launching skills..."],
+  open_settings:  ["Settings window open. ⚙️","Opening system settings.","Here are the settings."],
+  open_ai:        ["I'm already here, Atul! 😄","The AI window is right here.","You're already talking to me!"],
+  close_terminal: ["Terminal closed. ✓","Terminal window dismissed."],
+  close_projects: ["Projects closed. ✓","Projects window dismissed."],
   close_about:    ["About window closed. ✓"],
   close_skills:   ["Skills closed. ✓"],
   close_settings: ["Settings closed. ✓"],
-  clear:          ["Terminal cleared. 🧹", "Screen wiped clean.", "Terminal reset."],
+  clear:          ["Terminal cleared. 🧹","Screen wiped clean.","Terminal reset."],
   whoami:         ["You are Atul Singh — embedded systems enthusiast, builder of AtulOS. 🛠️"],
-  thanks:         ["You're welcome, Atul. 😊", "Happy to help!", "Anytime!", "Always here for you. 🤖"],
-  bye:            ["Goodbye, Atul. AtulOS will be here when you return. 👋", "See you later! 👋", "Take care, Atul. 👋"],
-  stop:           ["Stopping. 🔇", "Got it — going quiet."],
+  thanks:         ["You're welcome, Atul. 😊","Happy to help!","Anytime!","Always here for you. 🤖"],
+  bye:            ["Goodbye, Atul. AtulOS will be here when you return. 👋","See you later! 👋","Take care, Atul. 👋"],
+  stop:           ["Stopping. 🔇","Got it — going quiet."],
   friends:        ["Your close friends are:\n\n👥 Aayush\n👥 Muskan\n👥 Sameer\n👥 Kushal\n👥 Lucky\n👥 Yugal"],
   lock_system:    ["🔒 Device control locked. Password required again."],
   fallback:       [
@@ -2655,23 +2595,12 @@ const RESPONSE_BANK = {
   ],
 };
 
-/**
- * Pick a random response from a pool.
- */
 function pickResponse(arr) {
   if (!arr || !arr.length) return null;
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/**
- * generateResponse(intent, context) — returns a natural string response.
- *
- * @param {string} intent  - the resolved intent key
- * @param {object} context - optional context (e.g. { device, action })
- * @returns {string}
- */
 function generateResponse(intent, context) {
-  // Dynamic intents
   if (intent === 'time') {
     return `Current time: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} 🕐`;
   }
@@ -2691,24 +2620,9 @@ window.pickResponse     = pickResponse;
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     ===== AI UPGRADE CONTINUE =====
      MODULE 4.8 — COMMAND ENGINE (CENTRAL EXECUTION HUB)
-     executeCommand(input) is the single entry point for ALL commands.
-     It handles:
-       1. Context pronoun resolution  ("turn it off")
-       2. Multi-command splitting     ("turn on light and fan")
-       3. Natural-language parsing    via parseIntent()
-       4. Device auth gating          via DeviceAuth
-       5. Action execution
-       6. Response generation         via generateResponse()
-       7. Memory recording            via aiMemoryRecord()
-       8. Output to chat + terminal
 ════════════════════════════════════════════════════════════════ -->
 <script>
-/**
- * IoT device state setter — sends a 0/1 value to Firebase.
- * Safely catches errors in demo mode.
- */
 function iotSetDevice(deviceName, stateValue) {
   try {
     firebase.database().ref('devices').once('value').then(snap => {
@@ -2724,9 +2638,6 @@ function iotSetDevice(deviceName, stateValue) {
   }
 }
 
-/**
- * getDeviceStatusAsync — returns a promise resolving to a device status string.
- */
 function getDeviceStatusAsync() {
   return new Promise(resolve => {
     try {
@@ -2748,10 +2659,6 @@ function getDeviceStatusAsync() {
   });
 }
 
-/**
- * ACTION_MAP — maps intent keys to their side-effect functions.
- * Pure UI/system actions that don't need auth go here.
- */
 const ACTION_MAP = {
   open_terminal:  () => openWindow('terminal'),
   open_projects:  () => openWindow('projects'),
@@ -2791,24 +2698,17 @@ const ACTION_MAP = {
   },
 };
 
-/**
- * dispatchOutput(response) — sends a response to both the AI chat and terminal.
- * Called after every successful command execution.
- */
 function dispatchOutput(response) {
   if (!response) return;
 
-  // Send to AI chat
   if (typeof aiAppendMessage === 'function') {
     aiAppendMessage('ai', response, true);
   }
 
-  // Speak the response
   if (typeof jarvisSpeak === 'function') {
     jarvisSpeak(response);
   }
 
-  // Also mirror to terminal output if it's unlocked and visible
   if (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) {
     const termWin = document.getElementById('terminal');
     if (termWin && termWin.style.display !== 'none') {
@@ -2819,21 +2719,11 @@ function dispatchOutput(response) {
   }
 }
 
-/**
- * executeCommand(rawInput) — CENTRAL COMMAND ROUTER
- *
- * This is the single entry point for ALL user commands,
- * whether typed, spoken, or sent from the terminal.
- *
- * @param {string} rawInput - the raw user input string
- * @returns {string|null}   - the response text (null for async commands)
- */
 function executeCommand(rawInput) {
   if (!rawInput || !rawInput.trim()) return null;
 
   let input = rawInput.trim();
 
-  // Strip wake word prefixes
   input = input
     .replace(/^hey atulos?\s*/i, '')
     .replace(/^hello atulos?\s*/i, '')
@@ -2846,16 +2736,11 @@ function executeCommand(rawInput) {
     return resp;
   }
 
-  // ── STEP 1: Context pronoun resolution ───────────────────
-  // E.g. "turn it off" → "turn light off" using AI_MEMORY
   const contextResolved = resolveContextPronoun(input);
   if (contextResolved) {
-    return executeCommand(contextResolved); // recurse with resolved input
+    return executeCommand(contextResolved);
   }
 
-  // ── STEP 2: Multi-command splitting ──────────────────────
-  // E.g. "turn on light and fan" → ["turn on light", "turn on fan"]
-  // Split on " and " but only if both parts look like valid commands
   if (/ and /i.test(input)) {
     const parts = input.split(/ and /i).map(p => p.trim()).filter(p => p.length > 1);
     if (parts.length >= 2) {
@@ -2868,10 +2753,8 @@ function executeCommand(rawInput) {
     }
   }
 
-  // ── STEP 3: Parse intent ──────────────────────────────────
   const { intent, confidence } = parseIntent(input);
 
-  // ── STEP 4: Handle async intents (device status) ─────────
   if (intent === 'device_status') {
     const loadingMsg = "Fetching device status from Firebase… 📡";
     dispatchOutput(loadingMsg);
@@ -2882,19 +2765,13 @@ function executeCommand(rawInput) {
     return loadingMsg;
   }
 
-  // ── STEP 5: Auth gate for protected intents ──────────────
-  // DeviceAuth is defined in Module 8; we call it here for IoT intents
   const intentDef = INTENT_MAP[intent] || {};
   if (intentDef.requiresAuth) {
-    // DeviceAuth.gate handles the password flow
-    // We simulate the gate inline using the global DeviceAuth object
     if (typeof DeviceAuth !== 'undefined') {
       const authResult = DeviceAuth.gate(input);
       if (!authResult.proceed) {
-        // Auth is pending — display the auth prompt, do not execute
         dispatchOutput(authResult.reply);
 
-        // If auth just succeeded, execute the pending command
         if (authResult.isAuthSuccess && authResult.resolvedCommand) {
           setTimeout(() => {
             const resp = _executeIntentAction(intent, input);
@@ -2907,35 +2784,24 @@ function executeCommand(rawInput) {
     }
   }
 
-  // ── STEP 6: Execute action ───────────────────────────────
   const response = _executeIntentAction(intent, input);
 
-  // ── STEP 7: Record in memory ─────────────────────────────
   aiMemoryRecord(input, intent, response);
 
-  // ── STEP 8: Dispatch output ──────────────────────────────
   dispatchOutput(response);
 
   return response;
 }
 
-/**
- * _executeIntentAction(intent, input) — internal helper.
- * Runs the action and returns the response string.
- * Not intended to be called externally.
- */
 function _executeIntentAction(intent, input) {
-  // Run the side-effect action if available
   const action = ACTION_MAP[intent];
   if (action) {
     try { action(); } catch (e) { console.warn('[AtulOS] Action error for', intent, ':', e); }
   }
 
-  // Generate and return the response
   return generateResponse(intent) || pickResponse(RESPONSE_BANK.fallback);
 }
 
-// ── Expose on window for all callers ─────────────────────────
 window.executeCommand        = executeCommand;
 window._executeIntentAction  = _executeIntentAction;
 window.iotSetDevice          = iotSetDevice;
@@ -2946,15 +2812,8 @@ window.dispatchOutput        = dispatchOutput;
 
 <!-- ══════════════════════════════════════════════════════════════
      MODULE 5 — NLU / INTENT ENGINE
-     ⚡ UPGRADED: jarvisProcess now delegates to executeCommand()
-     and falls back gracefully. The original JARVIS_INTENTS and
-     JARVIS_RESPONSES are kept for backward compatibility with
-     any code that might call them directly.
 ════════════════════════════════════════════════════════════════ -->
 <script>
-
-// ── ORIGINAL JARVIS_INTENTS kept for backward compat ─────────
-// (trimmed duplicate: lastDevice variable now lives in AI_MEMORY)
 const JARVIS_INTENTS = {
   greeting:     { patterns: ['hello','hi','hey','sup','yo','howdy','hiya','good morning','good evening','good afternoon','greetings','what up','hi there'], action: null },
   identity:     { patterns: ['who are you','what are you','your name','introduce yourself','are you an ai','are you atulai','tell me about yourself'], action: null },
@@ -3017,7 +2876,6 @@ const JARVIS_INTENTS = {
   },
 };
 
-// ── JARVIS_RESPONSES kept for backward compat ─────────────────
 const JARVIS_RESPONSES = {
   greeting:      RESPONSE_BANK.greeting,
   identity:      RESPONSE_BANK.identity,
@@ -3061,19 +2919,10 @@ const JARVIS_RESPONSES = {
 
 function pick(arr) { return pickResponse(arr); }
 
-// ── getDeviceStatusFromFirebase kept for backward compat ──────
 function getDeviceStatusFromFirebase() { return getDeviceStatusAsync(); }
 
-// ── resolveContextCommand kept for backward compat ────────────
 function resolveContextCommand(raw) { return resolveContextPronoun(raw); }
 
-/**
- * jarvisProcess(rawInput) — UPGRADED
- *
- * Now delegates to executeCommand() which uses the new NLU pipeline.
- * Kept as the public API for Terminal and other callers.
- * Returns the response string (or null for async).
- */
 function jarvisProcess(rawInput) {
   if (!rawInput || !rawInput.trim()) return null;
 
@@ -3083,31 +2932,18 @@ function jarvisProcess(rawInput) {
   });
   if (!input && rawInput.trim()) return "AtulAI listening. What can I do for you, Atul? 👂";
 
-  // ── Delegate to the new unified command engine ────────────
-  // executeCommand handles: context resolution, multi-command,
-  // NLU parsing, auth gating, action execution, memory, output.
-  // We suppress its dispatchOutput here since terminal callers
-  // want just the return value and handle output themselves.
   return _jarvisProcessInternal(rawInput);
 }
 
-/**
- * _jarvisProcessInternal — runs the command pipeline and returns
- * only the response string, without triggering dispatchOutput.
- * Used by terminal (which does its own output) and jarvisProcess().
- */
 function _jarvisProcessInternal(rawInput) {
   let input = rawInput.trim();
 
-  // Strip wake prefixes
   input = input.replace(/^hey atulos?\s*/i, '').replace(/^hello atulos?\s*/i, '').replace(/^ok atulos?\s*/i, '').trim();
   if (!input) return "AtulAI listening. What can I do for you, Atul? 👂";
 
-  // Context pronoun resolution
   const contextResolved = resolveContextPronoun(input);
   if (contextResolved) return _jarvisProcessInternal(contextResolved);
 
-  // Multi-command
   if (/ and /i.test(input)) {
     const parts = input.split(/ and /i).map(p => p.trim()).filter(p => p.length > 1);
     if (parts.length >= 2) {
@@ -3117,7 +2953,6 @@ function _jarvisProcessInternal(rawInput) {
     }
   }
 
-  // Device status (async — return loading message, async will call dispatchOutput)
   const { intent } = parseIntent(input);
   if (intent === 'device_status') {
     getDeviceStatusAsync().then(msg => {
@@ -3127,22 +2962,18 @@ function _jarvisProcessInternal(rawInput) {
     return "Fetching device status from Firebase… 📡";
   }
 
-  // Lock system
   if (intent === 'lock_system') {
     if (typeof window._deviceAuthReset === 'function') window._deviceAuthReset();
     return pickResponse(RESPONSE_BANK.lock_system);
   }
 
-  // Execute action from JARVIS_INTENTS (backward compat)
   const def = JARVIS_INTENTS[intent];
   if (def && def.action) {
     try { def.action(); } catch (e) { console.warn('[AtulOS] Action error:', e); }
   }
 
-  // Update memory
   aiMemoryRecord(input, intent, '');
 
-  // Generate response
   const resp = generateResponse(intent);
   if (resp) {
     AI_MEMORY.history[AI_MEMORY.history.length - 1].response = resp;
@@ -3546,7 +3377,6 @@ function termPrintLine(role, text, cssClass, animated) {
   }
 }
 
-// ===== AI UPGRADE: Extended autocomplete with new commands =====
 const TERM_COMMANDS = [
   'help','clear','whoami','status',
   'open terminal','open projects','open about','open skills','open settings','open ai',
@@ -3555,7 +3385,6 @@ const TERM_COMMANDS = [
   'dark mode','light mode','joke','date','time',
   'voice on','voice off','wake word on','wake word off','stop',
   'my friends','device status','check devices','lock device control',
-  // ===== AI UPGRADE: Natural language variations in autocomplete =====
   'turn on light','turn off light','turn on fan','turn off fan',
   'switch on light','switch off light','start fan','stop fan',
   'activate buzzer','deactivate buzzer','launch terminal','launch settings',
@@ -3651,7 +3480,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       termInput.value = '';
 
-      // ===== AI UPGRADE: Terminal uses jarvisProcess (→ executeCommand) =====
       const response = (typeof window.jarvisProcess === 'function') ? window.jarvisProcess(raw) : '—';
       if (response) {
         termPrintLine('AI', response, 'jarvis-line', true);
@@ -3666,15 +3494,9 @@ window.termPrintLine = termPrintLine;
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     MODULE 8 — ATUL AI CHAT UI
-     ⚡ EXTENDED with session-based device control authentication
-     ⚡ EXTENDED with lock_system reset exposure
-     ⚡ UPGRADED: aiSendMessage now routes through executeCommand()
+     MODULE 8 — ATUL AI CHAT UI + DEVICE AUTH
 ════════════════════════════════════════════════════════════════ -->
 <script>
-// ══════════════════════════════════════════════════════════════
-// DEVICE AUTH STATE — Session-based password gate for IoT commands
-// ══════════════════════════════════════════════════════════════
 const DeviceAuth = (function () {
   'use strict';
 
@@ -3697,14 +3519,12 @@ const DeviceAuth = (function () {
   window._deviceAuthReset = resetAuth;
 
   function intentRequiresAuth(intentKey) {
-    // Check both INTENT_MAP (new) and JARVIS_INTENTS (legacy)
     const defNew = INTENT_MAP[intentKey];
     const defOld = JARVIS_INTENTS[intentKey];
     return !!(defNew && defNew.requiresAuth) || !!(defOld && defOld.requiresAuth);
   }
 
   function gate(rawInput) {
-    // STEP 1: Waiting for password
     if (waitingForPassword) {
       if (rawInput.trim() === DEVICE_PASSWORD) {
         isAuthenticated    = true;
@@ -3725,7 +3545,6 @@ const DeviceAuth = (function () {
       }
     }
 
-    // STEP 2: Check if command needs auth
     const { intent } = parseIntent(rawInput);
     if (intentRequiresAuth(intent) && !isAuthenticated) {
       waitingForPassword = true;
@@ -3743,9 +3562,6 @@ const DeviceAuth = (function () {
 })();
 
 
-// ══════════════════════════════════════════════════════════════
-// CHAT UI HELPERS
-// ══════════════════════════════════════════════════════════════
 const aiCmdHistory = [];
 let   aiHistIdx    = -1;
 
@@ -3801,9 +3617,6 @@ function aiHideTyping() {
   if (el) el.remove();
 }
 
-// ══════════════════════════════════════════════════════════════
-// aiSendMessage — UPGRADED to use DeviceAuth + executeCommand
-// ══════════════════════════════════════════════════════════════
 function aiSendMessage() {
   const inputEl = document.getElementById('ai-input');
   if (!inputEl) return;
@@ -3813,7 +3626,6 @@ function aiSendMessage() {
   aiCmdHistory.push(text);
   aiHistIdx = aiCmdHistory.length;
 
-  // Show user bubble
   aiAppendMessage('user', text, false);
   inputEl.value = '';
 
@@ -3822,21 +3634,17 @@ function aiSendMessage() {
   setTimeout(() => {
     aiHideTyping();
 
-    // ── Run the device auth gate ──────────────────────────────
     const authResult = DeviceAuth.gate(text);
 
     if (!authResult.proceed) {
-      // Auth gate intercepted — show the prompt/result
       aiAppendMessage('ai', authResult.reply, true);
       if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(authResult.reply);
 
-      // If password was just accepted, execute the pending command
       if (authResult.isAuthSuccess && authResult.resolvedCommand) {
         setTimeout(() => {
           aiShowTyping();
           setTimeout(() => {
             aiHideTyping();
-            // ===== AI UPGRADE: use executeCommand for pending command =====
             const resp = _jarvisProcessInternal(authResult.resolvedCommand) || "Done! 🤖";
             aiAppendMessage('ai', resp, true);
             if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
@@ -3846,13 +3654,6 @@ function aiSendMessage() {
       return;
     }
 
-    // ── Auth cleared — route through executeCommand ───────────
-    // ===== AI UPGRADE: all commands go through executeCommand() =====
-    // executeCommand handles: context memory, NLU, multi-command,
-    // action execution, response generation, memory recording.
-    // We call _jarvisProcessInternal here to get the return value
-    // without double-dispatching (executeCommand would call
-    // aiAppendMessage again). Instead we manually append once.
     const resp = _jarvisProcessInternal(text) || "I didn't get that. Try 'help'. 🤔";
     aiAppendMessage('ai', resp, true);
     if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
@@ -3887,7 +3688,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-// ===== AI UPGRADE END =====
 </script>
 
 
@@ -3897,7 +3697,6 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-  /* ── Animated typing status line ── */
   const statusMessages = [
     'INITIALIZING PROFILE MODULE v2.2...',
     'LOADING SUBJECT DATA: ATUL SINGH...',
@@ -3925,7 +3724,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   setTimeout(cycleStatusMsg, 2000);
 
-  /* ── Live metric randomizer (fake CPU / Memory) ── */
   function randomInRange(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
@@ -3947,7 +3745,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   setInterval(updateMetrics, 2200);
 
-  /* ── Sync voice metric with actual TTS state ── */
   function syncVoiceMetric() {
     const voiceVal = document.getElementById('jap-voice-val');
     const voiceBar = document.getElementById('jap-voice-bar');
@@ -3968,6 +3765,342 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     ===== UPGRADE START: UPGRADE 2 — WINDOW RESIZING =====
+     Injects resize handles onto every .app-window and wires up
+     mouse-based resize logic for right, bottom, and corner edges.
+     Does NOT interfere with dragging, window controls, or events.
+     Handles are injected via JS so the HTML stays untouched.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function initWindowResize() {
+  'use strict';
+
+  // Minimum window dimensions to prevent collapsing
+  const MIN_W = 280;
+  const MIN_H = 120;
+
+  /**
+   * Inject resize handles into a single .app-window element.
+   * Three handles: right edge, bottom edge, bottom-right corner.
+   * Each is a transparent absolutely-positioned div.
+   */
+  function injectHandles(win) {
+    const directions = ['right', 'bottom', 'corner'];
+    directions.forEach(dir => {
+      // Avoid duplicate injection
+      if (win.querySelector(`.resize-handle.${dir}`)) return;
+      const handle = document.createElement('div');
+      handle.className = `resize-handle ${dir}`;
+      handle.setAttribute('aria-hidden', 'true'); // purely visual/functional — not for screen readers
+      win.appendChild(handle);
+    });
+  }
+
+  /**
+   * Attach resize mouse/touch event listeners to a window's handles.
+   * Each handle type modifies width, height, or both.
+   */
+  function attachResizeListeners(win) {
+    const handles = win.querySelectorAll('.resize-handle');
+
+    handles.forEach(handle => {
+      let resizing    = false;
+      let startX      = 0;
+      let startY      = 0;
+      let startW      = 0;
+      let startH      = 0;
+
+      function onResizeStart(clientX, clientY) {
+        resizing = true;
+        startX   = clientX;
+        startY   = clientY;
+        startW   = win.offsetWidth;
+        startH   = win.offsetHeight;
+
+        // Prevent text selection during resize
+        document.body.style.userSelect      = 'none';
+        document.body.style.pointerEvents   = 'none';
+        handle.style.pointerEvents          = 'auto'; // keep handle active
+
+        // Bring window to front while resizing
+        if (typeof window.openWindow === 'undefined') {
+          // fallback: just raise z-index inline
+          win.style.zIndex = parseInt(win.style.zIndex || 100) + 1;
+        }
+      }
+
+      function onResizeMove(clientX, clientY) {
+        if (!resizing) return;
+
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        const isCorner = handle.classList.contains('corner');
+        const isRight  = handle.classList.contains('right');
+        const isBottom = handle.classList.contains('bottom');
+
+        if (isRight || isCorner) {
+          const newW = Math.max(MIN_W, startW + dx);
+          win.style.width = newW + 'px';
+        }
+        if (isBottom || isCorner) {
+          const newH = Math.max(MIN_H, startH + dy);
+          win.style.height = newH + 'px';
+        }
+      }
+
+      function onResizeEnd() {
+        if (!resizing) return;
+        resizing = false;
+        document.body.style.userSelect    = '';
+        document.body.style.pointerEvents = '';
+
+        // Persist new size in localStorage via the existing windowState mechanism
+        // We replicate the save pattern used in the drag handler
+        const id = win.dataset.windowId;
+        if (id) {
+          const storageKey = 'atul_windows_v2';
+          try {
+            const stored = JSON.parse(localStorage.getItem(storageKey)) || {};
+            stored[id] = stored[id] || {};
+            stored[id].width  = Math.round(win.offsetWidth);
+            stored[id].height = Math.round(win.offsetHeight);
+            localStorage.setItem(storageKey, JSON.stringify(stored));
+          } catch (e) { /* ignore storage errors */ }
+        }
+      }
+
+      // ── Mouse events ──────────────────────────────────────
+      handle.addEventListener('mousedown', e => {
+        e.stopPropagation(); // prevent drag handler from firing
+        e.preventDefault();
+        onResizeStart(e.clientX, e.clientY);
+      });
+
+      document.addEventListener('mousemove', e => {
+        if (resizing) onResizeMove(e.clientX, e.clientY);
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (resizing) onResizeEnd();
+      });
+
+      // ── Touch events ──────────────────────────────────────
+      handle.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        const t = e.touches[0];
+        onResizeStart(t.clientX, t.clientY);
+      }, { passive: true });
+
+      document.addEventListener('touchmove', e => {
+        if (!resizing) return;
+        const t = e.touches[0];
+        onResizeMove(t.clientX, t.clientY);
+      }, { passive: true });
+
+      document.addEventListener('touchend', () => {
+        if (resizing) onResizeEnd();
+      });
+    });
+  }
+
+  /**
+   * Initialise resize on all existing .app-window elements.
+   * Called after DOM is ready.
+   */
+  function initAll() {
+    document.querySelectorAll('.app-window').forEach(win => {
+      injectHandles(win);
+      attachResizeListeners(win);
+    });
+  }
+
+  // Run after DOM is ready (DOMContentLoaded may have already fired at this point
+  // since this script is at the bottom of the body — safe to call directly, but
+  // we guard with a check for safety)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
+
+})();
+</script>
+<!-- ===== UPGRADE END: UPGRADE 2 — WINDOW RESIZING ===== -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     ===== UPGRADE START: UPGRADE 3 — APP SYSTEM (SCALABLE) =====
+     Centralised app registry + openApp/closeApp functions.
+     Wraps existing openWindow/closeWindow — does NOT replace them.
+     All existing buttons, commands, and voice triggers still work
+     because they call openWindow/closeWindow directly, which
+     remains unchanged. openApp/closeApp are additive aliases.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function initAppSystem() {
+  'use strict';
+
+  /**
+   * APPS — Centralised registry mapping logical app names to their
+   * HTML element IDs and metadata.
+   *
+   * To add a new app in the future: just add an entry here.
+   * The openApp/closeApp functions will handle the rest automatically.
+   *
+   * Structure per entry:
+   *   id        {string}  — logical identifier used as the registry key
+   *   elementId {string}  — the actual DOM id of the .app-window element
+   *   title     {string}  — human-readable display name
+   *   icon      {string}  — Font Awesome class for the icon
+   */
+  const APPS = {
+    terminal: {
+      id:        'terminal',
+      elementId: 'terminal',
+      title:     'Terminal',
+      icon:      'fa-solid fa-terminal',
+    },
+    projects: {
+      id:        'projects',
+      elementId: 'projects',
+      title:     'Projects',
+      icon:      'fa-solid fa-folder-open',
+    },
+    about: {
+      id:        'about',
+      elementId: 'about',
+      title:     'About',
+      icon:      'fa-solid fa-circle-info',
+    },
+    skills: {
+      id:        'skills',
+      elementId: 'skills',
+      title:     'Skills',
+      icon:      'fa-solid fa-microchip',
+    },
+    settings: {
+      id:        'settings',
+      elementId: 'settings',
+      title:     'Settings',
+      icon:      'fa-solid fa-gear',
+    },
+    ai: {
+      id:        'ai',
+      elementId: 'atulAI',   // note: DOM id is 'atulAI', logical name is 'ai'
+      title:     'Atul AI',
+      icon:      'fa-solid fa-robot',
+    },
+  };
+
+  /**
+   * openApp(appName) — Open an app by its logical name.
+   *
+   * Looks up the app in APPS, then delegates to the existing
+   * openWindow() function so all side-effects (auth reset,
+   * taskbar management, z-index, state persistence) still apply.
+   *
+   * @param {string} appName — key from the APPS registry (case-insensitive)
+   * @returns {boolean}      — true if app was found and opened, false otherwise
+   */
+  function openApp(appName) {
+    if (!appName) return false;
+    const key  = appName.toLowerCase().trim();
+    const app  = APPS[key];
+
+    if (!app) {
+      console.warn(`[AtulOS AppSystem] Unknown app: "${appName}". Available apps:`, Object.keys(APPS).join(', '));
+      return false;
+    }
+
+    // Delegate to existing openWindow — preserves ALL existing behaviour
+    if (typeof window.openWindow === 'function') {
+      window.openWindow(app.elementId);
+      return true;
+    }
+
+    // Fallback: direct DOM manipulation if openWindow isn't available yet
+    const el = document.getElementById(app.elementId);
+    if (el) {
+      el.style.display = 'flex';
+      el.setAttribute('aria-hidden', 'false');
+      el.focus();
+      return true;
+    }
+
+    console.warn(`[AtulOS AppSystem] Element not found for app: "${appName}" (elementId: "${app.elementId}")`);
+    return false;
+  }
+
+  /**
+   * closeApp(appName) — Close an app by its logical name.
+   *
+   * Delegates to the existing closeWindow() function.
+   *
+   * @param {string} appName — key from the APPS registry (case-insensitive)
+   * @returns {boolean}      — true if app was found and closed, false otherwise
+   */
+  function closeApp(appName) {
+    if (!appName) return false;
+    const key = appName.toLowerCase().trim();
+    const app = APPS[key];
+
+    if (!app) {
+      console.warn(`[AtulOS AppSystem] Unknown app: "${appName}". Available apps:`, Object.keys(APPS).join(', '));
+      return false;
+    }
+
+    // Delegate to existing closeWindow — preserves ALL existing behaviour
+    if (typeof window.closeWindow === 'function') {
+      window.closeWindow(app.elementId);
+      return true;
+    }
+
+    // Fallback
+    const el = document.getElementById(app.elementId);
+    if (el) {
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden', 'true');
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * getApp(appName) — Retrieve app metadata from the registry.
+   * Useful for future extensions (e.g. dynamic launchers).
+   *
+   * @param {string} appName
+   * @returns {object|null}
+   */
+  function getApp(appName) {
+    if (!appName) return null;
+    return APPS[appName.toLowerCase().trim()] || null;
+  }
+
+  /**
+   * listApps() — Return all registered app names.
+   * @returns {string[]}
+   */
+  function listApps() {
+    return Object.keys(APPS);
+  }
+
+  // ── Expose on window ─────────────────────────────────────────
+  window.APPS     = APPS;
+  window.openApp  = openApp;
+  window.closeApp = closeApp;
+  window.getApp   = getApp;
+  window.listApps = listApps;
+
+  console.log('[AtulOS AppSystem] Initialised. Registered apps:', listApps().join(', '));
+
+})();
+</script>
+<!-- ===== UPGRADE END: UPGRADE 3 — APP SYSTEM (SCALABLE) ===== -->
 
 </body>
 </html>
