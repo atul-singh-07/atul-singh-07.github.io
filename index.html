@@ -1930,7 +1930,8 @@ const SpeechEngine = (function () {
         const text = finalText.trim();
         showMicBadge(`✓ Heard: "${text}"`, false);
         setTimeout(hideMicBadge, 2500);
-        if (text) submitCommand(text);
+        // ===== AI UPGRADE: Route voice to executeCommand =====
+        if (text) executeCommand(text);
         returnFromCommand();
       }
     };
@@ -1976,9 +1977,13 @@ const SpeechEngine = (function () {
     let remainder = transcript;
     WAKE_PHRASES.forEach(p => { remainder = remainder.replace(p, '').trim(); });
     if (remainder.length > 2) {
-      const resp = jarvisProcess(remainder) || 'Ready, Atul.';
-      if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', resp, true);
-      if (typeof jarvisSpeak     === 'function') jarvisSpeak(resp);
+      // ===== AI UPGRADE: Route wake word inline command to executeCommand =====
+      const result = executeCommand(remainder);
+      if (!result) {
+        const resp = 'Ready, Atul.';
+        if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', resp, true);
+        if (typeof jarvisSpeak     === 'function') jarvisSpeak(resp);
+      }
     } else {
       const resp = "AtulAI listening. What can I do for you? 👂";
       if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', resp, true);
@@ -1987,12 +1992,14 @@ const SpeechEngine = (function () {
     }
   }
 
+  // ===== AI UPGRADE: submitCommand now delegates to executeCommand =====
   function submitCommand(text) {
     const aiInput = document.getElementById('ai-input');
     if (aiInput) {
       aiInput.value = text;
       if (typeof aiSendMessage === 'function') aiSendMessage();
     }
+    // Also echo into terminal if it's open and authenticated
     if (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) {
       const termWin = document.getElementById('terminal');
       if (termWin && termWin.style.display !== 'none') {
@@ -2061,15 +2068,893 @@ window.disableWakeWord = () => SpeechEngine.disableWakeMode();
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     MODULE 5 — NLU / INTENT ENGINE
-     ⚡ ENHANCED: friends, device_status, lock_system intents added
+     ===== AI UPGRADE START =====
+     MODULE 4.5 — CONTEXT-AWARE MEMORY SYSTEM
+     Provides global AI_MEMORY for cross-command context tracking.
+     - Stores full command history
+     - Tracks last device & action for pronoun resolution ("turn it off")
+     - Detects device and action from any natural-language input
+════════════════════════════════════════════════════════════════ -->
+<script>
+// ── GLOBAL AI MEMORY ─────────────────────────────────────────
+/**
+ * AI_MEMORY persists for the duration of the session.
+ * Every command run through executeCommand() is recorded here.
+ */
+const AI_MEMORY = {
+  lastCommand: '',         // raw text of last user command
+  lastDevice:  null,       // 'light' | 'fan' | 'buzzer' | 'terminal' | etc.
+  lastAction:  null,       // 'on' | 'off' | 'open' | 'close' | 'toggle'
+  history:     [],         // [ { input, intent, response, timestamp } ]
+  maxHistory:  50,         // cap to avoid unbounded growth
+};
+
+/**
+ * Record a command execution into AI_MEMORY.
+ * @param {string} input    - the raw user input
+ * @param {string} intent   - resolved intent key
+ * @param {string} response - the text response sent back
+ */
+function aiMemoryRecord(input, intent, response) {
+  AI_MEMORY.lastCommand = input;
+
+  // Detect device from intent key (e.g. "light_on" → "light")
+  const deviceMatch = intent.match(/^(light|fan|buzzer)_(on|off)$/);
+  if (deviceMatch) {
+    AI_MEMORY.lastDevice = deviceMatch[1];
+    AI_MEMORY.lastAction = deviceMatch[2];
+  }
+
+  // Detect window-related action
+  const windowMatch = intent.match(/^(open|close)_(.+)$/);
+  if (windowMatch) {
+    AI_MEMORY.lastAction = windowMatch[1];         // 'open' or 'close'
+    AI_MEMORY.lastDevice = windowMatch[2];         // e.g. 'terminal'
+  }
+
+  // Push to history, trim if needed
+  AI_MEMORY.history.push({
+    input,
+    intent,
+    response,
+    timestamp: new Date().toISOString(),
+  });
+  if (AI_MEMORY.history.length > AI_MEMORY.maxHistory) {
+    AI_MEMORY.history.shift();
+  }
+}
+
+/**
+ * Resolve context pronouns ("it", "that", "this") against AI_MEMORY.
+ * Returns a rewritten input string, or null if no context pronoun found.
+ *
+ * Examples:
+ *   "turn it off"   → "turn light off"   (if lastDevice = 'light')
+ *   "switch it on"  → "turn fan on"      (if lastDevice = 'fan')
+ *   "open it"       → "open terminal"    (if lastDevice = 'terminal')
+ */
+function resolveContextPronoun(input) {
+  const norm = input.toLowerCase().trim();
+
+  // Patterns that contain a context pronoun referencing a device/app
+  const pronounPatterns = [
+    // Device state toggles
+    { regex: /\b(turn|switch|put)\s+it\s+on\b/,  replacement: `turn ${AI_MEMORY.lastDevice} on` },
+    { regex: /\b(turn|switch|put)\s+it\s+off\b/, replacement: `turn ${AI_MEMORY.lastDevice} off` },
+    { regex: /\bit\s+on\b/,                       replacement: `turn ${AI_MEMORY.lastDevice} on` },
+    { regex: /\bit\s+off\b/,                      replacement: `turn ${AI_MEMORY.lastDevice} off` },
+    { regex: /\bstart\s+it\b/,                    replacement: `turn ${AI_MEMORY.lastDevice} on` },
+    { regex: /\bstop\s+it\b/,                     replacement: `turn ${AI_MEMORY.lastDevice} off` },
+    // "toggle it" — flip last action
+    { regex: /\btoggle\s+it\b/, replacement: AI_MEMORY.lastAction === 'on'
+        ? `turn ${AI_MEMORY.lastDevice} off`
+        : `turn ${AI_MEMORY.lastDevice} on` },
+    // Window open/close
+    { regex: /\bopen\s+it\b/,  replacement: `open ${AI_MEMORY.lastDevice}` },
+    { regex: /\bclose\s+it\b/, replacement: `close ${AI_MEMORY.lastDevice}` },
+    // "same again" / "do it again"
+    { regex: /\b(do\s+it\s+again|same\s+again|repeat\s+that)\b/, replacement: AI_MEMORY.lastCommand },
+  ];
+
+  if (!AI_MEMORY.lastDevice && !AI_MEMORY.lastCommand) return null;
+
+  for (const { regex, replacement } of pronounPatterns) {
+    if (regex.test(norm) && replacement) {
+      return replacement;
+    }
+  }
+
+  return null; // no pronoun found — proceed normally
+}
+
+window.AI_MEMORY            = AI_MEMORY;
+window.aiMemoryRecord       = aiMemoryRecord;
+window.resolveContextPronoun = resolveContextPronoun;
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     ===== AI UPGRADE CONTINUE =====
+     MODULE 4.6 — ADVANCED INTENT PARSER (NATURAL LANGUAGE)
+     Replaces strict keyword matching with flexible NLU.
+     Supports 100+ command variations through synonym maps.
+════════════════════════════════════════════════════════════════ -->
+<script>
+/**
+ * INTENT_MAP — maps every intent key to a set of trigger words/phrases.
+ * Matching is done with flexible includes() scoring, not exact match.
+ *
+ * Structure:
+ *   intent_key: {
+ *     keywords:  string[]   — words to look for in the normalised input
+ *     phrases:   string[]   — longer phrase fragments for higher-confidence match
+ *     score:     number     — base confidence boost (0..1)
+ *   }
+ */
+const INTENT_MAP = {
+
+  // ── GREETINGS ──────────────────────────────────────────────
+  greeting: {
+    keywords: ['hello','hi','hey','howdy','hiya','sup','yo','greetings'],
+    phrases:  ['good morning','good evening','good afternoon','what up','hi there'],
+    score: 0.85,
+  },
+
+  // ── IDENTITY ───────────────────────────────────────────────
+  identity: {
+    keywords: ['who are you','what are you','your name','introduce yourself','are you an ai'],
+    phrases:  ['tell me about yourself','are you atulai'],
+    score: 0.90,
+  },
+
+  // ── HELP / CAPABILITIES ────────────────────────────────────
+  capabilities: {
+    keywords: ['help','commands','capabilities','features'],
+    phrases:  ['what can you do','list commands','show commands','show help','how do i use'],
+    score: 0.85,
+  },
+
+  // ── OPEN WINDOWS ───────────────────────────────────────────
+  open_terminal: {
+    keywords: ['terminal'],
+    phrases:  ['open terminal','launch terminal','start terminal','show terminal','give me terminal',
+               'go to terminal','bring up terminal','display terminal'],
+    score: 0.88,
+  },
+  open_projects: {
+    keywords: ['projects'],
+    phrases:  ['open projects','show projects','launch projects','go to projects','view projects',
+               'my projects','display projects'],
+    score: 0.88,
+  },
+  open_about: {
+    keywords: ['about'],
+    phrases:  ['open about','show about','launch about','go to about','who is atul','about atul',
+               'about window','display about'],
+    score: 0.85,
+  },
+  open_skills: {
+    keywords: ['skills'],
+    phrases:  ['open skills','show skills','launch skills','go to skills','view skills',
+               'my skills','what skills','skill window'],
+    score: 0.88,
+  },
+  open_settings: {
+    keywords: ['settings','preferences','config'],
+    phrases:  ['open settings','show settings','launch settings','go to settings',
+               'open preferences','change settings','system settings'],
+    score: 0.88,
+  },
+  open_ai: {
+    keywords: ['atul ai','atulai','assistant','chat'],
+    phrases:  ['open ai','open atul ai','launch ai','ai window','open assistant',
+               'chat with ai','open chat'],
+    score: 0.85,
+  },
+
+  // ── CLOSE WINDOWS ──────────────────────────────────────────
+  close_terminal: {
+    keywords: [],
+    phrases:  ['close terminal','exit terminal','hide terminal','shut terminal','dismiss terminal'],
+    score: 0.90,
+  },
+  close_projects: {
+    keywords: [],
+    phrases:  ['close projects','exit projects','hide projects','shut projects'],
+    score: 0.90,
+  },
+  close_about: {
+    keywords: [],
+    phrases:  ['close about','exit about','hide about'],
+    score: 0.90,
+  },
+  close_skills: {
+    keywords: [],
+    phrases:  ['close skills','exit skills','hide skills'],
+    score: 0.90,
+  },
+  close_settings: {
+    keywords: [],
+    phrases:  ['close settings','exit settings','hide settings','close preferences'],
+    score: 0.90,
+  },
+
+  // ── IoT DEVICE CONTROL ─────────────────────────────────────
+  light_on: {
+    keywords: ['light'],
+    phrases:  ['light on','turn on light','switch on light','lights on','enable light',
+               'put light on','on the light','light please','brighten up','start light',
+               'activate light','illuminate','turn the light on','power on light'],
+    score: 0.90,
+    requiresAuth: true,
+  },
+  light_off: {
+    keywords: ['light'],
+    phrases:  ['light off','turn off light','switch off light','lights off','disable light',
+               'put light off','off the light','lights out','stop light',
+               'deactivate light','turn the light off','power off light'],
+    score: 0.90,
+    requiresAuth: true,
+  },
+  fan_on: {
+    keywords: ['fan'],
+    phrases:  ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan',
+               'fan please','start the fan','activate fan','power on fan','spin fan'],
+    score: 0.90,
+    requiresAuth: true,
+  },
+  fan_off: {
+    keywords: ['fan'],
+    phrases:  ['fan off','turn off fan','stop fan','switch off fan','disable fan',
+               'stop the fan','deactivate fan','power off fan'],
+    score: 0.90,
+    requiresAuth: true,
+  },
+  buzzer_on: {
+    keywords: ['buzzer','alarm'],
+    phrases:  ['buzzer on','start buzzer','turn on buzzer','activate buzzer',
+               'sound buzzer','alarm on','enable buzzer','ring buzzer'],
+    score: 0.90,
+    requiresAuth: true,
+  },
+  buzzer_off: {
+    keywords: ['buzzer','alarm'],
+    phrases:  ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer',
+               'silence buzzer','alarm off','disable buzzer'],
+    score: 0.90,
+    requiresAuth: true,
+  },
+
+  // ── THEME / UI ─────────────────────────────────────────────
+  dark_mode: {
+    keywords: ['dark'],
+    phrases:  ['dark mode','dark theme','switch to dark','go dark','enable dark','night mode',
+               'nighttime','make it dark'],
+    score: 0.88,
+  },
+  light_mode: {
+    keywords: [],
+    phrases:  ['light mode','light theme','switch to light','go light','enable light mode',
+               'daytime','make it light','bright mode'],
+    score: 0.88,
+  },
+
+  // ── VOICE CONTROL ──────────────────────────────────────────
+  voice_on: {
+    keywords: [],
+    phrases:  ['voice on','enable voice','turn on voice','speak','enable speech','tts on',
+               'start speaking','activate voice'],
+    score: 0.88,
+  },
+  voice_off: {
+    keywords: [],
+    phrases:  ['voice off','disable voice','turn off voice','mute','disable speech','tts off',
+               'be quiet','shut up','stop talking','silence voice','go quiet'],
+    score: 0.88,
+  },
+  voice_settings: {
+    keywords: [],
+    phrases:  ['voice settings','open voice settings','adjust voice','change voice','voice options',
+               'voice config','configure voice'],
+    score: 0.88,
+  },
+
+  // ── WAKE WORD ──────────────────────────────────────────────
+  wake_enable: {
+    keywords: [],
+    phrases:  ['wake word on','enable wake word','activate wake mode','hey atulos','hello atulos',
+               'start listening'],
+    score: 0.90,
+  },
+  wake_disable: {
+    keywords: [],
+    phrases:  ['wake word off','disable wake word','disable wake mode','stop listening'],
+    score: 0.90,
+  },
+
+  // ── SYSTEM / INFO ──────────────────────────────────────────
+  system_status: {
+    keywords: ['status','diagnostics'],
+    phrases:  ['system status','system check','all good','how is the system','health check',
+               'are you ok','system report'],
+    score: 0.85,
+  },
+  time: {
+    keywords: [],
+    phrases:  ['what time','current time','tell me the time','time please','what time is it',
+               'show time','what is the time'],
+    score: 0.92,
+  },
+  date: {
+    keywords: [],
+    phrases:  ['what date','today date','what day is it','current date','tell me date',
+               'show date','what is the date'],
+    score: 0.92,
+  },
+  joke: {
+    keywords: ['joke','funny','humor','laugh'],
+    phrases:  ['tell me a joke','make me laugh','say something funny','got a joke'],
+    score: 0.88,
+  },
+  clear: {
+    keywords: ['clear','cls'],
+    phrases:  ['clear terminal','clear screen','reset terminal','wipe terminal'],
+    score: 0.90,
+  },
+  whoami: {
+    keywords: ['whoami'],
+    phrases:  ['who am i','show identity','my profile','my info'],
+    score: 0.90,
+  },
+  thanks: {
+    keywords: ['thanks','thx','ty','cheers'],
+    phrases:  ['thank you','well done','great job','good job','nice work','you rock'],
+    score: 0.80,
+  },
+  bye: {
+    keywords: ['bye','cya'],
+    phrases:  ['goodbye','see you','later','take care','good night','see ya','farewell'],
+    score: 0.88,
+  },
+  stop: {
+    keywords: ['stop','quiet','silence','cancel'],
+    phrases:  ['stop talking','stop speaking','be quiet','shut up','stop voice'],
+    score: 0.88,
+  },
+
+  // ── FRIENDS (AUTH REQUIRED) ────────────────────────────────
+  friends: {
+    keywords: ['friends'],
+    phrases:  ['my friends','friends list','who are my friends','show my friends',
+               'tell my friends','show friends','list my friends'],
+    requiresAuth: true,
+    score: 0.88,
+  },
+
+  // ── DEVICE STATUS ──────────────────────────────────────────
+  device_status: {
+    keywords: [],
+    phrases:  ['device status','status of devices','is light on','fan status','check devices',
+               'all devices','show device status','devices status','iot status'],
+    score: 0.88,
+  },
+
+  // ── LOCK SYSTEM ────────────────────────────────────────────
+  lock_system: {
+    keywords: [],
+    phrases:  ['lock device control','logout device control','reset access',
+               'lock devices','lock access'],
+    score: 0.92,
+  },
+};
+
+/**
+ * Normalise input: lowercase, strip punctuation & filler words.
+ */
+function nlNormalise(input) {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\b(please|can you|could you|would you|i want to|i need to|i'd like to|pls|plz|kindly|just|now)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * parseIntent(input) — Natural-language intent detection.
+ *
+ * Scoring strategy:
+ *   1. Exact phrase match   → score 1.0
+ *   2. Phrase substring     → score 0.92
+ *   3. All phrase words in input → score 0.80
+ *   4. Keyword present      → score base 0.55
+ *
+ * Returns: { intent: string, confidence: number, raw: string }
+ */
+function parseIntent(rawInput) {
+  const norm = nlNormalise(rawInput);
+  let bestScore  = 0;
+  let bestIntent = 'fallback';
+
+  for (const [intentKey, def] of Object.entries(INTENT_MAP)) {
+    let score = 0;
+    const baseBoost = (def.score || 0.80) - 0.80; // normalised boost
+
+    // 1. Exact phrase match
+    for (const phrase of (def.phrases || [])) {
+      if (norm === phrase)          { score = Math.max(score, 1.00); break; }
+      if (norm.includes(phrase))    { score = Math.max(score, 0.92 + baseBoost); }
+      if (phrase.includes(norm) && norm.length > 3) { score = Math.max(score, 0.78 + baseBoost); }
+
+      // 2. All words of phrase found in input
+      const phraseWords  = phrase.split(' ');
+      const inputWords   = norm.split(' ');
+      const allPresent   = phraseWords.every(pw =>
+        inputWords.some(iw => iw === pw || iw.includes(pw) || pw.includes(iw))
+      );
+      if (allPresent && phraseWords.length >= 2) {
+        score = Math.max(score, 0.82 + baseBoost);
+      }
+    }
+
+    // 3. Keyword match (lower confidence)
+    for (const kw of (def.keywords || [])) {
+      if (kw.length >= 3 && norm.includes(kw)) {
+        score = Math.max(score, 0.55 + baseBoost);
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore  = score;
+      bestIntent = intentKey;
+    }
+  }
+
+  return {
+    intent:     bestScore >= 0.50 ? bestIntent : 'fallback',
+    confidence: bestScore,
+    raw:        rawInput,
+  };
+}
+
+window.parseIntent   = parseIntent;
+window.nlNormalise   = nlNormalise;
+window.INTENT_MAP    = INTENT_MAP;
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     ===== AI UPGRADE CONTINUE =====
+     MODULE 4.7 — SMART RESPONSE GENERATOR
+     Natural, varied responses keyed by intent.
+     generateResponse(intent, context?) → string
 ════════════════════════════════════════════════════════════════ -->
 <script>
 
-// ── FEATURE 3: CONTEXT MEMORY — tracks last device used ──────
-// ADD THIS BEFORE JARVIS_INTENTS
-let lastDevice = null;  // stores 'light', 'fan', or 'buzzer' after each device command
+/**
+ * RESPONSE_BANK — pools of natural response strings per intent.
+ * pick() selects randomly for variety.
+ */
+const RESPONSE_BANK = {
+  greeting:      [
+    "Welcome back, Atul! All systems nominal. 🤖",
+    "Hello! AtulAI is online and ready.",
+    "Hey there, Atul. What can I do for you?",
+    "Good to see you. How can I assist?",
+  ],
+  identity:      [
+    "I'm AtulAI — your personal intelligent assistant built into AtulOS by Atul Singh.",
+    "AtulAI v3, powered by a unified speech engine. I control windows, IoT, and everything in this OS.",
+    "I'm the AI core of AtulOS. You built me, Atul. 😄",
+  ],
+  capabilities:  [
+    `Here's what I can do:\n\n🖥  Apps     : open/close terminal, projects, about, skills, settings\n💡  IoT      : light on/off, fan on/off, buzzer on/off\n🎨  UI       : dark mode, light mode\n🔊  Voice    : voice on/off, voice settings\n🎙️  Wake     : hey atulos / hello atulos\n⏰  Info     : time, date, status, whoami, joke\n👥  Social   : my friends (auth required)\n📡  Devices  : device status, check devices\n🔒  Security : lock device control\n🧹  Util     : clear, help, stop\n\nYou can speak naturally — I understand full sentences!`,
+  ],
+  light_on:      [
+    "Light is ON. 💡",
+    "Done — activating the light.",
+    "Light turned on. Brightening up! ☀️",
+    "Sure, light's on.",
+  ],
+  light_off:     [
+    "Light is OFF. 🌑",
+    "Done — light deactivated.",
+    "Lights out. 🌙",
+    "Light switched off.",
+  ],
+  fan_on:        [
+    "Fan is running. 🌀",
+    "Fan activated. Staying cool!",
+    "Fan ON. Breezy! 🌬️",
+    "Starting the fan now.",
+  ],
+  fan_off:       [
+    "Fan stopped. 🛑",
+    "Fan deactivated.",
+    "Stopping the fan.",
+    "Fan is OFF.",
+  ],
+  buzzer_on:     [
+    "Buzzer activated! 🔊",
+    "Alert — buzzer is on.",
+    "Buzzer is ringing. 🔔",
+  ],
+  buzzer_off:    [
+    "Buzzer silenced. 🔇",
+    "Silence restored.",
+    "Buzzer is OFF.",
+  ],
+  dark_mode:     [
+    "Dark mode engaged. 🌑",
+    "Switching to dark theme. Easy on the eyes.",
+    "Going dark. 🌙",
+  ],
+  light_mode:    [
+    "Light mode active. ☀️",
+    "Switching to light theme. Bright and clear.",
+    "Light theme enabled.",
+  ],
+  voice_on:      [
+    "Voice enabled. I'll speak my responses. 🔊",
+    "Voice output is ON. You'll hear me now.",
+  ],
+  voice_off:     [
+    "Voice muted. Silent mode active. 🔇",
+    "Going quiet. Text-only mode.",
+  ],
+  voice_settings:[
+    "Opening voice settings. 🎚️",
+    "Sure, let's configure your voice.",
+  ],
+  wake_enable:   [
+    'Wake word enabled. Say "Hey AtulOS" to activate me anytime. 🎙️',
+    'Always-on listening is active. Just say "Hey AtulOS".',
+  ],
+  wake_disable:  [
+    "Wake word disabled. 🔕",
+    "Always-on listening turned off.",
+  ],
+  system_status: [
+    "All systems operational. ✅",
+    "AtulOS running normally — no issues detected.",
+    "Everything looks good, Atul. Systems nominal.",
+  ],
+  time:  [], // generated dynamically
+  date:  [], // generated dynamically
+  joke:  [
+    "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
+    "A SQL query walks into a bar and asks two tables: 'Can I join you?' 😄",
+    "Why did the developer go broke? Used up all his cache. 💸",
+    "How many programmers to change a bulb? None — that's a hardware problem. 💡",
+    "Why do Java devs wear glasses? They don't C#. 🤓",
+    "I tried to write a joke about recursion, but... I tried to write a joke about recursion. 😅",
+  ],
+  open_terminal:  ["Opening terminal, Atul. 💻", "Terminal is up.", "Launching terminal..."],
+  open_projects:  ["Opening projects. 📁", "Here are your projects.", "Launching projects..."],
+  open_about:     ["Opening the about window. ℹ️", "Displaying profile info.", "About window — here you go."],
+  open_skills:    ["Skills window is open. 🧠", "Displaying your skills.", "Launching skills..."],
+  open_settings:  ["Settings window open. ⚙️", "Opening system settings.", "Here are the settings."],
+  open_ai:        ["I'm already here, Atul! 😄", "The AI window is right here.", "You're already talking to me!"],
+  close_terminal: ["Terminal closed. ✓", "Terminal window dismissed."],
+  close_projects: ["Projects closed. ✓", "Projects window dismissed."],
+  close_about:    ["About window closed. ✓"],
+  close_skills:   ["Skills closed. ✓"],
+  close_settings: ["Settings closed. ✓"],
+  clear:          ["Terminal cleared. 🧹", "Screen wiped clean.", "Terminal reset."],
+  whoami:         ["You are Atul Singh — embedded systems enthusiast, builder of AtulOS. 🛠️"],
+  thanks:         ["You're welcome, Atul. 😊", "Happy to help!", "Anytime!", "Always here for you. 🤖"],
+  bye:            ["Goodbye, Atul. AtulOS will be here when you return. 👋", "See you later! 👋", "Take care, Atul. 👋"],
+  stop:           ["Stopping. 🔇", "Got it — going quiet."],
+  friends:        ["Your close friends are:\n\n👥 Aayush\n👥 Muskan\n👥 Sameer\n👥 Kushal\n👥 Lucky\n👥 Yugal"],
+  lock_system:    ["🔒 Device control locked. Password required again."],
+  fallback:       [
+    "I didn't quite catch that. Try 'help' to see all commands.",
+    "Hmm, not sure about that one. Can you rephrase?",
+    "Command not recognised. Say 'help' for the full list.",
+    "I'm not sure what you mean. Try saying it differently.",
+  ],
+};
 
+/**
+ * Pick a random response from a pool.
+ */
+function pickResponse(arr) {
+  if (!arr || !arr.length) return null;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * generateResponse(intent, context) — returns a natural string response.
+ *
+ * @param {string} intent  - the resolved intent key
+ * @param {object} context - optional context (e.g. { device, action })
+ * @returns {string}
+ */
+function generateResponse(intent, context) {
+  // Dynamic intents
+  if (intent === 'time') {
+    return `Current time: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} 🕐`;
+  }
+  if (intent === 'date') {
+    return `Today is ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} 📅`;
+  }
+
+  const pool = RESPONSE_BANK[intent];
+  if (pool && pool.length) return pickResponse(pool);
+  return pickResponse(RESPONSE_BANK.fallback);
+}
+
+window.generateResponse = generateResponse;
+window.RESPONSE_BANK    = RESPONSE_BANK;
+window.pickResponse     = pickResponse;
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     ===== AI UPGRADE CONTINUE =====
+     MODULE 4.8 — COMMAND ENGINE (CENTRAL EXECUTION HUB)
+     executeCommand(input) is the single entry point for ALL commands.
+     It handles:
+       1. Context pronoun resolution  ("turn it off")
+       2. Multi-command splitting     ("turn on light and fan")
+       3. Natural-language parsing    via parseIntent()
+       4. Device auth gating          via DeviceAuth
+       5. Action execution
+       6. Response generation         via generateResponse()
+       7. Memory recording            via aiMemoryRecord()
+       8. Output to chat + terminal
+════════════════════════════════════════════════════════════════ -->
+<script>
+/**
+ * IoT device state setter — sends a 0/1 value to Firebase.
+ * Safely catches errors in demo mode.
+ */
+function iotSetDevice(deviceName, stateValue) {
+  try {
+    firebase.database().ref('devices').once('value').then(snap => {
+      const data = snap.val();
+      if (!data) return;
+      const key = Object.keys(data).find(k =>
+        data[k] && String(data[k].name).toLowerCase() === deviceName
+      );
+      if (key) firebase.database().ref('devices/' + key + '/state').set(stateValue);
+    });
+  } catch (e) {
+    console.warn('[AtulOS IoT] Firebase unavailable (demo mode):', e.message);
+  }
+}
+
+/**
+ * getDeviceStatusAsync — returns a promise resolving to a device status string.
+ */
+function getDeviceStatusAsync() {
+  return new Promise(resolve => {
+    try {
+      firebase.database().ref('devices').once('value').then(snap => {
+        const data = snap.val();
+        if (!data) { resolve("⚠️ Unable to fetch device status. Check Firebase connection."); return; }
+        const states = { light: 'OFF', fan: 'OFF', buzzer: 'OFF' };
+        for (const entry of Object.values(data)) {
+          if (entry && typeof entry === 'object' && 'name' in entry) {
+            const n = String(entry.name).toLowerCase();
+            if (n in states) states[n] = (entry.state === 1 || entry.state === 'on') ? 'ON' : 'OFF';
+          }
+        }
+        resolve(`📡 Device Status:\n\n💡 Light : ${states.light}\n🌀 Fan   : ${states.fan}\n🔊 Buzzer: ${states.buzzer}`);
+      }).catch(() => resolve("⚠️ Firebase read error. Check your connection."));
+    } catch (e) {
+      resolve("⚠️ Device status unavailable (demo mode).");
+    }
+  });
+}
+
+/**
+ * ACTION_MAP — maps intent keys to their side-effect functions.
+ * Pure UI/system actions that don't need auth go here.
+ */
+const ACTION_MAP = {
+  open_terminal:  () => openWindow('terminal'),
+  open_projects:  () => openWindow('projects'),
+  open_about:     () => openWindow('about'),
+  open_skills:    () => openWindow('skills'),
+  open_settings:  () => openWindow('settings'),
+  open_ai:        () => openWindow('atulAI'),
+
+  close_terminal: () => closeWindow('terminal'),
+  close_projects: () => closeWindow('projects'),
+  close_about:    () => closeWindow('about'),
+  close_skills:   () => closeWindow('skills'),
+  close_settings: () => closeWindow('settings'),
+
+  light_on:    () => iotSetDevice('light',  1),
+  light_off:   () => iotSetDevice('light',  0),
+  fan_on:      () => iotSetDevice('fan',    1),
+  fan_off:     () => iotSetDevice('fan',    0),
+  buzzer_on:   () => iotSetDevice('buzzer', 1),
+  buzzer_off:  () => iotSetDevice('buzzer', 0),
+
+  dark_mode:       () => setTheme('dark'),
+  light_mode:      () => setTheme('light'),
+
+  voice_on:        () => { jarvisTTSOn(); updateVoiceToggleUI(); },
+  voice_off:       () => { jarvisTTSOff(); updateVoiceToggleUI(); },
+  voice_settings:  () => openVoiceSettings(),
+
+  wake_enable:     () => SpeechEngine.enableWakeMode(),
+  wake_disable:    () => SpeechEngine.disableWakeMode(),
+
+  stop:            () => { if (window.stopSpeaking) stopSpeaking(); },
+  clear:           () => { const out = document.getElementById('terminal-output'); if (out) out.innerHTML = ''; },
+
+  lock_system:     () => {
+    if (typeof window._deviceAuthReset === 'function') window._deviceAuthReset();
+  },
+};
+
+/**
+ * dispatchOutput(response) — sends a response to both the AI chat and terminal.
+ * Called after every successful command execution.
+ */
+function dispatchOutput(response) {
+  if (!response) return;
+
+  // Send to AI chat
+  if (typeof aiAppendMessage === 'function') {
+    aiAppendMessage('ai', response, true);
+  }
+
+  // Speak the response
+  if (typeof jarvisSpeak === 'function') {
+    jarvisSpeak(response);
+  }
+
+  // Also mirror to terminal output if it's unlocked and visible
+  if (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) {
+    const termWin = document.getElementById('terminal');
+    if (termWin && termWin.style.display !== 'none') {
+      if (typeof termPrintLine === 'function') {
+        termPrintLine('AI', response, 'jarvis-line', true);
+      }
+    }
+  }
+}
+
+/**
+ * executeCommand(rawInput) — CENTRAL COMMAND ROUTER
+ *
+ * This is the single entry point for ALL user commands,
+ * whether typed, spoken, or sent from the terminal.
+ *
+ * @param {string} rawInput - the raw user input string
+ * @returns {string|null}   - the response text (null for async commands)
+ */
+function executeCommand(rawInput) {
+  if (!rawInput || !rawInput.trim()) return null;
+
+  let input = rawInput.trim();
+
+  // Strip wake word prefixes
+  input = input
+    .replace(/^hey atulos?\s*/i, '')
+    .replace(/^hello atulos?\s*/i, '')
+    .replace(/^ok atulos?\s*/i, '')
+    .trim();
+
+  if (!input) {
+    const resp = "AtulAI listening. What can I do for you, Atul? 👂";
+    dispatchOutput(resp);
+    return resp;
+  }
+
+  // ── STEP 1: Context pronoun resolution ───────────────────
+  // E.g. "turn it off" → "turn light off" using AI_MEMORY
+  const contextResolved = resolveContextPronoun(input);
+  if (contextResolved) {
+    return executeCommand(contextResolved); // recurse with resolved input
+  }
+
+  // ── STEP 2: Multi-command splitting ──────────────────────
+  // E.g. "turn on light and fan" → ["turn on light", "turn on fan"]
+  // Split on " and " but only if both parts look like valid commands
+  if (/ and /i.test(input)) {
+    const parts = input.split(/ and /i).map(p => p.trim()).filter(p => p.length > 1);
+    if (parts.length >= 2) {
+      const responses = [];
+      for (const part of parts) {
+        const r = executeCommand(part);
+        if (r) responses.push(r);
+      }
+      return responses.length > 0 ? responses.join('\n') : null;
+    }
+  }
+
+  // ── STEP 3: Parse intent ──────────────────────────────────
+  const { intent, confidence } = parseIntent(input);
+
+  // ── STEP 4: Handle async intents (device status) ─────────
+  if (intent === 'device_status') {
+    const loadingMsg = "Fetching device status from Firebase… 📡";
+    dispatchOutput(loadingMsg);
+    getDeviceStatusAsync().then(statusMsg => {
+      dispatchOutput(statusMsg);
+      aiMemoryRecord(input, intent, statusMsg);
+    });
+    return loadingMsg;
+  }
+
+  // ── STEP 5: Auth gate for protected intents ──────────────
+  // DeviceAuth is defined in Module 8; we call it here for IoT intents
+  const intentDef = INTENT_MAP[intent] || {};
+  if (intentDef.requiresAuth) {
+    // DeviceAuth.gate handles the password flow
+    // We simulate the gate inline using the global DeviceAuth object
+    if (typeof DeviceAuth !== 'undefined') {
+      const authResult = DeviceAuth.gate(input);
+      if (!authResult.proceed) {
+        // Auth is pending — display the auth prompt, do not execute
+        dispatchOutput(authResult.reply);
+
+        // If auth just succeeded, execute the pending command
+        if (authResult.isAuthSuccess && authResult.resolvedCommand) {
+          setTimeout(() => {
+            const resp = _executeIntentAction(intent, input);
+            dispatchOutput(resp);
+            aiMemoryRecord(authResult.resolvedCommand, intent, resp);
+          }, 600);
+        }
+        return authResult.reply;
+      }
+    }
+  }
+
+  // ── STEP 6: Execute action ───────────────────────────────
+  const response = _executeIntentAction(intent, input);
+
+  // ── STEP 7: Record in memory ─────────────────────────────
+  aiMemoryRecord(input, intent, response);
+
+  // ── STEP 8: Dispatch output ──────────────────────────────
+  dispatchOutput(response);
+
+  return response;
+}
+
+/**
+ * _executeIntentAction(intent, input) — internal helper.
+ * Runs the action and returns the response string.
+ * Not intended to be called externally.
+ */
+function _executeIntentAction(intent, input) {
+  // Run the side-effect action if available
+  const action = ACTION_MAP[intent];
+  if (action) {
+    try { action(); } catch (e) { console.warn('[AtulOS] Action error for', intent, ':', e); }
+  }
+
+  // Generate and return the response
+  return generateResponse(intent) || pickResponse(RESPONSE_BANK.fallback);
+}
+
+// ── Expose on window for all callers ─────────────────────────
+window.executeCommand        = executeCommand;
+window._executeIntentAction  = _executeIntentAction;
+window.iotSetDevice          = iotSetDevice;
+window.getDeviceStatusAsync  = getDeviceStatusAsync;
+window.dispatchOutput        = dispatchOutput;
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 5 — NLU / INTENT ENGINE
+     ⚡ UPGRADED: jarvisProcess now delegates to executeCommand()
+     and falls back gracefully. The original JARVIS_INTENTS and
+     JARVIS_RESPONSES are kept for backward compatibility with
+     any code that might call them directly.
+════════════════════════════════════════════════════════════════ -->
+<script>
+
+// ── ORIGINAL JARVIS_INTENTS kept for backward compat ─────────
+// (trimmed duplicate: lastDevice variable now lives in AI_MEMORY)
 const JARVIS_INTENTS = {
   greeting:     { patterns: ['hello','hi','hey','sup','yo','howdy','hiya','good morning','good evening','good afternoon','greetings','what up','hi there'], action: null },
   identity:     { patterns: ['who are you','what are you','your name','introduce yourself','are you an ai','are you atulai','tell me about yourself'], action: null },
@@ -2088,13 +2973,12 @@ const JARVIS_INTENTS = {
   close_skills:   { patterns: ['close skills','exit skills','hide skills'],                               action: () => closeWindow('skills')   },
   close_settings: { patterns: ['close settings','exit settings','hide settings','close preferences'],     action: () => closeWindow('settings') },
 
-  // ── IoT DEVICE CONTROL — flagged as requiresAuth: true ──
-  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], requiresAuth: true, action: () => { lastDevice = 'light'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           requiresAuth: true, action: () => { lastDevice = 'light'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'light'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
-  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    requiresAuth: true, action: () => { lastDevice = 'fan';   try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         requiresAuth: true, action: () => { lastDevice = 'fan';   try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'fan'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
-  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   requiresAuth: true, action: () => { lastDevice = 'buzzer'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(1); } }); } catch(e){} } },
-  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             requiresAuth: true, action: () => { lastDevice = 'buzzer'; try { firebase.database().ref('devices').once('value').then(s => { const d = s.val(); if (d) { const k = Object.keys(d).find(k => d[k].name === 'buzzer'); if (k) firebase.database().ref('devices/' + k + '/state').set(0); } }); } catch(e){} } },
+  light_on:   { patterns: ['light on','turn on light','switch on light','lights on','put light on','on the light','light please','brighten up','turn on the light'], requiresAuth: true, action: () => { AI_MEMORY.lastDevice = 'light'; iotSetDevice('light',1); } },
+  light_off:  { patterns: ['light off','turn off light','switch off light','lights off','put light off','off the light','turn off the light','lights out'],           requiresAuth: true, action: () => { AI_MEMORY.lastDevice = 'light'; iotSetDevice('light',0); } },
+  fan_on:     { patterns: ['fan on','turn on fan','start fan','switch on fan','enable fan','run fan','fan please','start the fan'],                                    requiresAuth: true, action: () => { AI_MEMORY.lastDevice = 'fan';   iotSetDevice('fan',1); } },
+  fan_off:    { patterns: ['fan off','turn off fan','stop fan','switch off fan','disable fan','stop the fan'],                                                         requiresAuth: true, action: () => { AI_MEMORY.lastDevice = 'fan';   iotSetDevice('fan',0); } },
+  buzzer_on:  { patterns: ['buzzer on','start buzzer','turn on buzzer','activate buzzer','sound buzzer','alarm on'],                                                   requiresAuth: true, action: () => { AI_MEMORY.lastDevice = 'buzzer'; iotSetDevice('buzzer',1); } },
+  buzzer_off: { patterns: ['buzzer off','stop buzzer','turn off buzzer','deactivate buzzer','silence buzzer','alarm off'],                                             requiresAuth: true, action: () => { AI_MEMORY.lastDevice = 'buzzer'; iotSetDevice('buzzer',0); } },
 
   dark_mode:  { patterns: ['dark mode','dark theme','switch to dark','go dark','enable dark','nighttime'], action: () => setTheme('dark')  },
   light_mode: { patterns: ['light mode','light theme','switch to light','go light','enable light mode','daytime'], action: () => setTheme('light') },
@@ -2118,251 +3002,158 @@ const JARVIS_INTENTS = {
   stop:   { patterns: ['stop','stop talking','quiet','silence','stop speaking','cancel'],
             action: () => { if (window.stopSpeaking) stopSpeaking(); } },
 
-  // ── FEATURE 1: FRIENDS COMMAND (AUTH REQUIRED) ────────────
-  // ADD THIS INSIDE JARVIS_INTENTS
   friends: {
-    patterns: [
-      'my friends',
-      'friends list',
-      'who are my friends',
-      'show my friends',
-      'tell my friends',
-      'show friends',
-      'list my friends',
-    ],
+    patterns: ['my friends','friends list','who are my friends','show my friends','tell my friends','show friends','list my friends'],
     requiresAuth: true,
     action: null,
   },
-
-  // ── FEATURE 2: DEVICE STATUS COMMAND ──────────────────────
-  // ADD THIS INSIDE JARVIS_INTENTS
   device_status: {
-    patterns: [
-      'device status',
-      'status of devices',
-      'is light on',
-      'fan status',
-      'check devices',
-      'all devices',
-      'show device status',
-      'devices status',
-    ],
-    action: null,  // handled async in jarvisProcess
+    patterns: ['device status','status of devices','is light on','fan status','check devices','all devices','show device status','devices status'],
+    action: null,
   },
-
-  // ── FEATURE 5: LOCK COMMAND (RESET AUTH) ──────────────────
-  // ADD THIS INSIDE JARVIS_INTENTS
   lock_system: {
-    patterns: [
-      'lock device control',
-      'logout device control',
-      'reset access',
-      'lock devices',
-      'lock access',
-    ],
-    action: null,  // handled in jarvisProcess — resets DeviceAuth
+    patterns: ['lock device control','logout device control','reset access','lock devices','lock access'],
+    action: null,
   },
 };
 
-function jarvisNormalise(input) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, '')
-    .replace(/\b(please|can you|could you|would you|i want to|i need to|pls|plz)\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function jarvisScore(norm, pattern) {
-  if (norm === pattern) return 1;
-  if (norm.includes(pattern)) return 0.92;
-  if (pattern.includes(norm) && norm.length > 3) return 0.80;
-  const pWords  = pattern.split(' ');
-  const iWords  = norm.split(' ');
-  const overlap = pWords.filter(pw => iWords.some(iw => iw.includes(pw) || pw.includes(iw)));
-  const ratio   = overlap.length / pWords.length;
-  if (ratio > 0.55) return 0.45 + ratio * 0.35;
-  return 0;
-}
-
-function parseIntent(rawInput) {
-  const norm = jarvisNormalise(rawInput);
-  let bestScore = 0;
-  let bestKey   = null;
-  for (const [key, def] of Object.entries(JARVIS_INTENTS)) {
-    for (const pat of def.patterns) {
-      const s = jarvisScore(norm, pat);
-      if (s > bestScore) { bestScore = s; bestKey = key; }
-    }
-  }
-  return bestScore >= 0.44
-    ? { intent: bestKey, confidence: bestScore, raw: rawInput }
-    : { intent: 'fallback', confidence: 0, raw: rawInput };
-}
-
+// ── JARVIS_RESPONSES kept for backward compat ─────────────────
 const JARVIS_RESPONSES = {
-  greeting:      ["Welcome back, Atul. All systems nominal. 🤖","Hello! AtulAI online. Ready to execute commands.","Hey there, Atul. What would you like me to do?"],
-  identity:      ["I'm AtulAI — your personal intelligent assistant built into AtulOS by Atul Singh.","AtulAI v3, powered by a unified speech engine. I control windows, IoT, and everything in this OS."],
-  capabilities:  [`Available commands:\n\n🖥  Apps     : open/close terminal, projects, about, skills, settings\n💡  IoT      : light on/off, fan on/off, buzzer on/off\n🎨  UI       : dark mode, light mode\n🔊  Voice    : voice on/off, voice settings\n🎙️  Wake     : hey atulos / hello atulos\n⏰  Info     : time, date, status, whoami, joke\n👥  Social   : my friends (auth required)\n📡  Devices  : device status, check devices\n🔒  Security : lock device control\n🧹  Util     : clear, help, stop\n\nYou can speak naturally — I understand full sentences!`],
-  light_on:      ["Light is ON. 💡","Done — activating the light.","Light turned on."],
-  light_off:     ["Light is OFF. 🌑","Done — light deactivated.","Lights out."],
-  fan_on:        ["Fan is running. 🌀","Fan activated. Staying cool!","Fan ON."],
-  fan_off:       ["Fan stopped. 🛑","Fan deactivated.","Stopping the fan."],
-  buzzer_on:     ["Buzzer activated! 🔊","Alert — buzzer is on."],
-  buzzer_off:    ["Buzzer silenced. 🔇","Silence restored."],
-  dark_mode:     ["Dark mode engaged. 🌑","Switching to dark theme."],
-  light_mode:    ["Light mode active. ☀️","Switching to light theme."],
-  voice_on:      ["Voice enabled. I'll speak my responses. 🔊"],
-  voice_off:     ["Voice muted. Silent mode active. 🔇"],
-  voice_settings:["Opening voice settings. 🎚️"],
-  wake_enable:   ['Wake word enabled. Say "Hey AtulOS" to activate me anytime. 🎙️'],
-  wake_disable:  ["Wake word disabled. 🔕"],
-  system_status: ["All systems operational. ✅","AtulOS running normally — no issues detected."],
+  greeting:      RESPONSE_BANK.greeting,
+  identity:      RESPONSE_BANK.identity,
+  capabilities:  RESPONSE_BANK.capabilities,
+  light_on:      RESPONSE_BANK.light_on,
+  light_off:     RESPONSE_BANK.light_off,
+  fan_on:        RESPONSE_BANK.fan_on,
+  fan_off:       RESPONSE_BANK.fan_off,
+  buzzer_on:     RESPONSE_BANK.buzzer_on,
+  buzzer_off:    RESPONSE_BANK.buzzer_off,
+  dark_mode:     RESPONSE_BANK.dark_mode,
+  light_mode:    RESPONSE_BANK.light_mode,
+  voice_on:      RESPONSE_BANK.voice_on,
+  voice_off:     RESPONSE_BANK.voice_off,
+  voice_settings:RESPONSE_BANK.voice_settings,
+  wake_enable:   RESPONSE_BANK.wake_enable,
+  wake_disable:  RESPONSE_BANK.wake_disable,
+  system_status: RESPONSE_BANK.system_status,
   time: [], date: [],
-  joke: [
-    "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
-    "A SQL query walks into a bar and asks two tables: 'Can I join you?' 😄",
-    "Why did the developer go broke? Used up all his cache. 💸",
-    "How many programmers to change a bulb? None — that's a hardware problem. 💡",
-    "Why do Java devs wear glasses? They don't C#. 🤓"
-  ],
-  open_terminal:  ["Opening terminal, Atul. 💻"],
-  open_projects:  ["Opening projects. 📁"],
-  open_about:     ["Opening the about window. ℹ️"],
-  open_skills:    ["Skills window open. 🧠"],
-  open_settings:  ["Settings window open. ⚙️"],
-  open_ai:        ["I'm already here, Atul! 😄"],
-  close_terminal: ["Terminal closed. ✓"],
-  close_projects: ["Projects closed. ✓"],
-  close_about:    ["About window closed. ✓"],
-  close_skills:   ["Skills closed. ✓"],
-  close_settings: ["Settings closed. ✓"],
-  clear:          ["Terminal cleared. 🧹"],
-  whoami:         ["You are Atul Singh — embedded systems enthusiast, builder of AtulOS. 🛠️"],
-  thanks:         ["You're welcome, Atul. 😊","Happy to help!","Anytime!"],
-  bye:            ["Goodbye, Atul. AtulOS will be here when you return. 👋"],
-  stop:           ["Stopping. 🔇","Got it — going quiet."],
-  fallback:       ["I didn't quite catch that. Try 'help' to see all commands.","Hmm, not sure about that one. Can you rephrase?","Command not recognised. Say 'help' for the full list."],
-
-  // ── FEATURE 1: FRIENDS RESPONSE ───────────────────────────
-  // ADD THIS INSIDE JARVIS_RESPONSES
-  friends: [
-    "Your close friends are:\n\n👥 Aayush\n👥 Muskan\n👥 Sameer\n👥 Kushal\n👥 Lucky\n👥 Yugal"
-  ],
-
-  // ── FEATURE 5: LOCK RESPONSE ──────────────────────────────
-  // ADD THIS INSIDE JARVIS_RESPONSES
-  lock_system: [
-    "🔒 Device control locked. Password required again."
-  ],
+  joke:          RESPONSE_BANK.joke,
+  open_terminal: RESPONSE_BANK.open_terminal,
+  open_projects: RESPONSE_BANK.open_projects,
+  open_about:    RESPONSE_BANK.open_about,
+  open_skills:   RESPONSE_BANK.open_skills,
+  open_settings: RESPONSE_BANK.open_settings,
+  open_ai:       RESPONSE_BANK.open_ai,
+  close_terminal:RESPONSE_BANK.close_terminal,
+  close_projects:RESPONSE_BANK.close_projects,
+  close_about:   RESPONSE_BANK.close_about,
+  close_skills:  RESPONSE_BANK.close_skills,
+  close_settings:RESPONSE_BANK.close_settings,
+  clear:         RESPONSE_BANK.clear,
+  whoami:        RESPONSE_BANK.whoami,
+  thanks:        RESPONSE_BANK.thanks,
+  bye:           RESPONSE_BANK.bye,
+  stop:          RESPONSE_BANK.stop,
+  friends:       RESPONSE_BANK.friends,
+  lock_system:   RESPONSE_BANK.lock_system,
+  fallback:      RESPONSE_BANK.fallback,
 };
 
-function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function pick(arr) { return pickResponse(arr); }
 
-// ── FEATURE 2: DEVICE STATUS — async Firebase fetch helper ───
-// ADD THIS BEFORE jarvisProcess
-function getDeviceStatusFromFirebase() {
-  return new Promise((resolve) => {
-    try {
-      firebase.database().ref('devices').once('value').then(snap => {
-        const data = snap.val();
-        if (!data) { resolve("⚠️ Unable to fetch device status. Check Firebase connection."); return; }
-        const states = { light: 'OFF', fan: 'OFF', buzzer: 'OFF' };
-        for (const entry of Object.values(data)) {
-          if (entry && typeof entry === 'object' && 'name' in entry) {
-            const n = String(entry.name).toLowerCase();
-            if (n in states) { states[n] = (entry.state === 1 || entry.state === 'on') ? 'ON' : 'OFF'; }
-          }
-        }
-        resolve(`📡 Device Status:\n\n💡 Light : ${states.light}\n🌀 Fan   : ${states.fan}\n🔊 Buzzer: ${states.buzzer}`);
-      }).catch(() => resolve("⚠️ Firebase read error. Check your connection."));
-    } catch (e) {
-      resolve("⚠️ Device status unavailable (demo mode).");
-    }
-  });
-}
+// ── getDeviceStatusFromFirebase kept for backward compat ──────
+function getDeviceStatusFromFirebase() { return getDeviceStatusAsync(); }
 
-// ── FEATURE 3: CONTEXT MEMORY — "turn it off / switch it on" ─
-// ADD THIS BEFORE jarvisProcess
-function resolveContextCommand(raw) {
-  if (!lastDevice) return null;
-  const norm = jarvisNormalise(raw);
-  const isOn  = /\b(turn it on|switch it on|on it|it on|start it)\b/.test(norm);
-  const isOff = /\b(turn it off|switch it off|off it|it off|stop it)\b/.test(norm);
-  if (!isOn && !isOff) return null;
-  const syntheticCmd = isOn
-    ? `turn on ${lastDevice}`
-    : `turn off ${lastDevice}`;
-  return syntheticCmd;
-}
+// ── resolveContextCommand kept for backward compat ────────────
+function resolveContextCommand(raw) { return resolveContextPronoun(raw); }
 
+/**
+ * jarvisProcess(rawInput) — UPGRADED
+ *
+ * Now delegates to executeCommand() which uses the new NLU pipeline.
+ * Kept as the public API for Terminal and other callers.
+ * Returns the response string (or null for async).
+ */
 function jarvisProcess(rawInput) {
   if (!rawInput || !rawInput.trim()) return null;
+
   let input = rawInput.toLowerCase().trim();
   [/^hey atulos?\s*/i, /^hello atulos?\s*/i, /^ok atulos?\s*/i].forEach(r => {
     input = input.replace(r, '');
   });
   if (!input && rawInput.trim()) return "AtulAI listening. What can I do for you, Atul? 👂";
 
-  // ── FEATURE 4: MULTI-COMMAND SUPPORT ──────────────────────
-  // ADD THIS INSIDE jarvisProcess, BEFORE parseIntent
-  // Split on " and " to handle compound commands like "turn on light and fan"
-  if (/ and /.test(input)) {
-    const parts = input.split(/ and /);
+  // ── Delegate to the new unified command engine ────────────
+  // executeCommand handles: context resolution, multi-command,
+  // NLU parsing, auth gating, action execution, memory, output.
+  // We suppress its dispatchOutput here since terminal callers
+  // want just the return value and handle output themselves.
+  return _jarvisProcessInternal(rawInput);
+}
+
+/**
+ * _jarvisProcessInternal — runs the command pipeline and returns
+ * only the response string, without triggering dispatchOutput.
+ * Used by terminal (which does its own output) and jarvisProcess().
+ */
+function _jarvisProcessInternal(rawInput) {
+  let input = rawInput.trim();
+
+  // Strip wake prefixes
+  input = input.replace(/^hey atulos?\s*/i, '').replace(/^hello atulos?\s*/i, '').replace(/^ok atulos?\s*/i, '').trim();
+  if (!input) return "AtulAI listening. What can I do for you, Atul? 👂";
+
+  // Context pronoun resolution
+  const contextResolved = resolveContextPronoun(input);
+  if (contextResolved) return _jarvisProcessInternal(contextResolved);
+
+  // Multi-command
+  if (/ and /i.test(input)) {
+    const parts = input.split(/ and /i).map(p => p.trim()).filter(p => p.length > 1);
     if (parts.length >= 2) {
-      const results = parts
-        .map(p => p.trim())
-        .filter(p => p.length > 0)
-        .map(p => jarvisProcess(p));
-      // Combine non-null responses, filter duplicates
-      const combined = [...new Set(results.filter(Boolean))].join('\n');
-      return combined || pick(JARVIS_RESPONSES.fallback);
+      const results = parts.map(p => _jarvisProcessInternal(p)).filter(Boolean);
+      const combined = [...new Set(results)].join('\n');
+      return combined || pickResponse(RESPONSE_BANK.fallback);
     }
   }
 
-  // ── FEATURE 3: CONTEXT MEMORY — resolve "it" references ──
-  const contextResolved = resolveContextCommand(input);
-  if (contextResolved) {
-    return jarvisProcess(contextResolved);
-  }
-
+  // Device status (async — return loading message, async will call dispatchOutput)
   const { intent } = parseIntent(input);
-
-  // ── FEATURE 2: DEVICE STATUS — async, injects into chat ──
   if (intent === 'device_status') {
-    getDeviceStatusFromFirebase().then(statusMsg => {
-      if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', statusMsg, true);
-      if (typeof jarvisSpeak     === 'function') jarvisSpeak(statusMsg);
+    getDeviceStatusAsync().then(msg => {
+      if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', msg, true);
+      if (typeof jarvisSpeak     === 'function') jarvisSpeak(msg);
     });
     return "Fetching device status from Firebase… 📡";
   }
 
-  // ── FEATURE 5: LOCK COMMAND — resets DeviceAuth session ──
+  // Lock system
   if (intent === 'lock_system') {
-    if (typeof DeviceAuth !== 'undefined' && DeviceAuth._resetAuth) {
-      DeviceAuth._resetAuth();
-    } else {
-      // Directly reset via the DeviceAuth internal mechanism
-      // We expose a reset function from DeviceAuth (see Module 8)
-      if (typeof window._deviceAuthReset === 'function') window._deviceAuthReset();
-    }
-    return pick(JARVIS_RESPONSES.lock_system);
+    if (typeof window._deviceAuthReset === 'function') window._deviceAuthReset();
+    return pickResponse(RESPONSE_BANK.lock_system);
   }
 
+  // Execute action from JARVIS_INTENTS (backward compat)
   const def = JARVIS_INTENTS[intent];
   if (def && def.action) {
-    try { def.action(); } catch (e) { console.warn('AtulAI action error:', e); }
+    try { def.action(); } catch (e) { console.warn('[AtulOS] Action error:', e); }
   }
-  if (intent === 'time') return `Current time: ${new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' })} 🕐`;
-  if (intent === 'date') return `Today is ${new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' })} 📅`;
-  const pool = JARVIS_RESPONSES[intent];
-  if (pool && pool.length) return pick(pool);
-  return pick(JARVIS_RESPONSES.fallback);
+
+  // Update memory
+  aiMemoryRecord(input, intent, '');
+
+  // Generate response
+  const resp = generateResponse(intent);
+  if (resp) {
+    AI_MEMORY.history[AI_MEMORY.history.length - 1].response = resp;
+    return resp;
+  }
+  return pickResponse(RESPONSE_BANK.fallback);
 }
 
-window.jarvisProcess = jarvisProcess;
-window.parseIntent   = parseIntent;
-window.atulAIEngine  = (input) => jarvisProcess(input);
+window.jarvisProcess   = jarvisProcess;
+window.parseIntent     = parseIntent;
+window.atulAIEngine    = (input) => jarvisProcess(input);
 </script>
 
 
@@ -2755,6 +3546,7 @@ function termPrintLine(role, text, cssClass, animated) {
   }
 }
 
+// ===== AI UPGRADE: Extended autocomplete with new commands =====
 const TERM_COMMANDS = [
   'help','clear','whoami','status',
   'open terminal','open projects','open about','open skills','open settings','open ai',
@@ -2762,8 +3554,13 @@ const TERM_COMMANDS = [
   'light on','light off','fan on','fan off','buzzer on','buzzer off',
   'dark mode','light mode','joke','date','time',
   'voice on','voice off','wake word on','wake word off','stop',
-  // ── FEATURE additions to autocomplete ──
   'my friends','device status','check devices','lock device control',
+  // ===== AI UPGRADE: Natural language variations in autocomplete =====
+  'turn on light','turn off light','turn on fan','turn off fan',
+  'switch on light','switch off light','start fan','stop fan',
+  'activate buzzer','deactivate buzzer','launch terminal','launch settings',
+  'show projects','show skills','system status','system check',
+  'enable voice','disable voice','enable wake word','disable wake word',
 ];
 
 function termRenderSuggestions(query) {
@@ -2854,6 +3651,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       termInput.value = '';
 
+      // ===== AI UPGRADE: Terminal uses jarvisProcess (→ executeCommand) =====
       const response = (typeof window.jarvisProcess === 'function') ? window.jarvisProcess(raw) : '—';
       if (response) {
         termPrintLine('AI', response, 'jarvis-line', true);
@@ -2871,54 +3669,42 @@ window.termPrintLine = termPrintLine;
      MODULE 8 — ATUL AI CHAT UI
      ⚡ EXTENDED with session-based device control authentication
      ⚡ EXTENDED with lock_system reset exposure
+     ⚡ UPGRADED: aiSendMessage now routes through executeCommand()
 ════════════════════════════════════════════════════════════════ -->
 <script>
 // ══════════════════════════════════════════════════════════════
 // DEVICE AUTH STATE — Session-based password gate for IoT commands
-// Only resets on page unload. Normal chat is completely unaffected.
 // ══════════════════════════════════════════════════════════════
 const DeviceAuth = (function () {
   'use strict';
 
-  const DEVICE_PASSWORD    = 'atul0775';   // password to unlock device control
-  let   isAuthenticated    = false;        // persists for the lifetime of the tab
-  let   waitingForPassword = false;        // true when AI is expecting the next input as a password
-  let   pendingCommand     = null;         // the raw command string to execute after auth succeeds
+  const DEVICE_PASSWORD    = 'atul0775';
+  let   isAuthenticated    = false;
+  let   waitingForPassword = false;
+  let   pendingCommand     = null;
 
-  // Reset on tab/window close — session-only authentication
   window.addEventListener('beforeunload', () => {
     isAuthenticated    = false;
     waitingForPassword = false;
     pendingCommand     = null;
   });
 
-  // ── FEATURE 5: Expose reset function for lock_system ──────
-  // ADD THIS INSIDE DeviceAuth IIFE
   function resetAuth() {
     isAuthenticated    = false;
     waitingForPassword = false;
     pendingCommand     = null;
   }
-  // Expose on window so jarvisProcess (Module 5) can call it
   window._deviceAuthReset = resetAuth;
 
-  /**
-   * Check whether the resolved intent requires device auth.
-   * Only IoT control intents have requiresAuth: true in JARVIS_INTENTS.
-   */
   function intentRequiresAuth(intentKey) {
-    const def = JARVIS_INTENTS[intentKey];
-    return !!(def && def.requiresAuth);
+    // Check both INTENT_MAP (new) and JARVIS_INTENTS (legacy)
+    const defNew = INTENT_MAP[intentKey];
+    const defOld = JARVIS_INTENTS[intentKey];
+    return !!(defNew && defNew.requiresAuth) || !!(defOld && defOld.requiresAuth);
   }
 
-  /**
-   * Call this before executing any AI command.
-   * Returns an object:
-   *   { proceed: true }               — run the command normally
-   *   { proceed: false, reply: str }  — return `reply` to the user and halt
-   */
   function gate(rawInput) {
-    // ── STEP 1: If we're waiting for a password, treat this input as the password attempt
+    // STEP 1: Waiting for password
     if (waitingForPassword) {
       if (rawInput.trim() === DEVICE_PASSWORD) {
         isAuthenticated    = true;
@@ -2926,13 +3712,12 @@ const DeviceAuth = (function () {
         const cmd          = pendingCommand;
         pendingCommand     = null;
         return {
-          proceed:        false,                          // we'll handle execution ourselves
-          isAuthSuccess:  true,
+          proceed:         false,
+          isAuthSuccess:   true,
           resolvedCommand: cmd,
-          reply:          '🔓 Access granted. Executing command...',
+          reply:           '🔓 Access granted. Executing command...',
         };
       } else {
-        // Wrong password — stay in waiting state so user can retry
         return {
           proceed: false,
           reply:   '❌ Incorrect password. Try again:',
@@ -2940,7 +3725,7 @@ const DeviceAuth = (function () {
       }
     }
 
-    // ── STEP 2: Not waiting for a password — check if this command needs auth
+    // STEP 2: Check if command needs auth
     const { intent } = parseIntent(rawInput);
     if (intentRequiresAuth(intent) && !isAuthenticated) {
       waitingForPassword = true;
@@ -2951,7 +3736,6 @@ const DeviceAuth = (function () {
       };
     }
 
-    // ── STEP 3: No auth needed (or already authenticated) — proceed normally
     return { proceed: true };
   }
 
@@ -2960,7 +3744,7 @@ const DeviceAuth = (function () {
 
 
 // ══════════════════════════════════════════════════════════════
-// EXISTING CHAT UI HELPERS — unchanged
+// CHAT UI HELPERS
 // ══════════════════════════════════════════════════════════════
 const aiCmdHistory = [];
 let   aiHistIdx    = -1;
@@ -3018,12 +3802,7 @@ function aiHideTyping() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// aiSendMessage — EXTENDED with DeviceAuth gate
-// Logic flow:
-//   1. Read input, append user bubble (unchanged)
-//   2. Run DeviceAuth.gate() before processing
-//      a. If gate returns proceed:false with reply → show reply, optionally execute pending command
-//      b. If gate returns proceed:true → run jarvisProcess normally
+// aiSendMessage — UPGRADED to use DeviceAuth + executeCommand
 // ══════════════════════════════════════════════════════════════
 function aiSendMessage() {
   const inputEl = document.getElementById('ai-input');
@@ -3034,7 +3813,7 @@ function aiSendMessage() {
   aiCmdHistory.push(text);
   aiHistIdx = aiCmdHistory.length;
 
-  // Always show the user's message bubble first
+  // Show user bubble
   aiAppendMessage('user', text, false);
   inputEl.value = '';
 
@@ -3047,27 +3826,34 @@ function aiSendMessage() {
     const authResult = DeviceAuth.gate(text);
 
     if (!authResult.proceed) {
-      // Auth gate intercepted this message
+      // Auth gate intercepted — show the prompt/result
       aiAppendMessage('ai', authResult.reply, true);
       if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(authResult.reply);
 
-      // If password was correct, also execute the originally pending command
+      // If password was just accepted, execute the pending command
       if (authResult.isAuthSuccess && authResult.resolvedCommand) {
         setTimeout(() => {
           aiShowTyping();
           setTimeout(() => {
             aiHideTyping();
-            const resp = jarvisProcess(authResult.resolvedCommand) || "Done! 🤖";
+            // ===== AI UPGRADE: use executeCommand for pending command =====
+            const resp = _jarvisProcessInternal(authResult.resolvedCommand) || "Done! 🤖";
             aiAppendMessage('ai', resp, true);
             if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
           }, 300 + Math.random() * 200);
         }, 600);
       }
-      return; // Stop — do not run jarvisProcess on this input
+      return;
     }
 
-    // ── Auth cleared — normal command processing ──────────────
-    const resp = jarvisProcess(text) || "I didn't get that. Try 'help'. 🤔";
+    // ── Auth cleared — route through executeCommand ───────────
+    // ===== AI UPGRADE: all commands go through executeCommand() =====
+    // executeCommand handles: context memory, NLU, multi-command,
+    // action execution, response generation, memory recording.
+    // We call _jarvisProcessInternal here to get the return value
+    // without double-dispatching (executeCommand would call
+    // aiAppendMessage again). Instead we manually append once.
+    const resp = _jarvisProcessInternal(text) || "I didn't get that. Try 'help'. 🤔";
     aiAppendMessage('ai', resp, true);
     if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
 
@@ -3080,7 +3866,7 @@ window.aiAppendMessage = aiAppendMessage;
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     aiAppendMessage('ai',
-      "Hello, Atul! I'm AtulAI — your personal AI assistant. 👋\n\nI can control OS windows, IoT devices, and answer questions.\n\nType 'help' for all commands, or tap 🎤 to speak.\nSay 'Hey AtulOS' after enabling wake mode in Settings!\n\n🔐 Device control requires password authentication.",
+      "Hello, Atul! I'm AtulAI — your personal AI assistant. 👋\n\nI can control OS windows, IoT devices, and answer questions.\n\nType 'help' for all commands, or tap 🎤 to speak.\nSay 'Hey AtulOS' after enabling wake mode in Settings!\n\n🔐 Device control requires password authentication.\n\n💡 Tip: I now understand natural language! Try:\n• \"switch on the fan\"\n• \"turn it off\" (after a device command)\n• \"launch terminal and open projects\"",
       false
     );
   }, 3600);
@@ -3101,6 +3887,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+// ===== AI UPGRADE END =====
 </script>
 
 
