@@ -958,6 +958,318 @@ body {
 }
 /* ===== UPGRADE END: UPGRADE 2 — WINDOW RESIZE HANDLES CSS ===== */
 
+/* ===== UPGRADE START: PROJECTS SECTION REDESIGN ===== */
+
+/* ── PROJECTS WINDOW — wider default ── */
+#projects { width: 680px; }
+
+/* ── PROJECTS WINDOW BODY ── */
+#projects .window-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ══════════════════════════════════════
+   FEATURED CARD — Smart Parking
+══════════════════════════════════════ */
+.proj-featured {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid rgba(99,168,255,0.35);
+  background: linear-gradient(145deg,
+    rgba(99,168,255,0.10) 0%,
+    rgba(99,168,255,0.03) 60%,
+    rgba(18,24,33,0.6) 100%);
+  padding: 20px 20px 18px;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow:
+    0 0 0 0.5px rgba(99,168,255,0.12) inset,
+    0 8px 32px rgba(0,0,0,0.4),
+    0 0 40px rgba(99,168,255,0.06);
+}
+.proj-featured:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99,168,255,0.6);
+  box-shadow:
+    0 0 0 0.5px rgba(99,168,255,0.2) inset,
+    0 16px 48px rgba(0,0,0,0.5),
+    0 0 60px rgba(99,168,255,0.14);
+}
+/* Ambient glow orb */
+.proj-featured::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(99,168,255,0.12) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: 50%;
+  animation: proj-glow-pulse 4s ease-in-out infinite;
+}
+@keyframes proj-glow-pulse {
+  0%,100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+/* Scan-line texture */
+.proj-featured::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(99,168,255,0.015) 3px,
+    rgba(99,168,255,0.015) 4px
+  );
+  pointer-events: none; border-radius: 14px;
+}
+
+.proj-featured-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  position: relative; z-index: 1;
+}
+
+.proj-featured-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+  display: flex; align-items: center; gap: 8px;
+}
+.proj-featured-title i { color: var(--accent); font-size: 14px; }
+
+.proj-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #28c840;
+  border: 1px solid rgba(40,200,64,0.4);
+  background: rgba(40,200,64,0.08);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.proj-live-badge::before {
+  content: '●';
+  font-size: 7px;
+  animation: blink-dot 1.4s ease-in-out infinite;
+}
+
+.proj-featured-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 14px;
+  position: relative; z-index: 1;
+}
+
+.proj-tech-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  position: relative; z-index: 1;
+}
+
+.proj-tag {
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(99,168,255,0.25);
+  background: rgba(99,168,255,0.07);
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 600;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+.proj-tag:hover {
+  border-color: rgba(99,168,255,0.5);
+  background: rgba(99,168,255,0.14);
+  transform: translateY(-1px);
+}
+.proj-tag.amber {
+  border-color: rgba(254,188,46,0.28);
+  background: rgba(254,188,46,0.07);
+  color: #febc2e;
+}
+.proj-tag.amber:hover {
+  border-color: rgba(254,188,46,0.5);
+  background: rgba(254,188,46,0.14);
+}
+.proj-tag.green {
+  border-color: rgba(40,200,64,0.28);
+  background: rgba(40,200,64,0.07);
+  color: #28c840;
+}
+
+.proj-btn-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  position: relative; z-index: 1;
+}
+
+.proj-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  letter-spacing: 0.3px;
+  transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(99,168,255,0.3);
+}
+.proj-btn-primary:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99,168,255,0.45);
+}
+
+.proj-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 12px;
+  color: var(--fg);
+  background: rgba(255,255,255,0.04);
+  letter-spacing: 0.3px;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.proj-btn-secondary:hover {
+  background: rgba(99,168,255,0.08);
+  border-color: rgba(99,168,255,0.35);
+  transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════
+   ARDUINO MINI-CARDS SECTION
+══════════════════════════════════════ */
+.proj-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.proj-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.proj-section-label i { font-size: 12px; opacity: 0.85; }
+
+.proj-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.proj-mini-card {
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 13px 14px 12px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  overflow: hidden;
+}
+.proj-mini-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  border-radius: 10px 10px 0 0;
+}
+.proj-mini-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99,168,255,0.35);
+  background: rgba(99,168,255,0.06);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 20px rgba(99,168,255,0.07);
+}
+.proj-mini-card:hover::before { opacity: 1; }
+
+.proj-mini-num {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.proj-mini-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.3;
+  transition: color 0.2s;
+}
+.proj-mini-card:hover .proj-mini-title { color: var(--accent); }
+
+.proj-mini-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.proj-mini-link-icon {
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s, transform 0.2s, color 0.2s;
+  display: flex; align-items: center; gap: 4px;
+}
+.proj-mini-card:hover .proj-mini-link-icon {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--accent);
+}
+
+@media (max-width: 520px) {
+  #projects { width: calc(100% - 24px) !important; }
+  .proj-mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 360px) {
+  .proj-mini-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== UPGRADE END: PROJECTS SECTION REDESIGN ===== */
+
 </style>
 </head>
 <body>
@@ -1107,25 +1419,138 @@ body {
     </div>
   </div>
   <div class="window-body">
-    <div style="padding:16px;margin-bottom:22px;border-radius:12px;border:1px solid rgba(99,168,255,0.25);background:linear-gradient(145deg,rgba(99,168,255,0.07),rgba(99,168,255,0.02));">
-      <h3 style="margin:0 0 8px;color:var(--accent);font-size:15px;">🚗 Smart Parking Management System</h3>
-      <p style="margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.6;">Real-time IoT parking system built using ESP32, Firebase and a live web dashboard. Displays slot availability dynamically with cloud integration.</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <a href="https://atul-singh-07.github.io/Smart-Parking-Dashboard/" target="_blank" rel="noopener noreferrer" style="padding:8px 14px;background:var(--accent);color:#000;font-weight:700;border-radius:8px;text-decoration:none;font-size:13px;">Open Live Dashboard →</a>
-        <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;text-decoration:none;font-size:13px;color:var(--fg);">View GitHub</a>
+
+    <!-- ── FEATURED: Smart Parking ── -->
+    <div class="proj-featured">
+      <div class="proj-featured-header">
+        <div class="proj-featured-title">
+          <i class="fa-solid fa-car"></i>
+          Smart Parking Management System
+        </div>
+        <span class="proj-live-badge">LIVE</span>
+      </div>
+
+      <p class="proj-featured-desc">
+        Real-time IoT parking system built using ESP32, Firebase and a live web dashboard.
+        Displays slot availability dynamically with cloud integration.
+      </p>
+
+      <div class="proj-tech-tags">
+        <span class="proj-tag">ESP32</span>
+        <span class="proj-tag">Firebase</span>
+        <span class="proj-tag">IoT</span>
+        <span class="proj-tag">C++</span>
+        <span class="proj-tag green">Real-time</span>
+      </div>
+
+      <div class="proj-btn-row">
+        <a href="https://atul-singh-07.github.io/Smart-Parking-Dashboard/"
+           target="_blank" rel="noopener noreferrer"
+           class="proj-btn-primary">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          Open Live Dashboard
+        </a>
+        <a href="https://github.com/atul-singh-07"
+           target="_blank" rel="noopener noreferrer"
+           class="proj-btn-secondary">
+          <i class="fab fa-github"></i>
+          View GitHub
+        </a>
       </div>
     </div>
-    <h3 style="color:var(--accent);margin-bottom:14px;font-size:14px;text-transform:uppercase;letter-spacing:1px;">Arduino Mini Projects</h3>
-    <ul style="list-style:none;padding:0;">
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/01_led_blink"            target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">01. LED Blink</a></li>
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/02_traffic_light"         target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">02. Traffic Light System</a></li>
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/03_dht11_sensor"          target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">03. DHT11 Temperature &amp; Humidity Sensor</a></li>
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/04_rgb_led"               target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">04. RGB LED Control</a></li>
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/05_seven_segment_display"  target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">05. Seven Segment Display</a></li>
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/06_servo"                 target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">06. Servo Motor Control</a></li>
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/07_radar_system"          target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">07. Ultrasonic Radar System</a></li>
-      <li style="margin-bottom:10px;"><a href="https://github.com/atul-singh-07/arduino-projects/tree/main/08_joystick_led"          target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:13px;">08. Joystick Controlled LED</a></li>
-    </ul>
+
+    <!-- ── ARDUINO MINI-PROJECTS ── -->
+    <div>
+      <div class="proj-section-label">
+        <i class="fa-solid fa-microchip"></i>
+        Arduino Mini Projects
+      </div>
+
+      <div class="proj-mini-grid">
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/01_led_blink"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 01</div>
+          <div class="proj-mini-title">LED Blink</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Arduino</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/02_traffic_light"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 02</div>
+          <div class="proj-mini-title">Traffic Light System</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Arduino</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/03_dht11_sensor"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 03</div>
+          <div class="proj-mini-title">DHT11 Temperature &amp; Humidity Sensor</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Sensor</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/04_rgb_led"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 04</div>
+          <div class="proj-mini-title">RGB LED Control</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Arduino</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/05_seven_segment_display"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 05</div>
+          <div class="proj-mini-title">Seven Segment Display</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Display</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/06_servo"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 06</div>
+          <div class="proj-mini-title">Servo Motor Control</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Motor</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/07_radar_system"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 07</div>
+          <div class="proj-mini-title">Ultrasonic Radar System</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Sensor</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+        <a href="https://github.com/atul-singh-07/arduino-projects/tree/main/08_joystick_led"
+           target="_blank" rel="noopener noreferrer" class="proj-mini-card">
+          <div class="proj-mini-num">Project 08</div>
+          <div class="proj-mini-title">Joystick Controlled LED</div>
+          <div class="proj-mini-footer">
+            <span class="proj-tag amber" style="font-size:9px;padding:2px 7px;">Input</span>
+            <span class="proj-mini-link-icon"><i class="fab fa-github"></i> View</span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
   </div>
 </div>
 
