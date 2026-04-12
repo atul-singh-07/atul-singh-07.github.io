@@ -2376,10 +2376,24 @@ const SpeechEngine = (function () {
       }
 
       if (currentMode === MODE.WAKE) {
-        const combined  = (finalText + interimText).toLowerCase().trim();
-        // ===== UPGRADE START: UPGRADE 1 — Use isWakeWord() for strict matching =====
+        const combined = (finalText + interimText).toLowerCase().trim();
+
+        // If input is wake word + command, exit wake mode first, then execute
+        const wakeCommand = typeof startsWithWakeWord === 'function' ? startsWithWakeWord(combined) : null;
+        if (wakeCommand) {
+          // Step 1: Stop wake mode so onend does not restart it
+          clearTimeout(commandTimeout);
+          currentMode = MODE.IDLE;
+          hideModeBadge();
+          hideMicBadge();
+          setMicBtnActive(false);
+          // Step 2: Execute the stripped command directly
+          if (typeof executeCommand === 'function') executeCommand(wakeCommand);
+          return;
+        }
+
+        // Pure wake word (exact match only) → prompt user and enter command mode
         const triggered = isWakeWord(combined);
-        // ===== UPGRADE END: UPGRADE 1 =====
         if (triggered) handleWakeWord(combined);
         return;
       }
@@ -2436,16 +2450,19 @@ const SpeechEngine = (function () {
   }
 
   function handleWakeWord(transcript) {
-    let remainder = transcript;
-    WAKE_PHRASES.forEach(p => { remainder = remainder.replace(p, '').trim(); });
-    if (remainder.length > 2) {
-      const result = executeCommand(remainder);
-      if (!result) {
-        const resp = 'Ready, Atul.';
-        if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', resp, true);
-        if (typeof jarvisSpeak     === 'function') jarvisSpeak(resp);
-      }
+    const command = typeof startsWithWakeWord === 'function' ? startsWithWakeWord(transcript) : null;
+
+    if (command && command.length > 0) {
+      // Has a command suffix — exit wake mode entirely before executing
+      clearTimeout(commandTimeout);
+      currentMode = MODE.IDLE;
+      hideModeBadge();
+      hideMicBadge();
+      setMicBtnActive(false);
+      // Execute the stripped command; greeting handler inside executeCommand covers "hello" etc.
+      executeCommand(command);
     } else {
+      // Pure wake word — prompt and enter command mode for next utterance
       const resp = "AtulAI listening. What can I do for you? 👂";
       if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', resp, true);
       if (typeof jarvisSpeak     === 'function') jarvisSpeak(resp);
@@ -2555,32 +2572,71 @@ window.disableWakeWord = () => SpeechEngine.disableWakeMode();
  * @param  {string} input  — raw transcript, will be normalised internally
  * @returns {boolean}
  */
+/**
+ * isWakeWord(input) — Strict wake word detector.
+ *
+ * FIX: Returns true ONLY when the normalised transcript is EXACTLY
+ * one of the wake words alone (no trailing words).
+ * "atulai hello" → false (has extra words → treat as command)
+ * "atulai"       → true  (exact match  → activate wake/listen mode)
+ *
+ * Approved wake words (exact-only):
+ *   "atul"
+ *   "hey atul"
+ *   "atul ai"
+ *   "atulai"
+ *
+ * @param  {string} input  — raw transcript, normalised internally
+ * @returns {boolean}
+ */
 function isWakeWord(input) {
   if (!input || typeof input !== 'string') return false;
 
-  // Normalise: lowercase, collapse whitespace, strip leading/trailing space
   const norm = input.toLowerCase().replace(/\s+/g, ' ').trim();
 
-  // The only three accepted wake phrases (strict list — do NOT expand with .includes())
-  const STRICT_WAKE_WORDS = [
+  // FIX: Only the EXACT wake word alone triggers wake mode.
+  // Inputs with extra words after the wake word are commands — NOT wake triggers.
+  const EXACT_WAKE_WORDS = [
     'atul',
     'hey atul',
     'atul ai',
+    'atulai',
   ];
 
-  for (const phrase of STRICT_WAKE_WORDS) {
-    // Exact match (user said only the wake word)
-    if (norm === phrase) return true;
-
-    // Wake word followed by a command: "atul open terminal"
-    // We accept "phrase " + anything but NOT a phrase buried mid-sentence
-    if (norm.startsWith(phrase + ' ')) return true;
-  }
-
-  return false;
+  return EXACT_WAKE_WORDS.includes(norm);
 }
 
-window.isWakeWord = isWakeWord;
+/**
+ * startsWithWakeWord(input) — Detects wake-word-prefixed commands.
+ * Used by handleWakeWord to strip the prefix and route to executeCommand.
+ * "atulai open terminal" → true
+ * "atulai"               → false (exact wake word, handled by isWakeWord)
+ *
+ * @param  {string} input — normalised transcript
+ * @returns {string|null}  — the command remainder, or null
+ */
+function startsWithWakeWord(input) {
+  if (!input || typeof input !== 'string') return null;
+  const norm = input.toLowerCase().replace(/\s+/g, ' ').trim();
+
+  const WAKE_PREFIXES = [
+    'atul ai ',
+    'hey atul ',
+    'atulai ',
+    'atul ',
+  ];
+
+  for (const prefix of WAKE_PREFIXES) {
+    if (norm.startsWith(prefix)) {
+      const remainder = norm.slice(prefix.length).trim();
+      if (remainder.length > 0) return remainder;
+    }
+  }
+  return null;
+}
+
+window.isWakeWord         = isWakeWord;
+window.startsWithWakeWord = startsWithWakeWord;
 </script>
 <!-- ===== UPGRADE END: UPGRADE 1 — STRICT WAKE WORD DETECTION ===== -->
 
@@ -2589,72 +2645,429 @@ window.isWakeWord = isWakeWord;
      MODULE 4.5 — CONTEXT-AWARE MEMORY SYSTEM
 ════════════════════════════════════════════════════════════════ -->
 <script>
+// ══════════════════════════════════════════════════════════════
+// MODULE 4.5 — MULTI-CONTEXT INTELLIGENT MEMORY SYSTEM v2
+// Upgrades: multi-device tracking, app context, intent tracking,
+// pronoun resolution ("it", "them", "that"), resolveContext()
+// Fully backward-compatible — lastDevice still readable.
+// ══════════════════════════════════════════════════════════════
+
 const AI_MEMORY = {
+  // ── Legacy (kept for backward compat) ──
   lastCommand: '',
-  lastDevice:  null,
-  lastAction:  null,
-  history:     [],
-  maxHistory:  50,
+  lastDevice:  null,   // mirrors lastDevices[0]
+  lastAction:  null,   // mirrors lastActionType shorthand
+
+  // ── Multi-context fields ──
+  lastDevices:    [],        // array of all recently mentioned IoT devices
+  lastApp:        null,      // last opened/closed app name
+  lastIntent:     null,      // last recognised intent string
+  lastActionType: null,      // 'iot' | 'app' | 'system'
+
+  // ── UPGRADE: Context Priority + Reasoning Engine ──
+  contextStack:        [],   // [{type, value, action, time}] — max 10 entries
+  lastReason:          null, // human-readable explanation of last context decision
+  lastReasonTimestamp: null, // Date.now() when lastReason was set
+
+  history:    [],
+  maxHistory: 50,
 };
 
+// ── Record a command into multi-context memory ──────────────
 function aiMemoryRecord(input, intent, response) {
   AI_MEMORY.lastCommand = input;
+  AI_MEMORY.lastIntent  = intent;
 
+  // IoT device tracking
   const deviceMatch = intent.match(/^(light|fan|buzzer)_(on|off)$/);
   if (deviceMatch) {
-    AI_MEMORY.lastDevice = deviceMatch[1];
-    AI_MEMORY.lastAction = deviceMatch[2];
+    const dev    = deviceMatch[1];
+    const action = deviceMatch[2];
+
+    // Legacy compat
+    AI_MEMORY.lastDevice = dev;
+    AI_MEMORY.lastAction = action;
+
+    // Multi-context: push device to front, keep unique, max 5
+    AI_MEMORY.lastDevices = [dev, ...AI_MEMORY.lastDevices.filter(d => d !== dev)].slice(0, 5);
+    AI_MEMORY.lastActionType = 'iot';
+
+    // ── UPGRADE: push to contextStack ──
+    _pushContextStack({ type: 'iot', value: dev, action, intent });
   }
 
+  // App context tracking
   const windowMatch = intent.match(/^(open|close)_(.+)$/);
   if (windowMatch) {
-    AI_MEMORY.lastAction = windowMatch[1];
-    AI_MEMORY.lastDevice = windowMatch[2];
+    const appAction = windowMatch[1];
+    const appName   = windowMatch[2];
+
+    // Legacy compat
+    AI_MEMORY.lastAction = appAction;
+    AI_MEMORY.lastDevice = appName;
+
+    // Multi-context
+    AI_MEMORY.lastApp        = appName;
+    AI_MEMORY.lastActionType = 'app';
+
+    // ── UPGRADE: push to contextStack ──
+    _pushContextStack({ type: 'app', value: appName, action: appAction, intent });
   }
 
-  AI_MEMORY.history.push({
-    input,
-    intent,
-    response,
-    timestamp: new Date().toISOString(),
-  });
-  if (AI_MEMORY.history.length > AI_MEMORY.maxHistory) {
-    AI_MEMORY.history.shift();
+  // System-level intent tracking
+  const systemIntents = ['dark_mode','light_mode','voice_on','voice_off',
+    'voice_settings','wake_enable','wake_disable','system_status',
+    'clear','whoami','time','date','lock_system'];
+  if (systemIntents.includes(intent)) {
+    AI_MEMORY.lastActionType = 'system';
+
+    // ── UPGRADE: push to contextStack ──
+    _pushContextStack({ type: 'system', value: intent, action: intent, intent });
   }
+
+  AI_MEMORY.history.push({ input, intent, response, timestamp: new Date().toISOString() });
+  if (AI_MEMORY.history.length > AI_MEMORY.maxHistory) AI_MEMORY.history.shift();
 }
 
-function resolveContextPronoun(input) {
+// ── Multi-device command scanner ────────────────────────────
+// Detects "turn on light and fan" patterns and updates lastDevices
+function _scanForMultiDevice(input) {
+  const norm    = input.toLowerCase();
+  const devices = ['light', 'fan', 'buzzer'];
+  const found   = devices.filter(d => norm.includes(d));
+  if (found.length >= 2) {
+    // Store all mentioned devices (unique, front-first)
+    found.forEach(d => {
+      AI_MEMORY.lastDevices = [d, ...AI_MEMORY.lastDevices.filter(x => x !== d)].slice(0, 5);
+    });
+    AI_MEMORY.lastDevice = found[0]; // legacy compat
+    return found;
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════
+// UPGRADE — CONTEXT PRIORITY + REASONING ENGINE v1
+// Functions: _pushContextStack, _contextAge, selectBestContext,
+//            inferIntentFromContext, (improved) resolveContext
+// ══════════════════════════════════════════════════════════════
+
+// ── Context Stack helpers ────────────────────────────────────
+const _CONTEXT_EXPIRY_MS = 3 * 60 * 1000; // 3 minutes
+const _CONTEXT_DECAY_MS  = 1 * 60 * 1000; // 1 minute — start reducing score
+
+function _pushContextStack(entry) {
+  // entry: { type, value, action, intent }
+  AI_MEMORY.contextStack.unshift({ ...entry, time: Date.now() });
+  if (AI_MEMORY.contextStack.length > 10) AI_MEMORY.contextStack.pop();
+}
+
+// Returns age of a stack entry in ms, or Infinity if missing
+function _contextAge(entry) {
+  if (!entry || !entry.time) return Infinity;
+  return Date.now() - entry.time;
+}
+
+// ── Context Priority Scoring ─────────────────────────────────
+/**
+ * selectBestContext(input, mem)
+ * Scores all context types against the current input + memory.
+ * Returns: { type: 'iot'|'app'|'system'|'none', score, reason }
+ */
+function selectBestContext(input, mem) {
+  const norm = input.toLowerCase().trim();
+  const scores = { iot: 0, app: 0, system: 0 };
+  const reasons = { iot: '', app: '', system: '' };
+
+  // ── FIX: Explicit IoT verb patterns get maximum priority ──
+  // These phrases unambiguously mean device control — score them highest
+  if (/\b(turn on|turn off|switch on|switch off)\b/.test(norm)) {
+    scores.iot += 6;
+    reasons.iot += 'strong IoT verb phrase (turn/switch on/off) detected; ';
+  }
+  // Standalone on/off also heavily favours IoT
+  if (/\b(on|off)\b/.test(norm) && !/\b(voice on|voice off|tts on|tts off)\b/.test(norm)) {
+    scores.iot += 3;
+    reasons.iot += 'on/off keyword present; ';
+  }
+  // Other IoT control verbs (removed: run, spin — too ambiguous)
+  if (/\b(toggle|activate|deactivate|start|stop)\b/.test(norm)) {
+    scores.iot += 2;
+    reasons.iot += 'IoT control verb detected; ';
+  }
+  if (/\b(light|fan|buzzer|device|lamp|bulb)\b/.test(norm)) {
+    scores.iot += 3;
+    reasons.iot += 'input mentions IoT device name; ';
+  }
+  if (mem.lastActionType === 'iot') {
+    // Always use most recent IoT entry from stack
+    const age = [...mem.contextStack].find(e => e.type === 'iot');
+    const agePenalty = age && _contextAge(age) > _CONTEXT_DECAY_MS ? -1 : +1;
+    scores.iot += agePenalty;
+    reasons.iot += agePenalty > 0
+      ? 'recent IoT action in stack; '
+      : 'IoT action is aging (>1 min); ';
+  }
+  if (mem.lastDevices.length > 0) {
+    scores.iot += 1;
+    reasons.iot += `${mem.lastDevices.length} device(s) in memory; `;
+  }
+
+  // ── App signals ───────────────────────────────────────────
+  // FIX: Only add app score when there are NO strong IoT signals present
+  const hasStrongIoT = /\b(turn on|turn off|switch on|switch off|light|fan|buzzer|lamp|bulb)\b/.test(norm);
+  if (!hasStrongIoT) {
+    if (/\b(open|close|launch|show|hide|exit|minimize|maximize)\b/.test(norm)) {
+      scores.app += 3;
+      reasons.app += 'input has open/close/window keywords; ';
+    }
+    if (/\b(terminal|projects|about|skills|settings|ai|chat|window)\b/.test(norm)) {
+      scores.app += 3;
+      reasons.app += 'input mentions known app name; ';
+    }
+  }
+  if (mem.lastActionType === 'app') {
+    // Always use most recent app entry from stack
+    const age = [...mem.contextStack].find(e => e.type === 'app');
+    const agePenalty = age && _contextAge(age) > _CONTEXT_DECAY_MS ? -1 : +1;
+    scores.app += agePenalty;
+    reasons.app += agePenalty > 0
+      ? 'recent app action in stack; '
+      : 'app action is aging (>1 min); ';
+  }
+  if (mem.lastApp) {
+    scores.app += 1;
+    reasons.app += `last app "${mem.lastApp}" in memory; `;
+  }
+
+  // ── System signals ────────────────────────────────────────
+  if (/\b(dark|light mode|theme|voice|wake|status|time|date|clear|whoami|joke|help)\b/.test(norm)) {
+    scores.system += 2;
+    reasons.system += 'input matches system-level keywords; ';
+  }
+  if (mem.lastActionType === 'system') {
+    scores.system += 1;
+    reasons.system += 'last action was system-type; ';
+  }
+
+  // ── Expiry: reduce stale contexts ────────────────────────
+  ['iot','app','system'].forEach(type => {
+    const entry = [...mem.contextStack].find(e => e.type === type);
+    if (entry && _contextAge(entry) > _CONTEXT_EXPIRY_MS) {
+      scores[type] = Math.max(0, scores[type] - 3);
+      reasons[type] += `context expired (>${_CONTEXT_EXPIRY_MS/60000} min ago); `;
+    }
+  });
+
+  // ── Pick winner ───────────────────────────────────────────
+  const winner = Object.entries(scores).reduce(
+    (best, [type, score]) => score > best.score ? { type, score } : best,
+    { type: 'none', score: 0 }
+  );
+
+  const reason = winner.type !== 'none'
+    ? `Used ${winner.type.toUpperCase()} context (score ${winner.score}): ${reasons[winner.type].trim()}`
+    : 'No strong context match found; defaulted to fallback.';
+
+  return { type: winner.type, score: winner.score, scores, reason };
+}
+
+// ── Reasoning / Inference Layer ──────────────────────────────
+/**
+ * inferIntentFromContext(input, context)
+ * When input is vague, use contextStack to infer what the user means.
+ * Returns: resolved command string or null
+ *
+ * Examples:
+ *   "run command"  + lastApp=terminal  → "open terminal"
+ *   "do something" + lastDevice=light  → null (too vague)
+ *   "close it"     + stack=[app:terminal] → "close terminal"
+ */
+function inferIntentFromContext(input, mem, confidence) {
   const norm = input.toLowerCase().trim();
 
-  const pronounPatterns = [
-    { regex: /\b(turn|switch|put)\s+it\s+on\b/,  replacement: `turn ${AI_MEMORY.lastDevice} on` },
-    { regex: /\b(turn|switch|put)\s+it\s+off\b/, replacement: `turn ${AI_MEMORY.lastDevice} off` },
-    { regex: /\bit\s+on\b/,                       replacement: `turn ${AI_MEMORY.lastDevice} on` },
-    { regex: /\bit\s+off\b/,                      replacement: `turn ${AI_MEMORY.lastDevice} off` },
-    { regex: /\bstart\s+it\b/,                    replacement: `turn ${AI_MEMORY.lastDevice} on` },
-    { regex: /\bstop\s+it\b/,                     replacement: `turn ${AI_MEMORY.lastDevice} off` },
-    { regex: /\btoggle\s+it\b/, replacement: AI_MEMORY.lastAction === 'on'
-        ? `turn ${AI_MEMORY.lastDevice} off`
-        : `turn ${AI_MEMORY.lastDevice} on` },
-    { regex: /\bopen\s+it\b/,  replacement: `open ${AI_MEMORY.lastDevice}` },
-    { regex: /\bclose\s+it\b/, replacement: `close ${AI_MEMORY.lastDevice}` },
-    { regex: /\b(do\s+it\s+again|same\s+again|repeat\s+that)\b/, replacement: AI_MEMORY.lastCommand },
-  ];
+  // ── FIX: Block inference entirely if IoT keywords are present ──
+  // IoT inputs must NEVER be re-routed to app inference
+  if (/\b(light|fan|buzzer|lamp|bulb|device|on|off|turn|switch|activate|deactivate)\b/.test(norm)) {
+    return null;
+  }
 
-  if (!AI_MEMORY.lastDevice && !AI_MEMORY.lastCommand) return null;
+  // ── FIX: Only infer when intent confidence is low (< 0.65) ──
+  // High-confidence intent matches should never be overridden by inference
+  if (typeof confidence === 'number' && confidence >= 0.65) {
+    return null;
+  }
 
-  for (const { regex, replacement } of pronounPatterns) {
-    if (regex.test(norm) && replacement) {
-      return replacement;
+  // ── FIX: Strict "run command" / "execute command" / "type command" only ──
+  // Removed weak single-word triggers: "run", "execute", "type"
+  if (/\b(run command|execute command|type command)\b/.test(norm)) {
+    const recentApp = [...mem.contextStack].find(
+      e => e.type === 'app' && _contextAge(e) < _CONTEXT_EXPIRY_MS
+    );
+    if (recentApp && recentApp.value === 'terminal') {
+      // ── FIX: Don't open if terminal is already visible ──
+      const termEl = document.getElementById('terminal');
+      if (termEl && termEl.style.display !== 'none') {
+        _setReason('Terminal already open — skipping duplicate open inference.');
+        return null;
+      }
+      _setReason('Inferred "open terminal" because recent app context is terminal and input suggests running a command.');
+      return 'open terminal';
+    }
+  }
+
+  // "what did I just do" / "show last" → explain last action
+  if (/\b(what did|last action|what was|just do|last command)\b/.test(norm)) {
+    if (mem.lastCommand) {
+      _setReason('User asked about last action — returning last command from memory.');
+      return null; // handled by "why" path in executeCommand
+    }
+  }
+
+  // Vague bare "close" or "open" — use most recent app from stack
+  // FIX: Use [...stack].find to always get the freshest (index 0 = most recent)
+  const recentApp = [...mem.contextStack].find(
+    e => e.type === 'app' && _contextAge(e) < _CONTEXT_EXPIRY_MS
+  );
+  if (recentApp) {
+    if (/^\s*close\s*$/.test(norm)) {
+      _setReason(`Inferred "close ${recentApp.value}" from context stack (most recent app).`);
+      return `close ${recentApp.value}`;
+    }
+    if (/^\s*open\s*$/.test(norm)) {
+      // FIX: Check if already open before inferring
+      const el = document.getElementById(recentApp.value);
+      if (el && el.style.display !== 'none') {
+        _setReason(`"${recentApp.value}" already open — skipping inferred open.`);
+        return null;
+      }
+      _setReason(`Inferred "open ${recentApp.value}" from context stack (most recent app).`);
+      return `open ${recentApp.value}`;
+    }
+  }
+
+  // Vague bare "on" or "off" — use most recent IoT device from stack
+  // FIX: Use [...stack].find to always get the freshest entry
+  const recentIot = [...mem.contextStack].find(
+    e => e.type === 'iot' && _contextAge(e) < _CONTEXT_EXPIRY_MS
+  );
+  if (recentIot) {
+    if (/^\s*on\s*$/.test(norm)) {
+      _setReason(`Inferred "turn ${recentIot.value} on" from context stack (most recent IoT device).`);
+      return `turn ${recentIot.value} on`;
+    }
+    if (/^\s*off\s*$/.test(norm)) {
+      _setReason(`Inferred "turn ${recentIot.value} off" from context stack (most recent IoT device).`);
+      return `turn ${recentIot.value} off`;
     }
   }
 
   return null;
 }
 
-window.AI_MEMORY            = AI_MEMORY;
-window.aiMemoryRecord       = aiMemoryRecord;
-window.resolveContextPronoun = resolveContextPronoun;
+// ── Reason writer ────────────────────────────────────────────
+function _setReason(reason) {
+  AI_MEMORY.lastReason          = reason;
+  AI_MEMORY.lastReasonTimestamp = Date.now();
+}
+
+// ── Central Context Resolver (UPGRADED) ─────────────────────
+// resolveContext(input, confidence?) → resolved command string or null
+function resolveContext(input, confidence) {
+  if (!input) return null;
+  const norm = input.toLowerCase().trim();
+
+  // ── "why did you do that" / debug ────────────────────────
+  if (/\b(why did you|why that|explain that|what was your reason|why)\b/.test(norm)) {
+    const reason = AI_MEMORY.lastReason || 'No reasoning recorded yet for this session.';
+    _setReason('User asked for explanation — returning last stored reason.');
+    return `__REASON__:${reason}`;
+  }
+
+  // ── "them" → apply to all recently used devices ───────────
+  if (/\bthem\b/.test(norm)) {
+    if (AI_MEMORY.lastDevices.length === 0) return null;
+    const actionWord = /\b(turn off|switch off|stop|off)\b/.test(norm) ? 'off' : 'on';
+    const parts = AI_MEMORY.lastDevices.map(d => `turn ${d} ${actionWord}`);
+    _setReason(`Resolved "them" to [${AI_MEMORY.lastDevices.join(', ')}] from lastDevices memory.`);
+    return parts.join(' and ');
+  }
+
+  // ── "that" / "again" → repeat last command ────────────────
+  if (/\b(that again|do that|repeat that|same again|do it again|again)\b/.test(norm)) {
+    if (AI_MEMORY.lastCommand) {
+      _setReason(`Resolved "repeat/again" to last command: "${AI_MEMORY.lastCommand}".`);
+      return AI_MEMORY.lastCommand;
+    }
+    return null;
+  }
+
+  // ── "it" pronoun ─────────────────────────────────────────
+  const hasIt = /\bit\b/.test(norm);
+  if (hasIt) {
+    const { type, reason } = selectBestContext(norm, AI_MEMORY);
+    _setReason(reason);
+
+    // ── FIX: IoT branch — validate device exists before resolving ──
+    if (type === 'iot') {
+      // Use most recent IoT entry from stack for accuracy
+      const freshIot = [...AI_MEMORY.contextStack].find(
+        e => e.type === 'iot' && _contextAge(e) < _CONTEXT_EXPIRY_MS
+      );
+      const dev = (freshIot && freshIot.value) || AI_MEMORY.lastDevice;
+      if (!dev) {
+        _setReason('No IoT device found in memory — cannot resolve "it".');
+        return '__NO_DEVICE__'; // signal to executeCommand
+      }
+      if (/\b(turn|switch|put)\s+it\s+on\b|\bit\s+on\b|\bstart\s+it\b/.test(norm))
+        return `turn ${dev} on`;
+      if (/\b(turn|switch|put)\s+it\s+off\b|\bit\s+off\b|\bstop\s+it\b/.test(norm))
+        return `turn ${dev} off`;
+      if (/\btoggle\s+it\b/.test(norm))
+        return AI_MEMORY.lastAction === 'on' ? `turn ${dev} off` : `turn ${dev} on`;
+    }
+
+    // ── FIX: App branch — only resolve if context type IS app ──
+    // DO NOT fall through from IoT to App for "it"
+    if (type === 'app') {
+      const freshApp = [...AI_MEMORY.contextStack].find(
+        e => e.type === 'app' && _contextAge(e) < _CONTEXT_EXPIRY_MS
+      );
+      const app = (freshApp && freshApp.value) || AI_MEMORY.lastApp;
+      if (app) {
+        if (/\bopen\s+it\b/.test(norm))  return `open ${app}`;
+        if (/\bclose\s+it\b/.test(norm)) return `close ${app}`;
+      }
+    }
+
+    // ── FIX: If no strong context type won, return original input
+    // (do NOT cross-resolve IoT "it" to app or vice versa)
+    _setReason(`Could not resolve "it" — no matching ${type} context value found. Passing through as-is.`);
+    return null;
+  }
+
+  // ── Inference fallback for vague inputs (with confidence gate) ─
+  const inferred = inferIntentFromContext(norm, AI_MEMORY, confidence);
+  if (inferred) return inferred;
+
+  return null;
+}
+
+// ── Legacy alias — resolveContextPronoun kept for compat ────
+function resolveContextPronoun(input) {
+  return resolveContext(input);
+}
+
+// ── Expose on window ────────────────────────────────────────
+window.AI_MEMORY              = AI_MEMORY;
+window.aiMemoryRecord         = aiMemoryRecord;
+window.resolveContext         = resolveContext;
+window.resolveContextPronoun  = resolveContextPronoun;
+window._scanForMultiDevice    = _scanForMultiDevice;
+window.selectBestContext      = selectBestContext;
+window.inferIntentFromContext = inferIntentFromContext;
+window._pushContextStack      = _pushContextStack;
+window._setReason             = _setReason;
 </script>
 
 
@@ -2665,8 +3078,8 @@ window.resolveContextPronoun = resolveContextPronoun;
 const INTENT_MAP = {
   greeting: {
     keywords: ['hello','hi','hey','howdy','hiya','sup','yo','greetings'],
-    phrases:  ['good morning','good evening','good afternoon','what up','hi there'],
-    score: 0.85,
+    phrases:  ['hello','hi','hey','howdy','hiya','good morning','good evening','good afternoon','what up','hi there'],
+    score: 0.90,
   },
   identity: {
     keywords: ['who are you','what are you','your name','introduce yourself','are you an ai'],
@@ -2815,8 +3228,7 @@ const INTENT_MAP = {
   },
   wake_enable: {
     keywords: [],
-    phrases:  ['wake word on','enable wake word','activate wake mode','hey atulos','hello atulos',
-               'start listening'],
+    phrases:  ['wake word on','enable wake word','activate wake mode','start listening'],
     score: 0.90,
   },
   wake_disable: {
@@ -2890,6 +3302,13 @@ const INTENT_MAP = {
     phrases:  ['lock device control','logout device control','reset access',
                'lock devices','lock access'],
     score: 0.92,
+  },
+  // ── UPGRADE: "why" intent for explanation layer ──
+  why: {
+    keywords: ['why'],
+    phrases:  ['why did you','explain that','what was your reason','why that',
+               'your reasoning','how did you decide','justify'],
+    score: 0.95,
   },
 };
 
@@ -3012,6 +3431,8 @@ const RESPONSE_BANK = {
   stop:           ["Stopping. 🔇","Got it — going quiet."],
   friends:        ["Your close friends are:\n\n👥 Aayush\n👥 Muskan\n👥 Sameer\n👥 Kushal\n👥 Lucky\n👥 Yugal"],
   lock_system:    ["🔒 Device control locked. Password required again."],
+  // ── UPGRADE: explanation layer responses ──
+  why:            [], // handled dynamically in generateResponse
   fallback:       [
     "I didn't quite catch that. Try 'help' to see all commands.",
     "Hmm, not sure about that one. Can you rephrase?",
@@ -3031,6 +3452,13 @@ function generateResponse(intent, context) {
   }
   if (intent === 'date') {
     return `Today is ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} 📅`;
+  }
+  // ── UPGRADE: return stored reasoning for 'why' intent ──
+  if (intent === 'why') {
+    const reason = (typeof AI_MEMORY !== 'undefined' && AI_MEMORY.lastReason)
+      ? AI_MEMORY.lastReason
+      : 'No reasoning recorded yet for this session.';
+    return `🧠 Reasoning: ${reason}`;
   }
 
   const pool = RESPONSE_BANK[intent];
@@ -3149,24 +3577,55 @@ function executeCommand(rawInput) {
 
   let input = rawInput.trim();
 
+  // Strip all known wake word prefixes first
   input = input
+    .replace(/^atulai\s+/i, '')
+    .replace(/^atul\s+ai\s+/i, '')
+    .replace(/^hey\s+atul\s*/i, '')
     .replace(/^hey atulos?\s*/i, '')
     .replace(/^hello atulos?\s*/i, '')
     .replace(/^ok atulos?\s*/i, '')
     .trim();
 
-  if (!input) {
-    const resp = "AtulAI listening. What can I do for you, Atul? 👂";
+  // Guard: empty or single-char after stripping → silent no-op (do NOT re-enter wake behavior)
+  if (!input || input.length < 2) return null;
+
+  // ── GREETING FAST-PATH — must come before any intent parsing ──
+  // Catches "hello", "hi", "hey" immediately with no fallthrough to other logic
+  if (/^(hello|hi|hey)(\s|$)/i.test(input)) {
+    const resp = "Hello! How can I help you? 😊";
     dispatchOutput(resp);
     return resp;
   }
 
-  const contextResolved = resolveContextPronoun(input);
-  if (contextResolved) {
+  // ── Parse intent first so confidence can gate inference ──
+  const { intent, confidence } = parseIntent(input);
+
+  // ── Context resolver — pass confidence for inference gate ──
+  const contextResolved = resolveContext(input, confidence);
+
+  // Handle __REASON__ special marker (user asked "why did you do that")
+  if (contextResolved && contextResolved.startsWith('__REASON__:')) {
+    const explanation = contextResolved.slice('__REASON__:'.length);
+    const resp = `🧠 Reasoning: ${explanation}`;
+    dispatchOutput(resp);
+    return resp;
+  }
+
+  // Handle __NO_DEVICE__ marker (FIX: "it" with no device in memory)
+  if (contextResolved === '__NO_DEVICE__') {
+    const resp = '⚠️ No device found to control. Please mention a device name (light, fan, buzzer).';
+    dispatchOutput(resp);
+    return resp;
+  }
+
+  if (contextResolved && contextResolved !== input) {
     return executeCommand(contextResolved);
   }
 
+  // ── Multi-device "and" handler + lastDevices tracking ──
   if (/ and /i.test(input)) {
+    _scanForMultiDevice(input);
     const parts = input.split(/ and /i).map(p => p.trim()).filter(p => p.length > 1);
     if (parts.length >= 2) {
       const responses = [];
@@ -3178,7 +3637,9 @@ function executeCommand(rawInput) {
     }
   }
 
-  const { intent, confidence } = parseIntent(input);
+  // ── Score context and store reasoning for this intent ──
+  const { reason } = selectBestContext(input, AI_MEMORY);
+  _setReason(`Intent "${intent}" (confidence ${Math.round(confidence * 100)}%). ${reason}`);
 
   if (intent === 'device_status') {
     const loadingMsg = "Fetching device status from Firebase… 📡";
@@ -3365,6 +3826,11 @@ function _jarvisProcessInternal(rawInput) {
 
   input = input.replace(/^hey atulos?\s*/i, '').replace(/^hello atulos?\s*/i, '').replace(/^ok atulos?\s*/i, '').trim();
   if (!input) return "AtulAI listening. What can I do for you, Atul? 👂";
+
+  // ── GREETING FAST-PATH — top priority, before any intent/wake logic ──
+  if (/^(hello|hi|hey)(\s|$)/i.test(input)) {
+    return "Hello! How can I help you? 😊";
+  }
 
   const contextResolved = resolveContextPronoun(input);
   if (contextResolved) return _jarvisProcessInternal(contextResolved);
@@ -3554,6 +4020,13 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     windowState[id] = { ...(windowState[id] || {}), open: true, minimized: false };
     saveWindowState(windowState);
     if (id === 'terminal') termResetAuth();
+    // ── UPGRADE: track app context ──
+    if (typeof AI_MEMORY !== 'undefined') {
+      AI_MEMORY.lastApp        = id;
+      AI_MEMORY.lastActionType = 'app';
+      AI_MEMORY.lastAction     = 'open';
+      AI_MEMORY.lastDevice     = id; // legacy compat
+    }
   }
 
   function closeWindow(id) {
@@ -3564,6 +4037,13 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     win.setAttribute('aria-hidden', 'true');
     windowState[id] = { ...(windowState[id] || {}), open: false };
     saveWindowState(windowState);
+    // ── UPGRADE: track app context on close ──
+    if (typeof AI_MEMORY !== 'undefined') {
+      AI_MEMORY.lastApp        = id;
+      AI_MEMORY.lastActionType = 'app';
+      AI_MEMORY.lastAction     = 'close';
+      AI_MEMORY.lastDevice     = id; // legacy compat
+    }
   }
 
   function minimizeWindow(win) {
