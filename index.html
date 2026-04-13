@@ -692,6 +692,44 @@ body {
 }
 .browser-status i { font-size: 10px; }
 
+.browser-home {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,14,20,0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.browser-home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.browser-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.05);
+  transition: 0.2s;
+}
+.browser-app:hover {
+  background: rgba(99,168,255,0.2);
+  transform: translateY(-2px);
+}
+.browser-app i {
+  font-size: 22px;
+  color: var(--accent);
+}
+.browser-app span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 /* ══════════════════════════════════════════════
    START BUTTON & START MENU — AtulOS
 ══════════════════════════════════════════════ */
@@ -2284,7 +2322,35 @@ body {
       <button class="browser-go" id="browser-go-btn">Go</button>
     </div>
     <div class="browser-frame-wrap">
-      <div class="browser-placeholder" id="browser-placeholder">
+      <div class="browser-home" id="browser-home">
+        <div class="browser-home-grid">
+          <div class="browser-app" onclick="openExternal('https://google.com')">
+            <i class="fab fa-google"></i>
+            <span>Google</span>
+          </div>
+          <div class="browser-app" onclick="openExternal('https://youtube.com')">
+            <i class="fab fa-youtube"></i>
+            <span>YouTube</span>
+          </div>
+          <div class="browser-app" onclick="openExternal('https://instagram.com')">
+            <i class="fab fa-instagram"></i>
+            <span>Instagram</span>
+          </div>
+          <div class="browser-app" onclick="openExternal('https://github.com')">
+            <i class="fab fa-github"></i>
+            <span>GitHub</span>
+          </div>
+          <div class="browser-app" onclick="openExternal('https://twitter.com')">
+            <i class="fab fa-twitter"></i>
+            <span>Twitter</span>
+          </div>
+          <div class="browser-app" onclick="openExternal('https://linkedin.com')">
+            <i class="fab fa-linkedin"></i>
+            <span>LinkedIn</span>
+          </div>
+        </div>
+      </div>
+      <div class="browser-placeholder" id="browser-placeholder" style="display:none;">
         <i class="fa-solid fa-globe"></i>
         <p>Enter a URL above and press Go</p>
       </div>
@@ -6072,37 +6138,74 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    function loadURL(url) {
-      if (!url) return;
+    function hideHome() {
+      var home = document.getElementById('browser-home');
+      if (home) home.style.display = 'none';
+    }
 
+    function openExternal(url) {
+      window.open(url, '_blank');
+      updateBrowserStatus('Opened in Chrome (restricted site)');
+    }
+
+    // Expose openExternal as a global so homepage grid onclick works
+    window.openExternal = openExternal;
+
+    function loadSmart(url) {
+      var failed = false;
+      hideHome();
+      placeholder.style.display = 'none';
+      iframe.style.display      = 'block';
+      iframe.src                = url;
+      urlInput.value            = url;
+      updateBrowserStatus('Loading...');
+
+      var timeout = setTimeout(function() {
+        if (!failed) {
+          failed = true;
+          iframe.style.display = 'none';
+          openExternal(url);
+        }
+      }, 2500);
+
+      iframe.onload = function() {
+        if (!failed) {
+          clearTimeout(timeout);
+          updateBrowserStatus('Loaded inside AtulOS');
+        }
+      };
+
+      iframe.onerror = function() {
+        if (!failed) {
+          failed = true;
+          clearTimeout(timeout);
+          iframe.style.display = 'none';
+          openExternal(url);
+        }
+      };
+    }
+
+    function openURL(url) {
       var blockedSites = [
         'google.com',
         'instagram.com',
         'facebook.com',
+        'youtube.com',
         'twitter.com',
-        'x.com'
+        'x.com',
+        'github.com'
       ];
 
-      var isBlocked = blockedSites.some(function(site) { return url.includes(site); });
-
-      if (isBlocked) {
-        window.open(url, '_blank');
-        updateBrowserStatus('Opened in new tab (restricted site)');
-        urlInput.value = url;
+      if (blockedSites.some(function(site) { return url.includes(site); })) {
+        hideHome();
+        openExternal(url);
       } else {
-        placeholder.style.display = 'none';
-        iframe.style.display      = 'block';
-        iframe.src                = url;
-        urlInput.value            = url;
-        updateBrowserStatus('Loading...');
-
-        iframe.onload = function() {
-          updateBrowserStatus('Loaded successfully');
-        };
-        iframe.onerror = function() {
-          updateBrowserStatus('Failed to load or blocked');
-        };
+        loadSmart(url);
       }
+    }
+
+    function loadURL(url) {
+      openURL(url);
     }
 
     function navigate(url) {
