@@ -1270,6 +1270,23 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 140px);
+  scroll-behavior: smooth;
+}
+
+#projects .window-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#projects .window-body::-webkit-scrollbar-thumb {
+  background: rgba(99,168,255,0.3);
+  border-radius: 4px;
+}
+
+#projects .window-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(99,168,255,0.5);
 }
 
 /* ══════════════════════════════════════
@@ -1284,7 +1301,7 @@ body {
     rgba(99,168,255,0.03) 60%,
     rgba(18,24,33,0.6) 100%);
   padding: 20px 20px 18px;
-  overflow: hidden;
+  overflow: visible;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   box-shadow:
     0 0 0 0.5px rgba(99,168,255,0.12) inset,
@@ -1420,7 +1437,8 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  position: relative; z-index: 1;
+  margin-top: 8px;
+  position: relative; z-index: 2;
 }
 
 .proj-btn-primary {
@@ -1437,6 +1455,8 @@ body {
   letter-spacing: 0.3px;
   transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
   box-shadow: 0 2px 12px rgba(99,168,255,0.3);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .proj-btn-primary:hover {
   filter: brightness(1.12);
@@ -1457,6 +1477,8 @@ body {
   background: rgba(255,255,255,0.04);
   letter-spacing: 0.3px;
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .proj-btn-secondary:hover {
   background: rgba(99,168,255,0.08);
@@ -6043,27 +6065,44 @@ document.addEventListener('DOMContentLoaded', function () {
       return 'https://' + raw;
     }
 
+    function updateBrowserStatus(message) {
+      var status = document.querySelector('.browser-status');
+      if (status) {
+        status.innerText = message;
+      }
+    }
+
     function loadURL(url) {
       if (!url) return;
-      placeholder.style.display = 'none';
-      iframe.style.display      = 'block';
-      iframe.src                = url;
-      urlInput.value            = url;
-      setStatus('fa-spinner fa-spin', 'Loading ' + url, 'var(--accent)');
 
-      // Can't reliably detect load in cross-origin iframes; just clear spinner
-      var timer = setTimeout(function() {
-        setStatus('fa-circle-check', url, '#28c840');
-      }, 2000);
+      var blockedSites = [
+        'google.com',
+        'instagram.com',
+        'facebook.com',
+        'twitter.com',
+        'x.com'
+      ];
 
-      iframe.onload = function() {
-        clearTimeout(timer);
-        setStatus('fa-circle-check', url, '#28c840');
-      };
-      iframe.onerror = function() {
-        clearTimeout(timer);
-        setStatus('fa-circle-xmark', 'Could not load: ' + url, '#ff5f57');
-      };
+      var isBlocked = blockedSites.some(function(site) { return url.includes(site); });
+
+      if (isBlocked) {
+        window.open(url, '_blank');
+        updateBrowserStatus('Opened in new tab (restricted site)');
+        urlInput.value = url;
+      } else {
+        placeholder.style.display = 'none';
+        iframe.style.display      = 'block';
+        iframe.src                = url;
+        urlInput.value            = url;
+        updateBrowserStatus('Loading...');
+
+        iframe.onload = function() {
+          updateBrowserStatus('Loaded successfully');
+        };
+        iframe.onerror = function() {
+          updateBrowserStatus('Failed to load or blocked');
+        };
+      }
     }
 
     function navigate(url) {
