@@ -4324,43 +4324,36 @@ function _jarvisProcessInternal(rawInput) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// UPGRADE 7 — CENTRAL COMMAND HANDLER + AI RESPONSE SYNC FIX
-// Inserted inline so it has access to RESPONSE_BANK before freeze.
+// UPGRADE 7 — UNIFIED COMMAND ENGINE (v2)
+// Spec-compliant: structured return { handled, action, app, response }
+// Safe integration into AI + terminal via single intercept point.
+// All existing commands pass through unchanged.
 // ══════════════════════════════════════════════════════════════
-
-/**
- * Capitalise first letter of a string.
- */
-function _capitalise(str) {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
 
 /**
  * handleSystemCommand(rawInput)
  *
- * Central command handler for all app-control instructions.
- * Normalises input, detects verb + app, executes the action,
- * and returns a formatted response string — or null if the
- * input is not a recognised system command.
+ * Unified command engine for app-control instructions.
  *
- * Returns: {string} response  — if command was handled
- *          null               — if not a system command
+ * Returns: { handled: true,  action, app, response } — if recognised
+ *          { handled: false }                        — if not a system command
  *
- * IMPORTANT: execution happens ONCE here. Callers must NOT
- * also call openApp/closeApp separately to avoid double execution.
+ * Execution happens ONCE here. No other layer calls openApp/closeApp
+ * for the same input path.
  */
 function handleSystemCommand(rawInput) {
-  if (!rawInput) return null;
+  // ── Normalise ────────────────────────────────────────────────
+  if (!rawInput || !rawInput.trim()) return { handled: false };
 
-  // Normalise: lowercase, strip filler phrases, collapse spaces
   var norm = rawInput
     .toLowerCase()
-    .replace(/\b(please|can you|could you|would you|i want to|i need to|just|now|for me)\b/g, '')
+    .replace(/\b(please|can you|could you|would you|i want to|i need to|just|now|for me|the|app)\b/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Known apps: logical name → display label
+  // ── App registry: logical id → display name ──────────────────
+  // Only apps that have openApp/closeApp support.
+  // Non-app commands must NOT match here.
   var APP_MAP = {
     'calculator': 'Calculator',
     'calendar':   'Calendar',
@@ -4376,72 +4369,110 @@ function handleSystemCommand(rawInput) {
     'atulai':     'Atul AI',
   };
 
-  var verbs = ['open','close','minimize','minimise','toggle','launch','start','show','hide','shut'];
+  // ── Verb groups ──────────────────────────────────────────────
+  var VERB_GROUPS = {
+    open:     ['open','launch','start','show','display','bring up'],
+    close:    ['close','hide','shut','exit','dismiss'],
+    minimize: ['minimize','minimise','min'],
+    toggle:   ['toggle'],
+  };
 
-  // Try to detect: <verb> <appName>  (verb anywhere before app name)
-  for (var vi = 0; vi < verbs.length; vi++) {
-    var verb = verbs[vi];
-    // Match "verb appName" anywhere in the string
-    var re = new RegExp('\\b' + verb + '\\s+(\\S+(?:\\s+\\S+)?)', 'i');
-    var m  = norm.match(re);
-    if (!m) continue;
+  // ── Try to match verb + app ───────────────────────────────────
+  var matchedVerb    = null;
+  var matchedVerbKey = null;
+  var matchedApp     = null;
 
-    var candidate = m[1].trim();
+  var verbKeys = Object.keys(VERB_GROUPS);
+  outer:
+  for (var vi = 0; vi < verbKeys.length; vi++) {
+    var vKey   = verbKeys[vi];
+    var vList  = VERB_GROUPS[vKey];
 
-    // Direct match
-    var appKey = null;
-    if (APP_MAP[candidate]) {
-      appKey = candidate;
-    } else {
-      // Partial / prefix match
-      var keys = Object.keys(APP_MAP);
-      for (var ki = 0; ki < keys.length; ki++) {
-        if (candidate.startsWith(keys[ki]) || keys[ki].startsWith(candidate)) {
-          appKey = keys[ki]; break;
+    for (var vli = 0; vli < vList.length; vli++) {
+      var verb = vList[vli];
+      // Match: ... verb ... appName ...
+      var re = new RegExp('\\b' + verb.replace(' ','\\s+') + '\\s+(.+)', 'i');
+      var m  = norm.match(re);
+      if (!m) continue;
+
+      // Everything after the verb is the candidate app phrase
+      var candidate = m[1].trim();
+
+      // Try exact match first
+      if (APP_MAP[candidate]) {
+        matchedVerb    = verb;
+        matchedVerbKey = vKey;
+        matchedApp     = candidate;
+        break outer;
+      }
+
+      // Try prefix / contains match (longer app names first to avoid false shorts)
+      var appKeys = Object.keys(APP_MAP).sort(function(a,b){ return b.length - a.length; });
+      for (var ki = 0; ki < appKeys.length; ki++) {
+        var ak = appKeys[ki];
+        if (candidate.includes(ak) || ak.includes(candidate)) {
+          matchedVerb    = verb;
+          matchedVerbKey = vKey;
+          matchedApp     = ak;
+          break outer;
         }
       }
     }
-
-    if (!appKey) continue;
-
-    var displayName = APP_MAP[appKey];
-
-    // Resolve canonical logical id (atul ai → ai)
-    var logicalId = (appKey === 'atul ai' || appKey === 'atulai') ? 'ai' : appKey;
-
-    // Execute — one path only, no double execution
-    if (verb === 'open' || verb === 'launch' || verb === 'start' || verb === 'show') {
-      if (typeof window.openApp === 'function') window.openApp(logicalId);
-      return '🚀 Opening ' + displayName + '.';
-    }
-    if (verb === 'close' || verb === 'hide' || verb === 'shut') {
-      if (typeof window.closeApp === 'function') window.closeApp(logicalId);
-      return '✖ Closing ' + displayName + '.';
-    }
-    if (verb === 'minimize' || verb === 'minimise') {
-      if (typeof window.minimizeApp === 'function') window.minimizeApp(logicalId);
-      return '🗕 Minimizing ' + displayName + '.';
-    }
-    if (verb === 'toggle') {
-      if (typeof window.toggleApp === 'function') window.toggleApp(logicalId);
-      return '🔄 Toggling ' + displayName + '.';
-    }
   }
 
-  return null; // not a system command
+  // No match → not a system command, let original logic handle it
+  if (!matchedApp) {
+    console.log('[AtulOS] System Command Result:', { handled: false, input: rawInput });
+    return { handled: false };
+  }
+
+  var displayName = APP_MAP[matchedApp];
+  var logicalId   = (matchedApp === 'atul ai' || matchedApp === 'atulai') ? 'ai' : matchedApp;
+  var responseText;
+
+  // ── Execute — single execution point ─────────────────────────
+  try {
+    if (matchedVerbKey === 'open') {
+      if (typeof window.openApp === 'function') window.openApp(logicalId);
+      responseText = '🚀 Opening ' + displayName + '.';
+    } else if (matchedVerbKey === 'close') {
+      if (typeof window.closeApp === 'function') window.closeApp(logicalId);
+      responseText = '✖ Closing ' + displayName + '.';
+    } else if (matchedVerbKey === 'minimize') {
+      if (typeof window.minimizeApp === 'function') window.minimizeApp(logicalId);
+      responseText = '🗕 Minimizing ' + displayName + '.';
+    } else if (matchedVerbKey === 'toggle') {
+      if (typeof window.toggleApp === 'function') window.toggleApp(logicalId);
+      responseText = '🔄 Toggling ' + displayName + '.';
+    }
+  } catch(e) {
+    console.warn('[AtulOS] handleSystemCommand execution error:', e);
+    return { handled: false };
+  }
+
+  var result = {
+    handled:  true,
+    action:   matchedVerbKey,
+    app:      logicalId,
+    response: responseText,
+  };
+
+  console.log('[AtulOS] System Command Result:', result);
+  return result;
 }
 
 window.handleSystemCommand = handleSystemCommand;
 
-// ── Patch _jarvisProcessInternal to run handleSystemCommand FIRST ──
-// We wrap the function in-place so the patch applies to all callers
-// (terminal, AI chat, voice) without touching individual call sites.
+// ── Patch _jarvisProcessInternal — single safe intercept point ───
+// Covers ALL callers: AI chat, terminal (via jarvisProcess), voice.
+// If handleSystemCommand returns handled:false, original logic runs.
 (function _patchJarvisInternal() {
   var _orig = _jarvisProcessInternal;
+
   _jarvisProcessInternal = function(rawInput) {
     if (!rawInput) return _orig(rawInput);
 
-    // Strip wake words before checking (mirrors _orig behaviour)
+    // Strip wake words (mirrors _orig pre-processing)
     var cleaned = rawInput
       .replace(/^hey atulos?\s*/i, '')
       .replace(/^hello atulos?\s*/i, '')
@@ -4449,46 +4480,48 @@ window.handleSystemCommand = handleSystemCommand;
       .trim();
     if (!cleaned) return _orig(rawInput);
 
-    // ── Priority 1: system command handler ──
-    var sysResp = handleSystemCommand(cleaned);
-    if (sysResp !== null) {
-      // Speak the response if TTS is active
+    console.log('[AtulOS] AI Input:', cleaned);
+
+    // ── Priority 1: unified system command engine ──
+    var result = handleSystemCommand(cleaned);
+    if (result.handled) {
       if (typeof window.jarvisSpeak === 'function') {
-        try { window.jarvisSpeak(sysResp); } catch(e) {}
+        try { window.jarvisSpeak(result.response); } catch(e) {}
       }
-      return sysResp;
+      return result.response;
     }
 
-    // ── Fall through to original logic for all other intents ──
+    // ── Fallthrough: original AI logic handles everything else ──
     return _orig(rawInput);
   };
-  // Expose patched version globally so AI chat and terminal use it
+
   window._jarvisProcessInternal = _jarvisProcessInternal;
+  console.log('[AtulOS U7] _jarvisProcessInternal patched — unified command engine active.');
 })();
 
-// ── Populate RESPONSE_BANK for new app intents (fixes fallback responses) ──
+// ── Populate RESPONSE_BANK for new intents (safety net for parseIntent path) ──
 (function _patchResponseBank() {
   if (typeof RESPONSE_BANK === 'undefined') return;
-
-  var newResponses = {
-    open_calculator: ['Opening Calculator. 🧮', 'Calculator is up.', 'Launching Calculator...'],
-    open_calendar:   ['Opening Calendar. 📅', 'Calendar is ready.', 'Launching Calendar...'],
-    open_browser:    ['Opening Browser. 🌐', 'Browser is up.', 'Launching Browser...'],
-    open_notes:      ['Opening Notes. 📝', 'Notes is ready.', 'Launching Notes...'],
-    close_calculator:['Calculator closed. ✓'],
-    close_calendar:  ['Calendar closed. ✓'],
-    close_browser:   ['Browser closed. ✓'],
-    close_notes:     ['Notes closed. ✓'],
+  var additions = {
+    open_calculator:  ['Opening Calculator. 🧮'],
+    open_calendar:    ['Opening Calendar. 📅'],
+    open_browser:     ['Opening Browser. 🌐'],
+    open_notes:       ['Opening Notes. 📝'],
+    close_calculator: ['Calculator closed. ✓'],
+    close_calendar:   ['Calendar closed. ✓'],
+    close_browser:    ['Browser closed. ✓'],
+    close_notes:      ['Notes closed. ✓'],
     minimize_calculator: ['Calculator minimized. 🗕'],
     minimize_calendar:   ['Calendar minimized. 🗕'],
     minimize_browser:    ['Browser minimized. 🗕'],
     minimize_notes:      ['Notes minimized. 🗕'],
     toggle_calculator:   ['Toggling Calculator. 🔄'],
     toggle_browser:      ['Toggling Browser. 🔄'],
+    toggle_notes:        ['Toggling Notes. 🔄'],
+    toggle_calendar:     ['Toggling Calendar. 🔄'],
   };
-
-  Object.keys(newResponses).forEach(function(key) {
-    if (!RESPONSE_BANK[key]) RESPONSE_BANK[key] = newResponses[key];
+  Object.keys(additions).forEach(function(k) {
+    if (!RESPONSE_BANK[k]) RESPONSE_BANK[k] = additions[k];
   });
 })();
 
