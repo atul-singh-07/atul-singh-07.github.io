@@ -283,6 +283,7 @@ body {
   display: none; flex-direction: column;
   min-height: 120px; overflow: hidden;
   backdrop-filter: blur(20px);
+  max-height: calc(100vh - 44px - 48px); /* never overlap taskbar (44px) or statusbar (~48px) */
 }
 .window-header {
   padding: 0 0 0 14px;
@@ -510,7 +511,7 @@ body {
   height: 44px; background: var(--card);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--border);
-  z-index: 5000; display: none;
+  z-index: 5000; display: flex;
   align-items: center; padding: 0 12px; gap: 6px;
   overflow-x: auto; overflow-y: hidden;
 }
@@ -537,6 +538,306 @@ body {
 }
 .hidden { display: none !important; }
 .small  { font-size: 13px; color: var(--muted); }
+
+
+/* ══════════════════════════════════════════════
+   CALCULATOR / CALENDAR / BROWSER APP STYLES
+══════════════════════════════════════════════ */
+
+/* ── Calculator ── */
+.calc-display {
+  background: rgba(0,0,0,0.45);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  text-align: right;
+}
+.calc-expr {
+  font-size: 11px; color: var(--muted);
+  min-height: 16px; margin-bottom: 4px;
+  font-family: ui-monospace, monospace;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.calc-result {
+  font-size: 28px; font-weight: 700; color: var(--fg);
+  font-family: ui-monospace, monospace;
+  letter-spacing: -1px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.calc-btn {
+  padding: 0; height: 52px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--fg); font-size: 16px; font-weight: 500;
+  font-family: inherit; cursor: pointer;
+  transition: background 0.12s, transform 0.08s, border-color 0.12s;
+  user-select: none;
+}
+.calc-btn:hover  { background: rgba(99,168,255,0.13); border-color: rgba(99,168,255,0.3); }
+.calc-btn:active { transform: scale(0.92); background: rgba(99,168,255,0.22); }
+.calc-btn.op     { color: var(--accent); background: rgba(99,168,255,0.07); }
+.calc-btn.op:hover { background: rgba(99,168,255,0.18); }
+.calc-btn.eq     { background: var(--accent); color: #000; border-color: transparent; font-weight: 700; }
+.calc-btn.eq:hover { filter: brightness(1.12); }
+.calc-btn.clear  { color: #ff5f57; border-color: rgba(255,95,87,0.2); background: rgba(255,95,87,0.07); }
+.calc-btn.clear:hover { background: rgba(255,95,87,0.16); }
+.calc-btn.wide   { grid-column: span 2; }
+
+/* ── Calendar ── */
+.cal-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.cal-nav-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--fg);
+  cursor: pointer; font-size: 14px; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.cal-nav-btn:hover { background: rgba(99,168,255,0.14); border-color: rgba(99,168,255,0.3); color: var(--accent); }
+.cal-month-label { font-size: 15px; font-weight: 700; color: var(--fg); }
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-dow {
+  text-align: center; font-size: 10px;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--muted); padding: 4px 0 8px;
+}
+.cal-day {
+  text-align: center; padding: 7px 2px;
+  border-radius: 8px; font-size: 13px;
+  cursor: pointer; color: var(--fg);
+  transition: background 0.12s, color 0.12s;
+  border: 1px solid transparent;
+}
+.cal-day:hover      { background: rgba(99,168,255,0.12); border-color: rgba(99,168,255,0.25); }
+.cal-day.empty      { cursor: default; }
+.cal-day.today      { background: var(--accent); color: #000; font-weight: 700; border-color: transparent; }
+.cal-day.today:hover { filter: brightness(1.1); }
+.cal-day.selected   { border-color: var(--accent); color: var(--accent); background: rgba(99,168,255,0.1); }
+.cal-selected-info  {
+  margin-top: 14px; padding: 10px 14px;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+  border-radius: 8px; font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.cal-selected-info i { color: var(--accent); }
+
+/* ── Browser ── */
+.browser-bar {
+  display: flex; gap: 8px; margin-bottom: 10px;
+  align-items: center;
+}
+.browser-url {
+  flex: 1; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--fg); font-family: inherit; font-size: 13px;
+  outline: none; transition: border-color 0.2s;
+}
+.browser-url:focus { border-color: rgba(99,168,255,0.45); }
+.browser-url::placeholder { color: var(--muted); }
+.browser-go {
+  padding: 8px 16px; border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--accent); color: #000;
+  font-weight: 700; font-size: 13px;
+  font-family: inherit; cursor: pointer;
+  transition: filter 0.15s;
+  white-space: nowrap;
+}
+.browser-go:hover { filter: brightness(1.12); }
+.browser-nav-btns { display: flex; gap: 4px; }
+.browser-nav-btn {
+  width: 32px; height: 34px; border-radius: 7px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--fg);
+  cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.browser-nav-btn:hover { background: rgba(99,168,255,0.14); color: var(--accent); }
+.browser-frame-wrap {
+  border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border);
+  background: #fff;
+  height: 420px; position: relative;
+}
+.browser-iframe {
+  width: 100%; height: 100%;
+  border: none; display: block;
+}
+.browser-placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; background: rgba(10,14,20,0.97);
+}
+.browser-placeholder i  { font-size: 36px; color: var(--accent); opacity: 0.4; }
+.browser-placeholder p  { font-size: 13px; color: var(--muted); }
+.browser-status {
+  margin-top: 8px; font-size: 11px; color: var(--muted);
+  display: flex; align-items: center; gap: 6px; min-height: 16px;
+}
+.browser-status i { font-size: 10px; }
+
+/* ══════════════════════════════════════════════
+   START BUTTON & START MENU — AtulOS
+══════════════════════════════════════════════ */
+#start-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 30px;
+  background: rgba(99,168,255,0.12);
+  border: 1px solid rgba(99,168,255,0.28);
+  border-radius: 8px;
+  cursor: pointer; flex-shrink: 0;
+  transition: background 0.18s, border-color 0.18s, transform 0.12s;
+  user-select: none; position: relative;
+  margin-right: 6px;
+}
+#start-btn:hover  { background: rgba(99,168,255,0.22); border-color: rgba(99,168,255,0.5); }
+#start-btn:active { transform: scale(0.93); }
+#start-btn.active { background: rgba(99,168,255,0.28); border-color: var(--accent); }
+.start-icon {
+  font-size: 15px; font-weight: 800;
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  line-height: 1; letter-spacing: -1px;
+  text-shadow: 0 0 10px rgba(99,168,255,0.55);
+  pointer-events: none;
+}
+
+/* ── START MENU PANEL ── */
+#start-menu {
+  position: fixed;
+  bottom: 52px; left: 8px;
+  width: 360px;
+  background: rgba(14, 19, 28, 0.88);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  box-shadow: 0 24px 72px rgba(0,0,0,0.65), 0 0 0 0.5px rgba(255,255,255,0.04) inset;
+  z-index: 6500;
+  padding: 16px;
+  display: none;
+  flex-direction: column; gap: 14px;
+  transform-origin: bottom left;
+  animation: startMenuIn 0.22s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes startMenuIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+#start-menu.visible { display: flex; }
+
+/* Search bar */
+#start-search-wrap {
+  position: relative;
+}
+#start-search {
+  width: 100%; padding: 9px 14px 9px 36px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.06);
+  color: var(--fg); font-family: inherit;
+  font-size: 13px; outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  box-sizing: border-box;
+}
+#start-search:focus { border-color: rgba(99,168,255,0.4); background: rgba(255,255,255,0.09); }
+#start-search::placeholder { color: var(--muted); }
+#start-search-icon {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px; color: var(--muted); pointer-events: none;
+}
+
+/* Section label */
+.start-section-label {
+  font-size: 10px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+  padding: 0 2px; margin-bottom: -6px;
+}
+
+/* App grid */
+#start-app-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.start-app-item {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 7px; padding: 12px 6px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s, transform 0.12s;
+  user-select: none;
+}
+.start-app-item:hover  { background: rgba(99,168,255,0.11); border-color: rgba(99,168,255,0.25); transform: translateY(-2px); }
+.start-app-item:active { transform: scale(0.93); }
+.start-app-icon { font-size: 24px; line-height: 1; }
+.start-app-name {
+  font-size: 10px; color: var(--muted);
+  text-align: center; line-height: 1.3;
+  letter-spacing: 0.2px;
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 72px;
+}
+.start-app-item:hover .start-app-name { color: var(--fg); }
+
+/* No results message */
+#start-no-results {
+  text-align: center; font-size: 12px;
+  color: var(--muted); padding: 18px 0;
+  display: none;
+}
+
+/* Divider line */
+.start-divider {
+  height: 1px; background: var(--border);
+  margin: 0 -2px;
+}
+
+/* Footer strip */
+#start-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 2px 0;
+}
+.start-footer-user {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--muted);
+}
+.start-footer-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #bf5af2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.start-power-btn {
+  width: 30px; height: 28px; border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--muted);
+  cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.start-power-btn:hover { background: rgba(255,95,87,0.15); color: #ff5f57; border-color: rgba(255,95,87,0.3); }
 
 
 /* ══════════════════════════════════════════════════
@@ -1866,8 +2167,157 @@ body {
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════════════════════════════
+     NEW FUNCTIONAL APPS — Calculator · Calendar · Browser
+     Added by Upgrade 5. Use existing .app-window class so the
+     window manager (drag, resize, min, max, close) works for free.
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ── CALCULATOR ── -->
+<div class="app-window" id="calculator" role="dialog" aria-labelledby="calc-title" tabindex="0" data-window-id="calculator" style="width:320px;">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left"><i class="fa-solid fa-calculator"></i><span id="calc-title">Calculator</span></div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Calculator"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Calculator"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Calculator"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+  <div class="window-body">
+    <div class="calc-display">
+      <div class="calc-expr"  id="calc-expr"></div>
+      <div class="calc-result" id="calc-result">0</div>
+    </div>
+    <div class="calc-grid">
+      <!-- Row 1 -->
+      <button class="calc-btn clear wide" data-calc="C">C</button>
+      <button class="calc-btn op"         data-calc="%">%</button>
+      <button class="calc-btn op"         data-calc="/">÷</button>
+      <!-- Row 2 -->
+      <button class="calc-btn" data-calc="7">7</button>
+      <button class="calc-btn" data-calc="8">8</button>
+      <button class="calc-btn" data-calc="9">9</button>
+      <button class="calc-btn op" data-calc="*">×</button>
+      <!-- Row 3 -->
+      <button class="calc-btn" data-calc="4">4</button>
+      <button class="calc-btn" data-calc="5">5</button>
+      <button class="calc-btn" data-calc="6">6</button>
+      <button class="calc-btn op" data-calc="-">−</button>
+      <!-- Row 4 -->
+      <button class="calc-btn" data-calc="1">1</button>
+      <button class="calc-btn" data-calc="2">2</button>
+      <button class="calc-btn" data-calc="3">3</button>
+      <button class="calc-btn op" data-calc="+">+</button>
+      <!-- Row 5 -->
+      <button class="calc-btn wide" data-calc="0">0</button>
+      <button class="calc-btn" data-calc=".">.</button>
+      <button class="calc-btn eq" data-calc="=">=</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CALENDAR ── -->
+<div class="app-window" id="calendar" role="dialog" aria-labelledby="cal-title" tabindex="0" data-window-id="calendar" style="width:360px;">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left"><i class="fa-regular fa-calendar"></i><span id="cal-title">Calendar</span></div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Calendar"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Calendar"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Calendar"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+  <div class="window-body">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="cal-prev" aria-label="Previous month"><i class="fa-solid fa-chevron-left"></i></button>
+      <span class="cal-month-label" id="cal-month-label"></span>
+      <button class="cal-nav-btn" id="cal-next" aria-label="Next month"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-selected-info" id="cal-selected-info">
+      <i class="fa-regular fa-calendar-check"></i>
+      <span id="cal-selected-text">Click a date to select it</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── BROWSER ── -->
+<div class="app-window" id="browser" role="dialog" aria-labelledby="browser-title" tabindex="0" data-window-id="browser" style="width:640px;">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left"><i class="fa-solid fa-globe"></i><span id="browser-title">Browser</span></div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Browser"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Browser"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Browser"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+  <div class="window-body">
+    <div class="browser-bar">
+      <div class="browser-nav-btns">
+        <button class="browser-nav-btn" id="browser-back"    title="Back"    aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
+        <button class="browser-nav-btn" id="browser-forward" title="Forward" aria-label="Forward"><i class="fa-solid fa-arrow-right"></i></button>
+        <button class="browser-nav-btn" id="browser-reload"  title="Reload"  aria-label="Reload"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+      <input class="browser-url" id="browser-url-input" type="text" placeholder="Enter a URL… e.g. example.com" aria-label="URL input" />
+      <button class="browser-go" id="browser-go-btn">Go</button>
+    </div>
+    <div class="browser-frame-wrap">
+      <div class="browser-placeholder" id="browser-placeholder">
+        <i class="fa-solid fa-globe"></i>
+        <p>Enter a URL above and press Go</p>
+      </div>
+      <iframe class="browser-iframe" id="browser-iframe" title="Browser" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="display:none;"></iframe>
+    </div>
+    <div class="browser-status" id="browser-status"></div>
+  </div>
+</div>
+
+<!-- ── NOTES ── -->
+<div class="app-window" id="notes" role="dialog" aria-labelledby="notes-title" tabindex="0" data-window-id="notes" style="width:400px;">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left"><i class="fa-solid fa-note-sticky"></i><span id="notes-title">Notes</span></div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Notes"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Notes"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Notes"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;flex-direction:column;gap:8px;height:320px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Auto-saved</span>
+      <button id="notes-clear-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,95,87,0.08);color:#ff5f57;font-size:11px;font-family:inherit;cursor:pointer;">Clear</button>
+    </div>
+    <textarea id="notes-textarea" placeholder="Start typing your notes here…" style="flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;color:var(--fg);font-family:inherit;font-size:13px;line-height:1.6;padding:12px;resize:none;outline:none;transition:border-color 0.2s;"></textarea>
+  </div>
+</div>
+
 <!-- ── TASKBAR ── -->
-<div id="taskbar" role="toolbar" aria-label="Minimized windows taskbar"></div>
+<div id="taskbar" role="toolbar" aria-label="Minimized windows taskbar">
+  <!-- START BUTTON injected by initStartMenu() JS below -->
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     START MENU PANEL
+════════════════════════════════════════════════════════════════ -->
+<div id="start-menu" role="dialog" aria-label="Start Menu" aria-modal="false">
+  <div id="start-search-wrap">
+    <i id="start-search-icon" class="fa-solid fa-magnifying-glass"></i>
+    <input id="start-search" type="text" placeholder="Search apps&#x2026;" autocomplete="off" aria-label="Search apps" />
+  </div>
+  <span class="start-section-label">All Apps</span>
+  <div id="start-app-grid" role="list"></div>
+  <div id="start-no-results">No apps found</div>
+  <div class="start-divider"></div>
+  <div id="start-footer">
+    <div class="start-footer-user">
+      <div class="start-footer-avatar">A</div>
+      <span>AtulOS User</span>
+    </div>
+    <button class="start-power-btn" title="Reload AtulOS" onclick="location.reload()" aria-label="Reload AtulOS">
+      <i class="fa-solid fa-power-off"></i>
+    </button>
+  </div>
+</div>
 
 
 <!-- ══════════════════════════════════════════════════════════════
@@ -3873,6 +4323,175 @@ function _jarvisProcessInternal(rawInput) {
   return pickResponse(RESPONSE_BANK.fallback);
 }
 
+// ══════════════════════════════════════════════════════════════
+// UPGRADE 7 — CENTRAL COMMAND HANDLER + AI RESPONSE SYNC FIX
+// Inserted inline so it has access to RESPONSE_BANK before freeze.
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Capitalise first letter of a string.
+ */
+function _capitalise(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * handleSystemCommand(rawInput)
+ *
+ * Central command handler for all app-control instructions.
+ * Normalises input, detects verb + app, executes the action,
+ * and returns a formatted response string — or null if the
+ * input is not a recognised system command.
+ *
+ * Returns: {string} response  — if command was handled
+ *          null               — if not a system command
+ *
+ * IMPORTANT: execution happens ONCE here. Callers must NOT
+ * also call openApp/closeApp separately to avoid double execution.
+ */
+function handleSystemCommand(rawInput) {
+  if (!rawInput) return null;
+
+  // Normalise: lowercase, strip filler phrases, collapse spaces
+  var norm = rawInput
+    .toLowerCase()
+    .replace(/\b(please|can you|could you|would you|i want to|i need to|just|now|for me)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Known apps: logical name → display label
+  var APP_MAP = {
+    'calculator': 'Calculator',
+    'calendar':   'Calendar',
+    'browser':    'Browser',
+    'notes':      'Notes',
+    'terminal':   'Terminal',
+    'projects':   'Projects',
+    'about':      'About',
+    'skills':     'Skills',
+    'settings':   'Settings',
+    'ai':         'Atul AI',
+    'atul ai':    'Atul AI',
+    'atulai':     'Atul AI',
+  };
+
+  var verbs = ['open','close','minimize','minimise','toggle','launch','start','show','hide','shut'];
+
+  // Try to detect: <verb> <appName>  (verb anywhere before app name)
+  for (var vi = 0; vi < verbs.length; vi++) {
+    var verb = verbs[vi];
+    // Match "verb appName" anywhere in the string
+    var re = new RegExp('\\b' + verb + '\\s+(\\S+(?:\\s+\\S+)?)', 'i');
+    var m  = norm.match(re);
+    if (!m) continue;
+
+    var candidate = m[1].trim();
+
+    // Direct match
+    var appKey = null;
+    if (APP_MAP[candidate]) {
+      appKey = candidate;
+    } else {
+      // Partial / prefix match
+      var keys = Object.keys(APP_MAP);
+      for (var ki = 0; ki < keys.length; ki++) {
+        if (candidate.startsWith(keys[ki]) || keys[ki].startsWith(candidate)) {
+          appKey = keys[ki]; break;
+        }
+      }
+    }
+
+    if (!appKey) continue;
+
+    var displayName = APP_MAP[appKey];
+
+    // Resolve canonical logical id (atul ai → ai)
+    var logicalId = (appKey === 'atul ai' || appKey === 'atulai') ? 'ai' : appKey;
+
+    // Execute — one path only, no double execution
+    if (verb === 'open' || verb === 'launch' || verb === 'start' || verb === 'show') {
+      if (typeof window.openApp === 'function') window.openApp(logicalId);
+      return '🚀 Opening ' + displayName + '.';
+    }
+    if (verb === 'close' || verb === 'hide' || verb === 'shut') {
+      if (typeof window.closeApp === 'function') window.closeApp(logicalId);
+      return '✖ Closing ' + displayName + '.';
+    }
+    if (verb === 'minimize' || verb === 'minimise') {
+      if (typeof window.minimizeApp === 'function') window.minimizeApp(logicalId);
+      return '🗕 Minimizing ' + displayName + '.';
+    }
+    if (verb === 'toggle') {
+      if (typeof window.toggleApp === 'function') window.toggleApp(logicalId);
+      return '🔄 Toggling ' + displayName + '.';
+    }
+  }
+
+  return null; // not a system command
+}
+
+window.handleSystemCommand = handleSystemCommand;
+
+// ── Patch _jarvisProcessInternal to run handleSystemCommand FIRST ──
+// We wrap the function in-place so the patch applies to all callers
+// (terminal, AI chat, voice) without touching individual call sites.
+(function _patchJarvisInternal() {
+  var _orig = _jarvisProcessInternal;
+  _jarvisProcessInternal = function(rawInput) {
+    if (!rawInput) return _orig(rawInput);
+
+    // Strip wake words before checking (mirrors _orig behaviour)
+    var cleaned = rawInput
+      .replace(/^hey atulos?\s*/i, '')
+      .replace(/^hello atulos?\s*/i, '')
+      .replace(/^ok atulos?\s*/i, '')
+      .trim();
+    if (!cleaned) return _orig(rawInput);
+
+    // ── Priority 1: system command handler ──
+    var sysResp = handleSystemCommand(cleaned);
+    if (sysResp !== null) {
+      // Speak the response if TTS is active
+      if (typeof window.jarvisSpeak === 'function') {
+        try { window.jarvisSpeak(sysResp); } catch(e) {}
+      }
+      return sysResp;
+    }
+
+    // ── Fall through to original logic for all other intents ──
+    return _orig(rawInput);
+  };
+  // Expose patched version globally so AI chat and terminal use it
+  window._jarvisProcessInternal = _jarvisProcessInternal;
+})();
+
+// ── Populate RESPONSE_BANK for new app intents (fixes fallback responses) ──
+(function _patchResponseBank() {
+  if (typeof RESPONSE_BANK === 'undefined') return;
+
+  var newResponses = {
+    open_calculator: ['Opening Calculator. 🧮', 'Calculator is up.', 'Launching Calculator...'],
+    open_calendar:   ['Opening Calendar. 📅', 'Calendar is ready.', 'Launching Calendar...'],
+    open_browser:    ['Opening Browser. 🌐', 'Browser is up.', 'Launching Browser...'],
+    open_notes:      ['Opening Notes. 📝', 'Notes is ready.', 'Launching Notes...'],
+    close_calculator:['Calculator closed. ✓'],
+    close_calendar:  ['Calendar closed. ✓'],
+    close_browser:   ['Browser closed. ✓'],
+    close_notes:     ['Notes closed. ✓'],
+    minimize_calculator: ['Calculator minimized. 🗕'],
+    minimize_calendar:   ['Calendar minimized. 🗕'],
+    minimize_browser:    ['Browser minimized. 🗕'],
+    minimize_notes:      ['Notes minimized. 🗕'],
+    toggle_calculator:   ['Toggling Calculator. 🔄'],
+    toggle_browser:      ['Toggling Browser. 🔄'],
+  };
+
+  Object.keys(newResponses).forEach(function(key) {
+    if (!RESPONSE_BANK[key]) RESPONSE_BANK[key] = newResponses[key];
+  });
+})();
+
 window.jarvisProcess   = jarvisProcess;
 window.parseIntent     = parseIntent;
 window.atulAIEngine    = (input) => jarvisProcess(input);
@@ -3949,7 +4568,8 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     }
 
     function syncVisibility() {
-      bar.style.display = Object.keys(chips).length > 0 ? 'flex' : 'none';
+      // Always keep taskbar visible for Start Button; chips are shown/hidden naturally
+      bar.style.display = 'flex';
     }
 
     function add(win) {
@@ -4017,6 +4637,8 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     win.setAttribute('aria-hidden', 'false');
     win.focus();
     bringToFront(win);
+    // ── BUG FIX: Add taskbar chip when window opens (prevent duplicates via Taskbar.add guard) ──
+    Taskbar.add(win);
     windowState[id] = { ...(windowState[id] || {}), open: true, minimized: false };
     saveWindowState(windowState);
     if (id === 'terminal') termResetAuth();
@@ -4052,6 +4674,8 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     const id = win.dataset.windowId || win.id;
     windowState[id] = { ...(windowState[id] || {}), minimized: true };
     saveWindowState(windowState);
+    // Taskbar chip already present from openWindow; no need to re-add
+    // (Taskbar.add is idempotent — guards against duplicates via chips[id] check)
     Taskbar.add(win);
   }
 
@@ -4062,11 +4686,12 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     if (!isMax) {
       const rect = win.getBoundingClientRect();
       windowState[id] = { ...(windowState[id] || {}), prev: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } };
-      const bar  = document.getElementById('statusbar');
+      const bar      = document.getElementById('statusbar');
+      const taskbarH = 44; /* taskbar is always 44px tall */
       win.style.left   = '8px';
       win.style.top    = (bar.offsetHeight + 8) + 'px';
       win.style.width  = (window.innerWidth  - 16) + 'px';
-      win.style.height = (window.innerHeight - bar.offsetHeight - 24) + 'px';
+      win.style.height = (window.innerHeight - bar.offsetHeight - taskbarH - 16) + 'px';
       win.dataset.maximized = 'true';
       if (maxBtn) maxBtn.className = 'fa-regular fa-window-restore';
     } else {
@@ -4123,10 +4748,14 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     }
     function onMove(cx, cy) {
       if (!dragging) return;
-      const bar = document.getElementById('statusbar');
-      const vw  = window.innerWidth, vh = window.innerHeight;
+      const bar      = document.getElementById('statusbar');
+      const taskbarH = 44; /* taskbar height — keep window header above taskbar */
+      const vw       = window.innerWidth, vh = window.innerHeight;
+      const minTop   = bar.offsetHeight + 8;
+      /* clamp bottom so at least the window header (34px) stays above the taskbar */
+      const maxTop   = vh - taskbarH - 34;
       let left  = Math.max(8, Math.min(cx - ox, vw - win.offsetWidth  - 8));
-      let top   = Math.max(bar.offsetHeight + 8, Math.min(cy - oy, vh - win.offsetHeight - 8));
+      let top   = Math.max(minTop, Math.min(cy - oy, maxTop));
       win.style.left = left + 'px';
       win.style.top  = top  + 'px';
     }
@@ -4751,7 +5380,9 @@ document.addEventListener('DOMContentLoaded', function () {
           win.style.width = newW + 'px';
         }
         if (isBottom || isCorner) {
-          const newH = Math.max(MIN_H, startH + dy);
+          const taskbarH = 44;
+          const maxH = window.innerHeight - win.getBoundingClientRect().top - taskbarH - 8;
+          const newH = Math.max(MIN_H, Math.min(startH + dy, maxH));
           win.style.height = newH + 'px';
         }
       }
@@ -4898,6 +5529,25 @@ document.addEventListener('DOMContentLoaded', function () {
       title:     'Atul AI',
       icon:      'fa-solid fa-robot',
     },
+    // ── Upgrade 5: New functional apps ──
+    calculator: {
+      id:        'calculator',
+      elementId: 'calculator',
+      title:     'Calculator',
+      icon:      'fa-solid fa-calculator',
+    },
+    calendar: {
+      id:        'calendar',
+      elementId: 'calendar',
+      title:     'Calendar',
+      icon:      'fa-regular fa-calendar',
+    },
+    browser: {
+      id:        'browser',
+      elementId: 'browser',
+      title:     'Browser',
+      icon:      'fa-solid fa-globe',
+    },
   };
 
   /**
@@ -5006,6 +5656,903 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 <!-- ===== UPGRADE END: UPGRADE 3 — APP SYSTEM (SCALABLE) ===== -->
+
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     UPGRADE 4 — WINDOWS 11-STYLE START MENU
+     Adds: Start Button, Start Menu Panel, App Grid, Search Filter.
+     Does NOT modify any existing code — fully additive.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function initStartMenu() {
+  'use strict';
+
+  var startApps = [
+    { name: 'Terminal',  icon: '💻', action: function(){ closeStartMenu(); openApp('terminal'); } },
+    { name: 'Projects',  icon: '📁', action: function(){ closeStartMenu(); openApp('projects'); } },
+    { name: 'About',     icon: 'ℹ️',  action: function(){ closeStartMenu(); openApp('about'); } },
+    { name: 'Skills',    icon: '🧠', action: function(){ closeStartMenu(); openApp('skills'); } },
+    { name: 'Atul AI',   icon: '🤖', action: function(){ closeStartMenu(); openApp('ai'); } },
+    { name: 'Settings',  icon: '⚙️',  action: function(){ closeStartMenu(); openApp('settings'); } },
+    { name: 'Calculator',icon: '🧮', action: function(){ closeStartMenu(); openApp('calculator'); } },
+    { name: 'Calendar',  icon: '📅', action: function(){ closeStartMenu(); openApp('calendar'); } },
+    { name: 'Notes',     icon: '📝', action: function(){ closeStartMenu(); openApp('notes'); } },
+    { name: 'Browser',   icon: '🌐', action: function(){ closeStartMenu(); openApp('browser'); } },
+  ];
+
+  var taskbar   = document.getElementById('taskbar');
+  var menuEl    = document.getElementById('start-menu');
+  var gridEl    = document.getElementById('start-app-grid');
+  var searchEl  = document.getElementById('start-search');
+  var noResults = document.getElementById('start-no-results');
+
+  // ── Create Start Button and prepend to taskbar ──────────────
+  var startBtn = document.createElement('button');
+  startBtn.id        = 'start-btn';
+  startBtn.title     = 'Start';
+  startBtn.setAttribute('aria-label', 'Open Start Menu');
+  startBtn.setAttribute('aria-haspopup', 'true');
+  startBtn.setAttribute('aria-expanded', 'false');
+  startBtn.innerHTML = '<span class="start-icon">A</span>';
+  taskbar.insertBefore(startBtn, taskbar.firstChild);
+
+  // ── Render app grid (with optional filter) ──────────────────
+  function renderGrid(filter) {
+    var query    = (filter || '').toLowerCase().trim();
+    var filtered = query ? startApps.filter(function(a){ return a.name.toLowerCase().indexOf(query) !== -1; }) : startApps;
+    gridEl.innerHTML = '';
+    noResults.style.display = filtered.length ? 'none' : 'block';
+    filtered.forEach(function(app) {
+      var item = document.createElement('div');
+      item.className = 'start-app-item';
+      item.setAttribute('role', 'listitem');
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('aria-label', app.name);
+      item.innerHTML = '<span class="start-app-icon">' + app.icon + '</span><span class="start-app-name">' + app.name + '</span>';
+      item.addEventListener('click', app.action);
+      item.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); app.action(); } });
+      gridEl.appendChild(item);
+    });
+  }
+
+  // ── Open / close helpers ────────────────────────────────────
+  function openStartMenu() {
+    renderGrid('');
+    searchEl.value = '';
+    menuEl.classList.add('visible');
+    startBtn.classList.add('active');
+    startBtn.setAttribute('aria-expanded', 'true');
+    requestAnimationFrame(function(){ searchEl.focus(); });
+  }
+
+  function closeStartMenu() {
+    menuEl.classList.remove('visible');
+    startBtn.classList.remove('active');
+    startBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  window.closeStartMenu = closeStartMenu;
+
+  // ── Toggle ──────────────────────────────────────────────────
+  startBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    menuEl.classList.contains('visible') ? closeStartMenu() : openStartMenu();
+  });
+
+  // ── Close on outside click ──────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!menuEl.contains(e.target) && e.target !== startBtn) closeStartMenu();
+  });
+
+  // ── Close on Escape ─────────────────────────────────────────
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && menuEl.classList.contains('visible')) { closeStartMenu(); startBtn.focus(); }
+  });
+
+  // ── Search filter ───────────────────────────────────────────
+  searchEl.addEventListener('input', function(){ renderGrid(searchEl.value); });
+  searchEl.addEventListener('click', function(e){ e.stopPropagation(); });
+  menuEl.addEventListener('click',   function(e){ e.stopPropagation(); });
+
+  console.log('[AtulOS StartMenu] Initialised with ' + startApps.length + ' apps.');
+})();
+</script>
+<!-- ===== UPGRADE END: UPGRADE 4 — START MENU ===== -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     UPGRADE 5 — FUNCTIONAL APPS: Calculator · Calendar · Browser
+     All logic isolated in one IIFE. No existing code modified.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function initFunctionalApps() {
+  'use strict';
+
+  // ─────────────────────────────────────────────────────────────
+  // CALCULATOR
+  // ─────────────────────────────────────────────────────────────
+  (function initCalculator() {
+    var exprEl   = document.getElementById('calc-expr');
+    var resultEl = document.getElementById('calc-result');
+    var calcWin  = document.getElementById('calculator');
+    if (!exprEl || !resultEl || !calcWin) return;
+
+    var expression = '';   // raw expression string
+    var justEvaled = false;
+
+    function calcRender() {
+      resultEl.textContent = expression || '0';
+    }
+
+    function calcEval() {
+      if (!expression) return;
+      try {
+        // Replace display chars with JS operators
+        var safe = expression
+          .replace(/[^0-9+\-*/.%()]/g, '')  // whitelist
+          .replace(/÷/g, '/')
+          .replace(/×/g, '*');
+        // Guard against leading operators
+        // eslint-disable-next-line no-new-func
+        var result = Function('"use strict"; return (' + safe + ')')();
+        if (!isFinite(result)) throw new Error('Not finite');
+        exprEl.textContent   = expression + ' =';
+        expression           = String(parseFloat(result.toFixed(10)));
+        resultEl.textContent = expression;
+        justEvaled           = true;
+      } catch (e) {
+        exprEl.textContent   = expression;
+        resultEl.textContent = 'Error';
+        expression           = '';
+        justEvaled           = false;
+      }
+    }
+
+    function calcInput(val) {
+      var ops = ['+', '-', '*', '/', '%'];
+      if (val === 'C') {
+        expression = '';
+        exprEl.textContent   = '';
+        resultEl.textContent = '0';
+        justEvaled = false;
+        return;
+      }
+      if (val === '=') { calcEval(); return; }
+
+      // If we just evaluated and user presses a number → start fresh
+      if (justEvaled && !ops.includes(val)) {
+        expression = '';
+        exprEl.textContent = '';
+      }
+      // If we just evaluated and user presses operator → continue from result
+      justEvaled = false;
+
+      // Prevent double operators
+      var last = expression.slice(-1);
+      if (ops.includes(val) && ops.includes(last)) {
+        expression = expression.slice(0, -1);
+      }
+      // Prevent multiple decimals in the current number segment
+      if (val === '.') {
+        var parts = expression.split(/[+\-*/%]/);
+        var lastPart = parts[parts.length - 1];
+        if (lastPart.includes('.')) return;
+      }
+
+      expression += val;
+      calcRender();
+    }
+
+    // Delegate clicks on the grid
+    calcWin.querySelector('.calc-grid').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-calc]');
+      if (btn) calcInput(btn.dataset.calc);
+    });
+
+    // Keyboard support (only when calculator window is focused)
+    calcWin.addEventListener('keydown', function(e) {
+      var map = {
+        'Enter': '=', '=': '=',
+        'Backspace': 'BACK', 'Escape': 'C',
+        '+': '+', '-': '-', '*': '*', '/': '/',
+        '%': '%', '.': '.'
+      };
+      if (map[e.key]) {
+        e.preventDefault();
+        if (map[e.key] === 'BACK') {
+          expression = expression.slice(0, -1);
+          if (!expression) { exprEl.textContent = ''; resultEl.textContent = '0'; }
+          else calcRender();
+          return;
+        }
+        calcInput(map[e.key]);
+      } else if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault();
+        calcInput(e.key);
+      }
+    });
+
+    // ── BUG FIX: Expose calculator functions as window globals ──
+    window.calcInput = calcInput;
+    window.calcEval  = calcEval;
+    window.calcClear = function() { calcInput('C'); };
+
+    console.log('[AtulOS] Calculator initialised');
+  })();
+
+  // ─────────────────────────────────────────────────────────────
+  // CALENDAR
+  // ─────────────────────────────────────────────────────────────
+  (function initCalendar() {
+    var gridEl    = document.getElementById('cal-grid');
+    var labelEl   = document.getElementById('cal-month-label');
+    var prevBtn   = document.getElementById('cal-prev');
+    var nextBtn   = document.getElementById('cal-next');
+    var selTextEl = document.getElementById('cal-selected-text');
+    if (!gridEl || !labelEl) return;
+
+    var MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+    var DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    var today    = new Date();
+    var viewYear = today.getFullYear();
+    var viewMonth= today.getMonth();   // 0-based
+    var selectedDate = null;           // Date object or null
+
+    function renderCalendar() {
+      labelEl.textContent = MONTHS[viewMonth] + ' ' + viewYear;
+      gridEl.innerHTML    = '';
+
+      // Day-of-week headers
+      DAYS.forEach(function(d) {
+        var el = document.createElement('div');
+        el.className = 'cal-dow';
+        el.textContent = d;
+        gridEl.appendChild(el);
+      });
+
+      // First day offset
+      var firstDay = new Date(viewYear, viewMonth, 1).getDay();
+      var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+      // Empty cells
+      for (var i = 0; i < firstDay; i++) {
+        var empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        gridEl.appendChild(empty);
+      }
+
+      // Day cells
+      for (var d = 1; d <= daysInMonth; d++) {
+        (function(day) {
+          var cell = document.createElement('div');
+          cell.className = 'cal-day';
+          cell.textContent = day;
+          cell.setAttribute('role', 'button');
+          cell.setAttribute('tabindex', '0');
+
+          var isToday  = (day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear());
+          var isSel    = selectedDate && (day === selectedDate.getDate() && viewMonth === selectedDate.getMonth() && viewYear === selectedDate.getFullYear());
+
+          if (isToday)  cell.classList.add('today');
+          if (isSel && !isToday) cell.classList.add('selected');
+
+          function selectDay() {
+            selectedDate = new Date(viewYear, viewMonth, day);
+            var opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+            selTextEl.textContent = selectedDate.toLocaleDateString(undefined, opts);
+            renderCalendar();
+          }
+
+          cell.addEventListener('click', selectDay);
+          cell.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectDay(); } });
+          gridEl.appendChild(cell);
+        })(d);
+      }
+    }
+
+    prevBtn.addEventListener('click', function() {
+      viewMonth--;
+      if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+      renderCalendar();
+    });
+    nextBtn.addEventListener('click', function() {
+      viewMonth++;
+      if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+      renderCalendar();
+    });
+
+    // Render immediately and also whenever the calendar window is opened
+    renderCalendar();
+    var calWin = document.getElementById('calendar');
+    if (calWin) {
+      // Re-render when window becomes visible (after openWindow)
+      var observer = new MutationObserver(function(muts) {
+        muts.forEach(function(m) {
+          if (m.attributeName === 'style' && calWin.style.display === 'flex') renderCalendar();
+        });
+      });
+      observer.observe(calWin, { attributes: true });
+    }
+
+    console.log('[AtulOS] Calendar initialised');
+  })();
+
+  // ─────────────────────────────────────────────────────────────
+  // BROWSER
+  // ─────────────────────────────────────────────────────────────
+  (function initBrowser() {
+    var urlInput     = document.getElementById('browser-url-input');
+    var goBtn        = document.getElementById('browser-go-btn');
+    var iframe       = document.getElementById('browser-iframe');
+    var placeholder  = document.getElementById('browser-placeholder');
+    var statusEl     = document.getElementById('browser-status');
+    var backBtn      = document.getElementById('browser-back');
+    var forwardBtn   = document.getElementById('browser-forward');
+    var reloadBtn    = document.getElementById('browser-reload');
+    if (!urlInput || !goBtn || !iframe) return;
+
+    var history = [];   // simple URL history
+    var histIdx = -1;
+
+    function setStatus(icon, msg, color) {
+      statusEl.innerHTML = '<i class="fa-solid ' + icon + '" style="color:' + (color||'var(--muted)') + '"></i> <span>' + msg + '</span>';
+    }
+
+    function normaliseURL(raw) {
+      raw = raw.trim();
+      if (!raw) return null;
+      // Already has protocol
+      if (/^https?:\/\//i.test(raw)) return raw;
+      // Looks like a bare domain or path — prepend https://
+      return 'https://' + raw;
+    }
+
+    function loadURL(url) {
+      if (!url) return;
+      placeholder.style.display = 'none';
+      iframe.style.display      = 'block';
+      iframe.src                = url;
+      urlInput.value            = url;
+      setStatus('fa-spinner fa-spin', 'Loading ' + url, 'var(--accent)');
+
+      // Can't reliably detect load in cross-origin iframes; just clear spinner
+      var timer = setTimeout(function() {
+        setStatus('fa-circle-check', url, '#28c840');
+      }, 2000);
+
+      iframe.onload = function() {
+        clearTimeout(timer);
+        setStatus('fa-circle-check', url, '#28c840');
+      };
+      iframe.onerror = function() {
+        clearTimeout(timer);
+        setStatus('fa-circle-xmark', 'Could not load: ' + url, '#ff5f57');
+      };
+    }
+
+    function navigate(url) {
+      // Trim history forward if we navigated back
+      if (histIdx < history.length - 1) history = history.slice(0, histIdx + 1);
+      history.push(url);
+      histIdx = history.length - 1;
+      loadURL(url);
+    }
+
+    goBtn.addEventListener('click', function() {
+      var url = normaliseURL(urlInput.value);
+      if (!url) { setStatus('fa-triangle-exclamation', 'Please enter a URL', '#febc2e'); return; }
+      navigate(url);
+    });
+
+    urlInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') goBtn.click();
+    });
+
+    backBtn.addEventListener('click', function() {
+      if (histIdx > 0) { histIdx--; loadURL(history[histIdx]); urlInput.value = history[histIdx]; }
+    });
+
+    forwardBtn.addEventListener('click', function() {
+      if (histIdx < history.length - 1) { histIdx++; loadURL(history[histIdx]); urlInput.value = history[histIdx]; }
+    });
+
+    reloadBtn.addEventListener('click', function() {
+      if (iframe.src && iframe.src !== 'about:blank' && iframe.style.display === 'block') {
+        iframe.src = iframe.src; // triggers reload
+        setStatus('fa-spinner fa-spin', 'Reloading…', 'var(--accent)');
+      }
+    });
+
+    // ── BUG FIX: Expose openSite as a window global ──
+    window.openSite = function() {
+      var url = normaliseURL(urlInput.value);
+      if (!url) { setStatus('fa-triangle-exclamation', 'Please enter a URL', '#febc2e'); return; }
+      navigate(url);
+    };
+
+    console.log('[AtulOS] Browser initialised');
+  })();
+
+})(); // end initFunctionalApps
+</script>
+<!-- ===== UPGRADE END: UPGRADE 5 — FUNCTIONAL APPS ===== -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     UPGRADE 6 — UNIFIED APP CONTROL SYSTEM
+     Adds: appState tracking, unified open/close/minimize/toggle,
+     Notes app logic, terminal command extensions,
+     AI intent extensions, start menu rewire.
+     ADDITIVE ONLY — zero existing code modified.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function initUpgrade6() {
+  'use strict';
+
+  // ═══════════════════════════════════════════════════════════════
+  // 1. APP STATE REGISTRY
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Tracks open/minimized state for all apps.
+   * elementId maps logical name → actual DOM id.
+   */
+  var APP_REGISTRY = {
+    terminal:   { elementId: 'terminal',   open: false, minimized: false },
+    projects:   { elementId: 'projects',   open: false, minimized: false },
+    about:      { elementId: 'about',      open: false, minimized: false },
+    skills:     { elementId: 'skills',     open: false, minimized: false },
+    settings:   { elementId: 'settings',   open: false, minimized: false },
+    ai:         { elementId: 'atulAI',     open: false, minimized: false },
+    calculator: { elementId: 'calculator', open: false, minimized: false },
+    calendar:   { elementId: 'calendar',   open: false, minimized: false },
+    browser:    { elementId: 'browser',    open: false, minimized: false },
+    notes:      { elementId: 'notes',      open: false, minimized: false },
+  };
+
+  /** Resolve logical name → registry entry. Case-insensitive. */
+  function _getEntry(appId) {
+    if (!appId) return null;
+    var key = appId.toLowerCase().trim();
+    // Handle aliases
+    if (key === 'atulai' || key === 'atul ai') key = 'ai';
+    return APP_REGISTRY[key] || null;
+  }
+
+  /** Sync state from DOM reality (called on init). */
+  function _syncStateFromDOM() {
+    Object.keys(APP_REGISTRY).forEach(function(key) {
+      var entry = APP_REGISTRY[key];
+      var el    = document.getElementById(entry.elementId);
+      if (!el) return;
+      entry.open      = el.style.display !== 'none';
+      entry.minimized = false; // minimized windows have display:none too
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 2. UNIFIED APP CONTROL FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * openApp(appId) — Open app by logical name.
+   * Delegates to existing window.openWindow for all side-effects.
+   */
+  function openApp(appId) {
+    var entry = _getEntry(appId);
+    if (!entry) {
+      console.warn('[AtulOS U6] openApp: unknown app "' + appId + '"');
+      return false;
+    }
+    entry.open      = true;
+    entry.minimized = false;
+    if (typeof window.openWindow === 'function') {
+      window.openWindow(entry.elementId);
+    } else {
+      // Minimal fallback
+      var el = document.getElementById(entry.elementId);
+      if (el) { el.style.display = 'flex'; el.setAttribute('aria-hidden','false'); }
+    }
+    return true;
+  }
+
+  /**
+   * closeApp(appId) — Close app by logical name.
+   * Delegates to existing window.closeWindow.
+   */
+  function closeApp(appId) {
+    var entry = _getEntry(appId);
+    if (!entry) {
+      console.warn('[AtulOS U6] closeApp: unknown app "' + appId + '"');
+      return false;
+    }
+    entry.open      = false;
+    entry.minimized = false;
+    if (typeof window.closeWindow === 'function') {
+      window.closeWindow(entry.elementId);
+    } else {
+      var el = document.getElementById(entry.elementId);
+      if (el) { el.style.display = 'none'; el.setAttribute('aria-hidden','true'); }
+    }
+    return true;
+  }
+
+  /**
+   * minimizeApp(appId) — Hide window but keep taskbar chip active.
+   * Uses the existing minimizeWindow path via the minimize button logic,
+   * replicated safely here without touching the original function.
+   */
+  function minimizeApp(appId) {
+    var entry = _getEntry(appId);
+    if (!entry) return false;
+    var el = document.getElementById(entry.elementId);
+    if (!el || el.style.display === 'none') return false; // already hidden
+    entry.open      = true;  // logically still open
+    entry.minimized = true;
+    el.style.display = 'none';
+    el.setAttribute('aria-hidden', 'true');
+    // Add taskbar chip so user can restore — reuse existing Taskbar.add
+    if (window._Taskbar && typeof window._Taskbar.add === 'function') {
+      window._Taskbar.add(el);
+    }
+    return true;
+  }
+
+  /**
+   * toggleApp(appId) — If open and visible → minimize. If minimized → restore.
+   * If closed → open.
+   */
+  function toggleApp(appId) {
+    var entry = _getEntry(appId);
+    if (!entry) return false;
+    var el = document.getElementById(entry.elementId);
+    if (!el) return false;
+    var visible = el.style.display !== 'none';
+    if (visible) {
+      minimizeApp(appId);
+    } else if (entry.minimized) {
+      // restore
+      entry.minimized = false;
+      openApp(appId);
+    } else {
+      openApp(appId);
+    }
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 3. REWIRE START MENU to use openApp (additive — replaces action fns)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * After DOM is ready, patch the start menu app list so each item
+   * calls openApp() instead of bare openWindow().
+   * We do this by waiting for initStartMenu to finish, then
+   * overwriting the startApps actions via a DOMContentLoaded hook.
+   * Since initStartMenu runs as a script (not deferred), it has
+   * already set up its internal startApps array — but we can't reach
+   * it (it's in an IIFE closure). Instead we patch the rendered grid
+   * items via event delegation on #start-app-grid.
+   *
+   * Cleaner approach: inject our own click handler that intercepts
+   * app name → openApp() before the old handler fires, using
+   * capture phase so we run first and can call closeStartMenu.
+   */
+  document.addEventListener('DOMContentLoaded', function() {
+    var grid = document.getElementById('start-app-grid');
+    if (!grid) return;
+
+    // Map display names → logical app IDs
+    var NAME_TO_ID = {
+      'terminal':   'terminal',
+      'projects':   'projects',
+      'about':      'about',
+      'skills':     'skills',
+      'atul ai':    'ai',
+      'settings':   'settings',
+      'calculator': 'calculator',
+      'calendar':   'calendar',
+      'browser':    'browser',
+      'notes':      'notes',
+    };
+
+    // Use MutationObserver so we catch every time the grid is re-rendered
+    // (start menu calls renderGrid() on open which clears innerHTML)
+    var observer = new MutationObserver(function() {
+      grid.querySelectorAll('.start-app-item').forEach(function(item) {
+        if (item.dataset.u6Patched) return; // already wired
+        item.dataset.u6Patched = '1';
+
+        item.addEventListener('click', function(e) {
+          e.stopImmediatePropagation(); // prevent old handler running twice
+          var label = (item.getAttribute('aria-label') || '').toLowerCase().trim();
+          var appId = NAME_TO_ID[label];
+          if (appId) {
+            openApp(appId);
+          }
+          if (typeof window.closeStartMenu === 'function') window.closeStartMenu();
+        }, true); // capture phase → runs before existing bubble handler
+      });
+    });
+    observer.observe(grid, { childList: true });
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // 4. TERMINAL COMMAND EXTENSION
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * We extend the terminal by hooking into window.jarvisProcess.
+   * The terminal calls jarvisProcess(rawInput) for every command.
+   * We wrap it: intercept app commands first, fall through to original.
+   */
+  var _originalJarvisProcess = null;
+
+  // Additional terminal autocomplete entries
+  var EXTRA_TERM_COMMANDS = [
+    'open calculator','open calendar','open browser','open notes','open ai',
+    'close calculator','close calendar','close browser','close notes','close ai',
+    'minimize calculator','minimize calendar','minimize browser','minimize notes',
+    'minimize terminal','minimize settings',
+    'toggle calculator','toggle browser','toggle notes','toggle calendar',
+    'apps','list apps',
+  ];
+
+  function _injectTerminalCommands() {
+    if (typeof TERM_COMMANDS !== 'undefined' && Array.isArray(TERM_COMMANDS)) {
+      EXTRA_TERM_COMMANDS.forEach(function(cmd) {
+        if (TERM_COMMANDS.indexOf(cmd) === -1) TERM_COMMANDS.push(cmd);
+      });
+    }
+  }
+
+  /**
+   * Try to handle a terminal command as an app command.
+   * Returns response string if handled, null if not.
+   */
+  function _handleAppCommand(raw) {
+    var input = raw.toLowerCase().trim();
+
+    // "apps" / "list apps"
+    if (input === 'apps' || input === 'list apps') {
+      return '📦 Registered apps: ' + Object.keys(APP_REGISTRY).join(', ');
+    }
+
+    // "open <appId>"
+    if (/^open\s+\S+/.test(input)) {
+      var appId = input.replace(/^open\s+/, '').trim();
+      if (openApp(appId)) return '🚀 Opening ' + appId + '...';
+      return '⚠️ Unknown app: "' + appId + '". Type "apps" to see available apps.';
+    }
+
+    // "close <appId>"
+    if (/^close\s+\S+/.test(input)) {
+      var appId = input.replace(/^close\s+/, '').trim();
+      if (closeApp(appId)) return '✖ Closed ' + appId + '.';
+      return '⚠️ Unknown app: "' + appId + '".';
+    }
+
+    // "minimize <appId>"
+    if (/^minimize\s+\S+/.test(input)) {
+      var appId = input.replace(/^minimize\s+/, '').trim();
+      if (minimizeApp(appId)) return '🗕 Minimized ' + appId + '.';
+      return '⚠️ Could not minimize "' + appId + '" (not open or unknown).';
+    }
+
+    // "toggle <appId>"
+    if (/^toggle\s+\S+/.test(input)) {
+      var appId = input.replace(/^toggle\s+/, '').trim();
+      if (toggleApp(appId)) return '🔄 Toggled ' + appId + '.';
+      return '⚠️ Unknown app: "' + appId + '".';
+    }
+
+    return null; // not handled
+  }
+
+  function _wrapJarvisProcess() {
+    // UPGRADE 7: handleSystemCommand is now integrated directly into
+    // _jarvisProcessInternal, so no outer wrap is needed.
+    // This function is kept as a no-op to avoid errors if called.
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 5. ATULAI INTENT EXTENSION (voice + text)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Extend JARVIS_INTENTS with new app open/close/minimize patterns.
+   * Done after DOMContentLoaded so JARVIS_INTENTS is guaranteed defined.
+   */
+  function _extendAIIntents() {
+    if (typeof JARVIS_INTENTS === 'undefined') return;
+
+    var newIntents = {
+      open_calculator: {
+        patterns: ['open calculator','launch calculator','start calculator','calculator please','show calculator'],
+        action: function() { openApp('calculator'); },
+      },
+      open_calendar: {
+        patterns: ['open calendar','launch calendar','start calendar','calendar please','show calendar'],
+        action: function() { openApp('calendar'); },
+      },
+      open_browser: {
+        patterns: ['open browser','launch browser','start browser','browser please','show browser'],
+        action: function() { openApp('browser'); },
+      },
+      open_notes: {
+        patterns: ['open notes','launch notes','start notes','notes please','show notes','my notes'],
+        action: function() { openApp('notes'); },
+      },
+      close_calculator: {
+        patterns: ['close calculator','exit calculator','hide calculator','shut calculator'],
+        action: function() { closeApp('calculator'); },
+      },
+      close_calendar: {
+        patterns: ['close calendar','exit calendar','hide calendar'],
+        action: function() { closeApp('calendar'); },
+      },
+      close_browser: {
+        patterns: ['close browser','exit browser','hide browser','shut browser'],
+        action: function() { closeApp('browser'); },
+      },
+      close_notes: {
+        patterns: ['close notes','exit notes','hide notes'],
+        action: function() { closeApp('notes'); },
+      },
+      minimize_calculator: {
+        patterns: ['minimize calculator','minimise calculator'],
+        action: function() { minimizeApp('calculator'); },
+      },
+      minimize_browser: {
+        patterns: ['minimize browser','minimise browser'],
+        action: function() { minimizeApp('browser'); },
+      },
+      minimize_notes: {
+        patterns: ['minimize notes','minimise notes'],
+        action: function() { minimizeApp('notes'); },
+      },
+      minimize_calendar: {
+        patterns: ['minimize calendar','minimise calendar'],
+        action: function() { minimizeApp('calendar'); },
+      },
+      toggle_calculator: {
+        patterns: ['toggle calculator'],
+        action: function() { toggleApp('calculator'); },
+      },
+      toggle_browser: {
+        patterns: ['toggle browser'],
+        action: function() { toggleApp('browser'); },
+      },
+    };
+
+    Object.keys(newIntents).forEach(function(key) {
+      if (!JARVIS_INTENTS[key]) JARVIS_INTENTS[key] = newIntents[key];
+    });
+
+    // Also extend INTENT_MAP if present
+    if (typeof INTENT_MAP !== 'undefined') {
+      Object.keys(newIntents).forEach(function(key) {
+        if (!INTENT_MAP[key]) {
+          INTENT_MAP[key] = {
+            keywords: [],
+            phrases:  newIntents[key].patterns,
+            score:    0.90,
+          };
+        }
+      });
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 6. NOTES APP LOGIC
+  // ═══════════════════════════════════════════════════════════════
+
+  var NOTES_STORAGE_KEY = 'atulos_notes_v1';
+
+  function initNotesApp() {
+    var textarea  = document.getElementById('notes-textarea');
+    var clearBtn  = document.getElementById('notes-clear-btn');
+    var notesWin  = document.getElementById('notes');
+    if (!textarea || !notesWin) return;
+
+    // Load saved content
+    try {
+      var saved = localStorage.getItem(NOTES_STORAGE_KEY);
+      if (saved) textarea.value = saved;
+    } catch(e) {}
+
+    // Auto-save on every keystroke
+    textarea.addEventListener('input', function() {
+      try { localStorage.setItem(NOTES_STORAGE_KEY, textarea.value); } catch(e) {}
+    });
+
+    // Focus on textarea border
+    textarea.addEventListener('focus', function() {
+      textarea.style.borderColor = 'rgba(99,168,255,0.45)';
+    });
+    textarea.addEventListener('blur', function() {
+      textarea.style.borderColor = 'var(--border)';
+    });
+
+    // Clear button
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        if (textarea.value && !confirm('Clear all notes?')) return;
+        textarea.value = '';
+        try { localStorage.removeItem(NOTES_STORAGE_KEY); } catch(e) {}
+      });
+    }
+
+    // Re-load when window is re-opened (MutationObserver on display style)
+    var obs = new MutationObserver(function(muts) {
+      muts.forEach(function(m) {
+        if (m.attributeName === 'style' && notesWin.style.display === 'flex') {
+          try {
+            var s = localStorage.getItem(NOTES_STORAGE_KEY);
+            textarea.value = s || '';
+          } catch(e) {}
+          setTimeout(function() { textarea.focus(); }, 80);
+        }
+      });
+    });
+    obs.observe(notesWin, { attributes: true });
+
+    console.log('[AtulOS U6] Notes app initialised');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 7. EXPOSE GLOBALS + BOOT
+  // ═══════════════════════════════════════════════════════════════
+
+  // Expose unified control API
+  window.openApp    = openApp;
+  window.closeApp   = closeApp;
+  window.minimizeApp= minimizeApp;
+  window.toggleApp  = toggleApp;
+  window.APP_REGISTRY = APP_REGISTRY;
+
+  // Run after DOM is ready
+  document.addEventListener('DOMContentLoaded', function() {
+    _syncStateFromDOM();
+    _injectTerminalCommands();
+    _extendAIIntents();
+    initNotesApp();
+
+    // Wrap jarvisProcess after a tick to ensure it's defined
+    setTimeout(_wrapJarvisProcess, 0);
+
+    // Also add Notes to existing APPS registry if present
+    if (typeof window.APPS !== 'undefined' && !window.APPS['notes']) {
+      window.APPS['notes'] = {
+        id: 'notes', elementId: 'notes',
+        title: 'Notes', icon: 'fa-solid fa-note-sticky',
+      };
+    }
+
+    console.log('[AtulOS U6] Upgrade 6 — Unified App Control System online.');
+  });
+
+  // If DOM already ready (scripts at bottom of body)
+  if (document.readyState !== 'loading') {
+    _syncStateFromDOM();
+    _injectTerminalCommands();
+    _extendAIIntents();
+    initNotesApp();
+    setTimeout(_wrapJarvisProcess, 0);
+    if (typeof window.APPS !== 'undefined' && !window.APPS['notes']) {
+      window.APPS['notes'] = {
+        id: 'notes', elementId: 'notes',
+        title: 'Notes', icon: 'fa-solid fa-note-sticky',
+      };
+    }
+  }
+
+})();
+</script>
+<!-- ===== UPGRADE END: UPGRADE 6 — UNIFIED APP CONTROL SYSTEM ===== -->
 
 </body>
 </html>
