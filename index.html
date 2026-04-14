@@ -1631,9 +1631,149 @@ body {
 
 /* ===== UPGRADE END: PROJECTS SECTION REDESIGN ===== */
 
+/* ===== ATUL AUTH SYSTEM v1.0 ===== */
+#atul-auth-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  align-items: center;
+  justify-content: center;
+}
+#atul-auth-overlay.active {
+  display: flex;
+}
+#atul-auth-box {
+  background: linear-gradient(160deg, #0a0f1e 0%, #0d1a2e 100%);
+  border: 1px solid rgba(0,200,255,0.25);
+  border-radius: 16px;
+  padding: 40px 36px 32px;
+  width: 340px;
+  max-width: 92vw;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(0,180,255,0.18), 0 0 0 1px rgba(0,200,255,0.08);
+  animation: atulAuthIn 0.28s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes atulAuthIn {
+  from { opacity: 0; transform: scale(0.85) translateY(20px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+#atul-auth-box .auth-logo {
+  font-size: 13px;
+  letter-spacing: 8px;
+  color: #00c8ff;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 4px;
+  text-shadow: 0 0 12px rgba(0,200,255,0.7);
+}
+#atul-auth-box .auth-subtitle {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(0,200,255,0.5);
+  margin-bottom: 28px;
+  font-family: 'Courier New', monospace;
+}
+#atul-auth-box .auth-ring {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,200,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 24px;
+  position: relative;
+}
+#atul-auth-box .auth-ring::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,200,255,0.15);
+}
+#atul-auth-box .auth-ring i {
+  font-size: 26px;
+  color: #00c8ff;
+  text-shadow: 0 0 16px rgba(0,200,255,0.8);
+}
+#atul-auth-box .auth-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+#atul-auth-input {
+  width: 100%;
+  background: rgba(0,200,255,0.05);
+  border: 1px solid rgba(0,200,255,0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  padding: 10px 14px;
+  outline: none;
+  text-align: center;
+  letter-spacing: 4px;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#atul-auth-input:focus {
+  border-color: rgba(0,200,255,0.55);
+  box-shadow: 0 0 16px rgba(0,200,255,0.12);
+}
+#atul-auth-msg {
+  font-size: 11px;
+  min-height: 16px;
+  margin-bottom: 16px;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+#atul-auth-btn {
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(90deg, #0080b3, #00c8ff);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: opacity 0.2s, box-shadow 0.2s;
+}
+#atul-auth-btn:hover { opacity: 0.88; box-shadow: 0 0 20px rgba(0,200,255,0.35); }
+#atul-auth-cancel {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  letter-spacing: 1px;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+#atul-auth-cancel:hover { color: rgba(255,255,255,0.6); }
+/* ===== ATUL AUTH SYSTEM END ===== */
+
 </style>
 </head>
 <body>
+
+<div id="atul-auth-overlay" role="dialog" aria-modal="true" aria-label="ATUL Authentication">
+  <div id="atul-auth-box">
+    <div class="auth-logo">A T U L</div>
+    <div class="auth-subtitle">ATUL AUTH SYSTEM v1.0</div>
+    <div class="auth-ring">
+      <i class="fa-solid fa-lock"></i>
+    </div>
+    <div class="auth-label">ENTER ACCESS CODE</div>
+    <input id="atul-auth-input" type="password" placeholder="••••••••" autocomplete="off" spellcheck="false" />
+    <div id="atul-auth-msg"></div>
+    <button id="atul-auth-btn">VERIFY</button>
+    <button id="atul-auth-cancel">CANCEL</button>
+  </div>
+</div>
 
 <!-- ── BOOT SCREEN ── -->
 <div id="bootScreen" role="status" aria-live="polite" aria-label="Boot screen">
@@ -5149,6 +5289,133 @@ window.termPrintLine = termPrintLine;
 
 
 <!-- ══════════════════════════════════════════════════════════════
+     MODULE 7b — ATUL AUTH SYSTEM v1.0 (POPUP AUTHENTICATION)
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  const AUTH_PASSWORD = 'atul0775';
+  let _pendingCallback = null;
+  let _listenersReady  = false;
+
+  function _el(id) { return document.getElementById(id); }
+
+  function _closeOverlay() {
+    const overlay = _el('atul-auth-overlay');
+    const input   = _el('atul-auth-input');
+    const msg     = _el('atul-auth-msg');
+    if (overlay) overlay.classList.remove('active');
+    if (input)   input.value = '';
+    if (msg)     { msg.textContent = ''; msg.style.color = ''; }
+    _pendingCallback = null;
+  }
+
+  function _tryVerify() {
+    const input = _el('atul-auth-input');
+    const msg   = _el('atul-auth-msg');
+    if (!input) return;
+
+    if (input.value === AUTH_PASSWORD) {
+      if (msg) { msg.textContent = '✔ Access granted.'; msg.style.color = '#28c840'; }
+      setTimeout(function () {
+        const cb = _pendingCallback;
+        _closeOverlay();
+        if (typeof cb === 'function') cb();
+      }, 480);
+    } else {
+      if (msg) { msg.textContent = '✖ Incorrect code. Try again.'; msg.style.color = '#ff5f57'; }
+      input.value = '';
+      input.focus();
+      input.style.transition = 'transform 0.08s';
+      input.style.transform  = 'translateX(-7px)';
+      setTimeout(function () { input.style.transform = 'translateX(7px)';  }, 80);
+      setTimeout(function () { input.style.transform = 'translateX(-5px)'; }, 160);
+      setTimeout(function () { input.style.transform = 'translateX(0)';    }, 240);
+    }
+  }
+
+  function _attachListeners() {
+    if (_listenersReady) return;
+    const overlay   = _el('atul-auth-overlay');
+    const btn       = _el('atul-auth-btn');
+    const cancelBtn = _el('atul-auth-cancel');
+    const input     = _el('atul-auth-input');
+    if (!overlay) return;
+    _listenersReady = true;
+
+    if (btn)       btn.addEventListener('click', _tryVerify);
+    if (cancelBtn) cancelBtn.addEventListener('click', _closeOverlay);
+    if (input)     input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter')  _tryVerify();
+      if (e.key === 'Escape') _closeOverlay();
+    });
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) _closeOverlay();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', _attachListeners);
+
+  window.triggerSecurityAlert = function (callback) {
+    _attachListeners();
+    _pendingCallback = (typeof callback === 'function') ? callback : null;
+    const overlay = _el('atul-auth-overlay');
+    const input   = _el('atul-auth-input');
+    const msg     = _el('atul-auth-msg');
+    if (!overlay) {
+      window.addEventListener('load', function () { window.triggerSecurityAlert(callback); }, { once: true });
+      return;
+    }
+    if (msg)   { msg.textContent = ''; msg.style.color = ''; }
+    if (input) { input.value = ''; }
+    overlay.classList.add('active');
+    setTimeout(function () { if (input) input.focus(); }, 120);
+  };
+
+})();
+</script>
+
+<script>
+/* ── MULTI-SCOPE SESSION AUTH ── */
+let ATULAI_DEVICE_AUTH  = false;
+let ATULAI_FRIENDS_AUTH = false;
+
+function requireAuth(actionFn, scope) {
+  let isAuthenticated = false;
+  if (scope === 'device')  isAuthenticated = ATULAI_DEVICE_AUTH;
+  else if (scope === 'friends') isAuthenticated = ATULAI_FRIENDS_AUTH;
+
+  if (isAuthenticated === true) {
+    return actionFn();
+  }
+
+  if (typeof aiAppendMessage === 'function') {
+    aiAppendMessage('ai', '🔐 Authentication required for ' + scope + ' access…', true);
+  }
+
+  window.triggerSecurityAlert(function () {
+    if (scope === 'device')       ATULAI_DEVICE_AUTH  = true;
+    else if (scope === 'friends') ATULAI_FRIENDS_AUTH = true;
+
+    if (typeof aiAppendMessage === 'function') {
+      aiAppendMessage('ai', '✅ ' + scope.charAt(0).toUpperCase() + scope.slice(1) + ' access granted for this session.', true);
+    }
+
+    if (typeof actionFn === 'function') actionFn();
+  });
+
+  return '🔐 Verifying identity…';
+}
+
+function resetAtulAISession() {
+  ATULAI_DEVICE_AUTH  = false;
+  ATULAI_FRIENDS_AUTH = false;
+}
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
      MODULE 8 — ATUL AI CHAT UI + DEVICE AUTH
 ════════════════════════════════════════════════════════════════ -->
 <script>
@@ -5289,26 +5556,45 @@ function aiSendMessage() {
   setTimeout(() => {
     aiHideTyping();
 
-    const authResult = DeviceAuth.gate(text);
+    const parsedIntent = (typeof parseIntent === 'function') ? parseIntent(text) : null;
+    const intentKey    = parsedIntent ? parsedIntent.intent : null;
 
-    if (!authResult.proceed) {
-      aiAppendMessage('ai', authResult.reply, true);
-      if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(authResult.reply);
+    /* ── DEVICE intents — one session for all device control ── */
+    const DEVICE_INTENTS  = ['light_on','light_off','fan_on','fan_off','buzzer_on','buzzer_off'];
+    /* ── FRIENDS intent — separate session ── */
+    const FRIENDS_INTENTS = ['friends'];
 
-      if (authResult.isAuthSuccess && authResult.resolvedCommand) {
+    if (intentKey && DEVICE_INTENTS.includes(intentKey)) {
+      requireAuth(function () {
         setTimeout(() => {
           aiShowTyping();
           setTimeout(() => {
             aiHideTyping();
-            const resp = _jarvisProcessInternal(authResult.resolvedCommand) || "Done! 🤖";
+            const resp = _jarvisProcessInternal(text) || 'Done! 🤖';
             aiAppendMessage('ai', resp, true);
             if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
-          }, 300 + Math.random() * 200);
-        }, 600);
-      }
+          }, 300);
+        }, 200);
+      }, 'device');
       return;
     }
 
+    if (intentKey && FRIENDS_INTENTS.includes(intentKey)) {
+      requireAuth(function () {
+        setTimeout(() => {
+          aiShowTyping();
+          setTimeout(() => {
+            aiHideTyping();
+            const resp = _jarvisProcessInternal(text) || 'Done! 🤖';
+            aiAppendMessage('ai', resp, true);
+            if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
+          }, 300);
+        }, 200);
+      }, 'friends');
+      return;
+    }
+
+    /* ── NORMAL FLOW (no auth needed) ── */
     const resp = _jarvisProcessInternal(text) || "I didn't get that. Try 'help'. 🤔";
     aiAppendMessage('ai', resp, true);
     if (typeof window.jarvisSpeak === 'function') window.jarvisSpeak(resp);
@@ -5322,7 +5608,7 @@ window.aiAppendMessage = aiAppendMessage;
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     aiAppendMessage('ai',
-      "Hello, Atul! I'm AtulAI — your personal AI assistant. 👋\n\nI can control OS windows, IoT devices, and answer questions.\n\nType 'help' for all commands, or tap 🎤 to speak.\nSay 'Hey AtulOS' after enabling wake mode in Settings!\n\n🔐 Device control requires password authentication.\n\n💡 Tip: I now understand natural language! Try:\n• \"switch on the fan\"\n• \"turn it off\" (after a device command)\n• \"launch terminal and open projects\"",
+      "Hello, Atul! I'm AtulAI — your personal AI assistant. 👋\n\nI can control OS windows, IoT devices, and answer questions.\n\nType 'help' for all commands, or tap 🎤 to speak.\nSay 'Hey AtulOS' after enabling wake mode in Settings!\n\n🔐 Device control requires secure popup authentication.\n\n💡 Tip: I now understand natural language! Try:\n• \"switch on the fan\"\n• \"turn it off\" (after a device command)\n• \"launch terminal and open projects\"",
       false
     );
   }, 3600);
