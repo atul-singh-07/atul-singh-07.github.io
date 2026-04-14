@@ -4760,6 +4760,290 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
 
 
 <!-- ══════════════════════════════════════════════════════════════
+     UPGRADE 8 — ATULAI LEVEL 2 INTELLIGENCE
+     Adds: Natural language math, multi-step commands,
+           context memory, smart response generator.
+     ADDITIVE ONLY — patches _jarvisProcessInternal via intercept.
+     Zero existing code modified.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function initLevel2Intelligence() {
+  'use strict';
+
+  // ── 1. GLOBAL MEMORY ─────────────────────────────────────────
+  var atulaiMemory = {
+    lastSearch:  null,
+    lastSubject: null,
+  };
+
+  // ── 2. NATURAL LANGUAGE MATH PARSER ──────────────────────────
+  function parseNaturalMath(input) {
+    var expr = input.toLowerCase();
+    expr = expr
+      .replace(/\b(what is|calculate|solve|find|compute|evaluate)\b/gi, '')
+      .replace(/\bplus\b/gi, '+')
+      .replace(/\bminus\b/gi, '-')
+      .replace(/\b(times|multiplied by|into|x)\b/gi, '*')
+      .replace(/\b(divided by|over|div)\b/gi, '/')
+      .replace(/\bsquared\b/gi, '*2')
+      .replace(/\bcubed\b/gi, '*3')
+      .replace(/[^0-9+\-*/(). ]/g, '')
+      .trim();
+
+    if (expr && /^[0-9+\-*/(). ]+$/.test(expr) && /[0-9]/.test(expr)) {
+      return expr;
+    }
+    return null;
+  }
+
+  // ── 3. MULTI-STEP COMMAND SPLITTER ───────────────────────────
+  function splitCommands(input) {
+    // Split on " then " or " and " — but only at top level
+    // Avoid splitting "open browser and search X" incorrectly
+    // We preserve "open X and search Y" as a single special case handled in detectIntentAdvanced
+    return input
+      .toLowerCase()
+      .split(/\s+then\s+/)
+      .map(function(cmd) { return cmd.trim(); })
+      .filter(Boolean);
+  }
+
+  // ── 4. CONTEXT RESOLVER FOR PRONOUNS ─────────────────────────
+  function resolveAtulAIContext(query) {
+    if (/\b(his|her)\b/i.test(query)) {
+      if (atulaiMemory.lastSubject) {
+        return query.replace(/\b(his|her)\b/gi, atulaiMemory.lastSubject);
+      }
+    }
+    return query;
+  }
+
+  // ── 5. ENHANCED INTENT DETECTOR ──────────────────────────────
+  function detectIntentAdvanced(input) {
+    var norm = input.toLowerCase().trim();
+    var intents = [];
+
+    // ── Special combo: "open browser and search X" ──
+    var comboMatch = norm.match(/\bopen\s+browser\s+and\s+search\s+(.+)/i) ||
+                     norm.match(/\bopen\s+browser\b.*\bsearch\s+(.+)/i);
+    if (comboMatch) {
+      intents.push({ type: 'open_app', value: 'browser' });
+      intents.push({ type: 'search',   value: comboMatch[1].trim() });
+      return intents;
+    }
+
+    // ── Special combo: "open youtube and search X" ──
+    var ytMatch = norm.match(/\bopen\s+youtube\s+and\s+search\s+(.+)/i);
+    if (ytMatch) {
+      intents.push({ type: 'search', value: ytMatch[1].trim() + ' site:youtube.com' });
+      return intents;
+    }
+
+    // ── Split by "then" for multi-step ──
+    var parts = splitCommands(norm);
+
+    parts.forEach(function(cmd) {
+      cmd = resolveAtulAIContext(cmd);
+
+      // Natural math detection
+      var mathExpr = parseNaturalMath(cmd);
+      if (mathExpr) {
+        intents.push({ type: 'math', value: mathExpr });
+        return;
+      }
+
+      // "search X"
+      var searchMatch = cmd.match(/^search\s+(.+)/i);
+      if (searchMatch) {
+        intents.push({ type: 'search', value: searchMatch[1].trim() });
+        return;
+      }
+
+      // "look up X" / "find X" / "google X"
+      var lookupMatch = cmd.match(/^(?:look up|google|find info on|search for)\s+(.+)/i);
+      if (lookupMatch) {
+        intents.push({ type: 'search', value: lookupMatch[1].trim() });
+        return;
+      }
+
+      // "open <app>"
+      var openMatch = cmd.match(/^open\s+(.+)/i);
+      if (openMatch) {
+        intents.push({ type: 'open_app', value: openMatch[1].trim() });
+        return;
+      }
+
+      // Fallback — pass to original engine
+      intents.push({ type: 'passthrough', value: cmd });
+    });
+
+    return intents.length > 0 ? intents : [{ type: 'passthrough', value: norm }];
+  }
+
+  // ── 6. SMART RESPONSE GENERATOR ──────────────────────────────
+  function generateSmartResponse(intent, result) {
+    switch (intent.type) {
+      case 'math':
+        if (result !== null && result !== undefined && result !== 'Error') {
+          return '🧮 ' + intent.value + ' = ' + result;
+        }
+        return '⚠️ Could not calculate: ' + intent.value;
+
+      case 'search':
+        return '🔍 Searching Google for "' + intent.value + '"…';
+
+      case 'open_app':
+        return '🚀 Opening ' + intent.value + '…';
+
+      default:
+        return null; // let original engine handle it
+    }
+  }
+
+  // ── 7. CALCULATOR RUNNER ──────────────────────────────────────
+  function runCalculator(expr) {
+    try {
+      // Set expression into calculator display
+      var exprEl   = document.getElementById('calc-expr');
+      var resultEl = document.getElementById('calc-result');
+
+      // Evaluate safely
+      // eslint-disable-next-line no-new-func
+      var result = Function('"use strict"; return (' + expr.replace(/[^0-9+\-*/(). ]/g,'') + ')')();
+      if (!isFinite(result)) throw new Error('Not finite');
+
+      var displayResult = parseFloat(result.toFixed(10));
+
+      if (exprEl)   exprEl.textContent   = expr + ' =';
+      if (resultEl) resultEl.textContent = String(displayResult);
+
+      return displayResult;
+    } catch (e) {
+      var resultEl2 = document.getElementById('calc-result');
+      if (resultEl2) resultEl2.textContent = 'Error';
+      return 'Error';
+    }
+  }
+
+  // ── 8. BROWSER SEARCH RUNNER ──────────────────────────────────
+  function runBrowserSearch(query) {
+    var urlInput = document.getElementById('browser-url-input');
+    var url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+    if (urlInput) urlInput.value = url;
+    // Use openURL logic — it will open externally since google.com is blocked in iframe
+    if (typeof window.openExternal === 'function') {
+      window.openExternal(url);
+    } else if (typeof window.openSite === 'function') {
+      window.openSite();
+    } else {
+      window.open(url, '_blank');
+    }
+  }
+
+  // ── 9. MAIN PROCESS FUNCTION ──────────────────────────────────
+  function processAtulAI(rawInput) {
+    var input = rawInput.trim();
+    var norm  = input.toLowerCase();
+
+    // Quick check: does this look like a natural language math or search or multi-step?
+    // If none match, return null so the original engine handles it.
+    var hasMath    = parseNaturalMath(norm) !== null;
+    var hasSearch  = /\b(search|look up|google)\b/.test(norm);
+    var hasCombo   = /open\s+(browser|youtube).*and.*search/.test(norm);
+    var hasThen    = /\bthen\b/.test(norm);
+
+    if (!hasMath && !hasSearch && !hasCombo && !hasThen) {
+      return null; // not a Level 2 command
+    }
+
+    var intents = detectIntentAdvanced(input);
+
+    // Collect responses
+    var responses = [];
+
+    intents.forEach(function(intent) {
+      var response = '';
+
+      if (intent.type === 'math') {
+        openApp('calculator');
+        var result = runCalculator(intent.value);
+        response = generateSmartResponse(intent, result);
+
+      } else if (intent.type === 'search') {
+        var query = resolveAtulAIContext(intent.value);
+        atulaiMemory.lastSearch  = query;
+        atulaiMemory.lastSubject = query.split(' ')[0];
+        openApp('browser');
+        setTimeout(function() { runBrowserSearch(query); }, 400);
+        response = generateSmartResponse(intent);
+
+      } else if (intent.type === 'open_app') {
+        openApp(intent.value);
+        response = generateSmartResponse(intent);
+
+      } else {
+        // passthrough — let original engine handle
+        return;
+      }
+
+      if (response) responses.push(response);
+    });
+
+    return responses.length > 0 ? responses.join('\n') : null;
+  }
+
+  // ── 10. PATCH _jarvisProcessInternal ─────────────────────────
+  // This runs after all existing patches (Upgrade 7), so we wrap again.
+  // If Level 2 handles it, we return our result.
+  // Otherwise, the previous patched version runs (which includes U7 logic).
+  var _prevInternal = _jarvisProcessInternal;
+
+  _jarvisProcessInternal = function(rawInput) {
+    if (!rawInput || !rawInput.trim()) return _prevInternal(rawInput);
+
+    // Strip wake words
+    var cleaned = rawInput
+      .replace(/^hey atulos?\s*/i, '')
+      .replace(/^hello atulos?\s*/i, '')
+      .replace(/^ok atulos?\s*/i, '')
+      .trim();
+
+    if (!cleaned) return _prevInternal(rawInput);
+
+    // Try Level 2 processing
+    var l2Result = processAtulAI(cleaned);
+
+    if (l2Result !== null) {
+      // Speak it
+      if (typeof window.jarvisSpeak === 'function') {
+        try { window.jarvisSpeak(l2Result); } catch(e) {}
+      }
+      return l2Result;
+    }
+
+    // Fall through to previous engine (Upgrade 7 + original)
+    return _prevInternal(rawInput);
+  };
+
+  window._jarvisProcessInternal = _jarvisProcessInternal;
+
+  // ── 11. EXPOSE GLOBALS ────────────────────────────────────────
+  window.atulaiMemory       = atulaiMemory;
+  window.parseNaturalMath   = parseNaturalMath;
+  window.splitCommands      = splitCommands;
+  window.detectIntentAdvanced = detectIntentAdvanced;
+  window.generateSmartResponse = generateSmartResponse;
+  window.runCalculator      = runCalculator;
+  window.runBrowserSearch   = runBrowserSearch;
+  window.processAtulAI      = processAtulAI;
+
+  console.log('[AtulOS U8] Level 2 Intelligence online — natural math, multi-step, context memory active.');
+})();
+</script>
+<!-- ===== UPGRADE END: UPGRADE 8 — LEVEL 2 INTELLIGENCE ===== -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
      MODULE 6 — WINDOW MANAGER + AUTH + BOOT
 ════════════════════════════════════════════════════════════════ -->
 <script>
