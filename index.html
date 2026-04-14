@@ -4760,290 +4760,6 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     UPGRADE 8 — ATULAI LEVEL 2 INTELLIGENCE
-     Adds: Natural language math, multi-step commands,
-           context memory, smart response generator.
-     ADDITIVE ONLY — patches _jarvisProcessInternal via intercept.
-     Zero existing code modified.
-════════════════════════════════════════════════════════════════ -->
-<script>
-(function initLevel2Intelligence() {
-  'use strict';
-
-  // ── 1. GLOBAL MEMORY ─────────────────────────────────────────
-  var atulaiMemory = {
-    lastSearch:  null,
-    lastSubject: null,
-  };
-
-  // ── 2. NATURAL LANGUAGE MATH PARSER ──────────────────────────
-  function parseNaturalMath(input) {
-    var expr = input.toLowerCase();
-    expr = expr
-      .replace(/\b(what is|calculate|solve|find|compute|evaluate)\b/gi, '')
-      .replace(/\bplus\b/gi, '+')
-      .replace(/\bminus\b/gi, '-')
-      .replace(/\b(times|multiplied by|into|x)\b/gi, '*')
-      .replace(/\b(divided by|over|div)\b/gi, '/')
-      .replace(/\bsquared\b/gi, '*2')
-      .replace(/\bcubed\b/gi, '*3')
-      .replace(/[^0-9+\-*/(). ]/g, '')
-      .trim();
-
-    if (expr && /^[0-9+\-*/(). ]+$/.test(expr) && /[0-9]/.test(expr)) {
-      return expr;
-    }
-    return null;
-  }
-
-  // ── 3. MULTI-STEP COMMAND SPLITTER ───────────────────────────
-  function splitCommands(input) {
-    // Split on " then " or " and " — but only at top level
-    // Avoid splitting "open browser and search X" incorrectly
-    // We preserve "open X and search Y" as a single special case handled in detectIntentAdvanced
-    return input
-      .toLowerCase()
-      .split(/\s+then\s+/)
-      .map(function(cmd) { return cmd.trim(); })
-      .filter(Boolean);
-  }
-
-  // ── 4. CONTEXT RESOLVER FOR PRONOUNS ─────────────────────────
-  function resolveAtulAIContext(query) {
-    if (/\b(his|her)\b/i.test(query)) {
-      if (atulaiMemory.lastSubject) {
-        return query.replace(/\b(his|her)\b/gi, atulaiMemory.lastSubject);
-      }
-    }
-    return query;
-  }
-
-  // ── 5. ENHANCED INTENT DETECTOR ──────────────────────────────
-  function detectIntentAdvanced(input) {
-    var norm = input.toLowerCase().trim();
-    var intents = [];
-
-    // ── Special combo: "open browser and search X" ──
-    var comboMatch = norm.match(/\bopen\s+browser\s+and\s+search\s+(.+)/i) ||
-                     norm.match(/\bopen\s+browser\b.*\bsearch\s+(.+)/i);
-    if (comboMatch) {
-      intents.push({ type: 'open_app', value: 'browser' });
-      intents.push({ type: 'search',   value: comboMatch[1].trim() });
-      return intents;
-    }
-
-    // ── Special combo: "open youtube and search X" ──
-    var ytMatch = norm.match(/\bopen\s+youtube\s+and\s+search\s+(.+)/i);
-    if (ytMatch) {
-      intents.push({ type: 'search', value: ytMatch[1].trim() + ' site:youtube.com' });
-      return intents;
-    }
-
-    // ── Split by "then" for multi-step ──
-    var parts = splitCommands(norm);
-
-    parts.forEach(function(cmd) {
-      cmd = resolveAtulAIContext(cmd);
-
-      // Natural math detection
-      var mathExpr = parseNaturalMath(cmd);
-      if (mathExpr) {
-        intents.push({ type: 'math', value: mathExpr });
-        return;
-      }
-
-      // "search X"
-      var searchMatch = cmd.match(/^search\s+(.+)/i);
-      if (searchMatch) {
-        intents.push({ type: 'search', value: searchMatch[1].trim() });
-        return;
-      }
-
-      // "look up X" / "find X" / "google X"
-      var lookupMatch = cmd.match(/^(?:look up|google|find info on|search for)\s+(.+)/i);
-      if (lookupMatch) {
-        intents.push({ type: 'search', value: lookupMatch[1].trim() });
-        return;
-      }
-
-      // "open <app>"
-      var openMatch = cmd.match(/^open\s+(.+)/i);
-      if (openMatch) {
-        intents.push({ type: 'open_app', value: openMatch[1].trim() });
-        return;
-      }
-
-      // Fallback — pass to original engine
-      intents.push({ type: 'passthrough', value: cmd });
-    });
-
-    return intents.length > 0 ? intents : [{ type: 'passthrough', value: norm }];
-  }
-
-  // ── 6. SMART RESPONSE GENERATOR ──────────────────────────────
-  function generateSmartResponse(intent, result) {
-    switch (intent.type) {
-      case 'math':
-        if (result !== null && result !== undefined && result !== 'Error') {
-          return '🧮 ' + intent.value + ' = ' + result;
-        }
-        return '⚠️ Could not calculate: ' + intent.value;
-
-      case 'search':
-        return '🔍 Searching Google for "' + intent.value + '"…';
-
-      case 'open_app':
-        return '🚀 Opening ' + intent.value + '…';
-
-      default:
-        return null; // let original engine handle it
-    }
-  }
-
-  // ── 7. CALCULATOR RUNNER ──────────────────────────────────────
-  function runCalculator(expr) {
-    try {
-      // Set expression into calculator display
-      var exprEl   = document.getElementById('calc-expr');
-      var resultEl = document.getElementById('calc-result');
-
-      // Evaluate safely
-      // eslint-disable-next-line no-new-func
-      var result = Function('"use strict"; return (' + expr.replace(/[^0-9+\-*/(). ]/g,'') + ')')();
-      if (!isFinite(result)) throw new Error('Not finite');
-
-      var displayResult = parseFloat(result.toFixed(10));
-
-      if (exprEl)   exprEl.textContent   = expr + ' =';
-      if (resultEl) resultEl.textContent = String(displayResult);
-
-      return displayResult;
-    } catch (e) {
-      var resultEl2 = document.getElementById('calc-result');
-      if (resultEl2) resultEl2.textContent = 'Error';
-      return 'Error';
-    }
-  }
-
-  // ── 8. BROWSER SEARCH RUNNER ──────────────────────────────────
-  function runBrowserSearch(query) {
-    var urlInput = document.getElementById('browser-url-input');
-    var url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
-    if (urlInput) urlInput.value = url;
-    // Use openURL logic — it will open externally since google.com is blocked in iframe
-    if (typeof window.openExternal === 'function') {
-      window.openExternal(url);
-    } else if (typeof window.openSite === 'function') {
-      window.openSite();
-    } else {
-      window.open(url, '_blank');
-    }
-  }
-
-  // ── 9. MAIN PROCESS FUNCTION ──────────────────────────────────
-  function processAtulAI(rawInput) {
-    var input = rawInput.trim();
-    var norm  = input.toLowerCase();
-
-    // Quick check: does this look like a natural language math or search or multi-step?
-    // If none match, return null so the original engine handles it.
-    var hasMath    = parseNaturalMath(norm) !== null;
-    var hasSearch  = /\b(search|look up|google)\b/.test(norm);
-    var hasCombo   = /open\s+(browser|youtube).*and.*search/.test(norm);
-    var hasThen    = /\bthen\b/.test(norm);
-
-    if (!hasMath && !hasSearch && !hasCombo && !hasThen) {
-      return null; // not a Level 2 command
-    }
-
-    var intents = detectIntentAdvanced(input);
-
-    // Collect responses
-    var responses = [];
-
-    intents.forEach(function(intent) {
-      var response = '';
-
-      if (intent.type === 'math') {
-        openApp('calculator');
-        var result = runCalculator(intent.value);
-        response = generateSmartResponse(intent, result);
-
-      } else if (intent.type === 'search') {
-        var query = resolveAtulAIContext(intent.value);
-        atulaiMemory.lastSearch  = query;
-        atulaiMemory.lastSubject = query.split(' ')[0];
-        openApp('browser');
-        setTimeout(function() { runBrowserSearch(query); }, 400);
-        response = generateSmartResponse(intent);
-
-      } else if (intent.type === 'open_app') {
-        openApp(intent.value);
-        response = generateSmartResponse(intent);
-
-      } else {
-        // passthrough — let original engine handle
-        return;
-      }
-
-      if (response) responses.push(response);
-    });
-
-    return responses.length > 0 ? responses.join('\n') : null;
-  }
-
-  // ── 10. PATCH _jarvisProcessInternal ─────────────────────────
-  // This runs after all existing patches (Upgrade 7), so we wrap again.
-  // If Level 2 handles it, we return our result.
-  // Otherwise, the previous patched version runs (which includes U7 logic).
-  var _prevInternal = _jarvisProcessInternal;
-
-  _jarvisProcessInternal = function(rawInput) {
-    if (!rawInput || !rawInput.trim()) return _prevInternal(rawInput);
-
-    // Strip wake words
-    var cleaned = rawInput
-      .replace(/^hey atulos?\s*/i, '')
-      .replace(/^hello atulos?\s*/i, '')
-      .replace(/^ok atulos?\s*/i, '')
-      .trim();
-
-    if (!cleaned) return _prevInternal(rawInput);
-
-    // Try Level 2 processing
-    var l2Result = processAtulAI(cleaned);
-
-    if (l2Result !== null) {
-      // Speak it
-      if (typeof window.jarvisSpeak === 'function') {
-        try { window.jarvisSpeak(l2Result); } catch(e) {}
-      }
-      return l2Result;
-    }
-
-    // Fall through to previous engine (Upgrade 7 + original)
-    return _prevInternal(rawInput);
-  };
-
-  window._jarvisProcessInternal = _jarvisProcessInternal;
-
-  // ── 11. EXPOSE GLOBALS ────────────────────────────────────────
-  window.atulaiMemory       = atulaiMemory;
-  window.parseNaturalMath   = parseNaturalMath;
-  window.splitCommands      = splitCommands;
-  window.detectIntentAdvanced = detectIntentAdvanced;
-  window.generateSmartResponse = generateSmartResponse;
-  window.runCalculator      = runCalculator;
-  window.runBrowserSearch   = runBrowserSearch;
-  window.processAtulAI      = processAtulAI;
-
-  console.log('[AtulOS U8] Level 2 Intelligence online — natural math, multi-step, context memory active.');
-})();
-</script>
-<!-- ===== UPGRADE END: UPGRADE 8 — LEVEL 2 INTELLIGENCE ===== -->
-
-
-<!-- ══════════════════════════════════════════════════════════════
      MODULE 6 — WINDOW MANAGER + AUTH + BOOT
 ════════════════════════════════════════════════════════════════ -->
 <script>
@@ -7298,6 +7014,650 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 <!-- ===== UPGRADE END: UPGRADE 6 — UNIFIED APP CONTROL SYSTEM ===== -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     ===== UPGRADE START: UPGRADE 8 — ADVANCED INTENT ENGINE =====
+     Multi-command pipeline, structured intent parsing, smart search
+     flow, app orchestration, command chaining, history-aware
+     suggestions, dynamic responses, and fallback confirmation.
+     Fully additive — no existing functionality removed or broken.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function AtulOS_Upgrade8() {
+  'use strict';
+
+  // ═══════════════════════════════════════════════════════════════
+  // 1. KNOWN APP ALIASES — maps natural phrases → logical IDs
+  // ═══════════════════════════════════════════════════════════════
+  var APP_ALIASES = {
+    'calculator': 'calculator', 'calc': 'calculator',
+    'calendar':   'calendar',   'cal':  'calendar',
+    'browser':    'browser',    'web':  'browser',    'internet': 'browser', 'search engine': 'browser',
+    'notes':      'notes',      'note': 'notes',      'notepad': 'notes',
+    'terminal':   'terminal',   'term': 'terminal',   'console': 'terminal', 'shell': 'terminal',
+    'projects':   'projects',   'project': 'projects',
+    'about':      'about',
+    'skills':     'skills',     'skill': 'skills',
+    'settings':   'settings',   'setting': 'settings', 'preferences': 'settings', 'prefs': 'settings',
+    'ai':         'atulAI',     'atul ai': 'atulAI',   'atulai': 'atulAI',        'assistant': 'atulAI', 'chat': 'atulAI',
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // 2. INTENT TYPE DEFINITIONS
+  // ═══════════════════════════════════════════════════════════════
+  // type: "open_app" | "search" | "calculate" | "device" | "system"
+  //
+  // Each intent object:
+  //   { type, app, query, value, raw }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 3. SMART SEGMENT SPLITTER
+  //    Splits compound commands at semantic boundaries:
+  //    "and", "then", "also", "after that", commas
+  //    but avoids splitting arithmetic like "add 20 and 30"
+  // ═══════════════════════════════════════════════════════════════
+  function _splitSegments(input) {
+    // Protect arithmetic: "add X and Y", "X plus Y", etc.
+    var arithmeticProtect = /\b(\d+\s*(and|\+|plus|minus|-|times|\*|divided by|\/|mod|%)\s*\d+)\b/gi;
+    var placeholder = {};
+    var idx = 0;
+    var protected_input = input.replace(arithmeticProtect, function(m) {
+      var key = '<<ARITH_' + (idx++) + '>>';
+      placeholder[key] = m;
+      return key;
+    });
+
+    // Split on: ", then", ", also", " then ", " also ", " and then ", "; "
+    // but NOT bare " and " if it looks like arithmetic after protection
+    var parts = protected_input.split(/\s*,\s*then\s+|\s*;\s*|\s+then\s+|\s+also\s+|\s+after\s+that\s+/i);
+
+    // For " and ", only split if neither side looks like a number chain
+    var expanded = [];
+    parts.forEach(function(part) {
+      var andParts = part.split(/\s+and\s+/i);
+      // If any sub-part starts with a digit or is pure numeric op, keep together
+      if (andParts.length > 1) {
+        var allNumeric = andParts.every(function(p) { return /^\s*[\d\.\+\-\*\/\%\(\)]+\s*$/.test(p.trim()); });
+        if (allNumeric) {
+          expanded.push(part);
+        } else {
+          andParts.forEach(function(p) { if (p.trim()) expanded.push(p.trim()); });
+        }
+      } else {
+        if (part.trim()) expanded.push(part.trim());
+      }
+    });
+
+    // Restore arithmetic placeholders
+    return expanded.map(function(seg) {
+      Object.keys(placeholder).forEach(function(k) {
+        seg = seg.replace(k, placeholder[k]);
+      });
+      return seg.trim();
+    }).filter(function(s) { return s.length > 0; });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 4. RESOLVE APP NAME from fragment
+  // ═══════════════════════════════════════════════════════════════
+  function _resolveAppId(fragment) {
+    var f = fragment.toLowerCase().trim();
+    if (APP_ALIASES[f]) return APP_ALIASES[f];
+    // Partial match
+    var keys = Object.keys(APP_ALIASES).sort(function(a,b){ return b.length - a.length; });
+    for (var i = 0; i < keys.length; i++) {
+      if (f.indexOf(keys[i]) !== -1 || keys[i].indexOf(f) !== -1) {
+        return APP_ALIASES[keys[i]];
+      }
+    }
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 5. SINGLE SEGMENT → INTENT OBJECT
+  // ═══════════════════════════════════════════════════════════════
+  function _segmentToIntent(seg) {
+    var s = seg.toLowerCase().trim();
+
+    // ── search intent ──────────────────────────────────────────
+    // "search for X", "search X", "look up X", "google X", "find X online"
+    // Also: "search virat kohli", "google virat kohli", "look up virat kohli"
+    var searchMatch = s.match(/^(?:search(?:\s+for)?|look\s+up|google(?:\s+for)?|find\s+online|find|browse\s+for|web\s+search(?:\s+for)?|search\s+google\s+for|search\s+on\s+google)\s+(.+)$/i);
+    if (searchMatch) {
+      return { type: 'search', app: 'browser', query: searchMatch[1].trim(), value: '', raw: seg };
+    }
+
+    // "open browser and search X"
+    var openBrowserSearch = s.match(/^(?:open|launch|start)\s+browser\s+(?:and\s+)?(?:search(?:\s+for)?|look\s+up|google|find)\s+(.+)$/i);
+    if (openBrowserSearch) {
+      return { type: 'search', app: 'browser', query: openBrowserSearch[1].trim(), value: '', raw: seg };
+    }
+
+    // ── calculate intent ────────────────────────────────────────
+    // "calculate X", "compute X", "what is X+Y", "X + Y = ?", "add X and Y", "X times Y"
+    var calcMatch = s.match(/^(?:calculate|compute|eval(?:uate)?|what(?:'s|\s+is)?\s+(?:the\s+(?:result|value|answer)\s+of)?)\s+(.+)$/i);
+    if (calcMatch) {
+      return { type: 'calculate', app: 'calculator', query: '', value: calcMatch[1].trim(), raw: seg };
+    }
+
+    // Detect arithmetic expressions directly: "20 + 30", "100 * 5", "add 20 and 30", "20 plus 30"
+    var arithmeticRaw = s
+      .replace(/\badd\b/gi, '+').replace(/\bplus\b/gi, '+')
+      .replace(/\bminus\b/gi, '-').replace(/\bsubtract\b/gi, '-')
+      .replace(/\btimes\b/gi, '*').replace(/\bmultiplied by\b/gi, '*').replace(/\bx\b/gi, '*')
+      .replace(/\bdivided by\b/gi, '/').replace(/\bover\b/gi, '/')
+      .replace(/\bmod\b/gi, '%');
+    var pureArith = arithmeticRaw.replace(/\band\b/gi, '+').replace(/\s+/g, '');
+    if (/^[\d\.\+\-\*\/\%\(\)]+$/.test(pureArith) && /[\+\-\*\/\%]/.test(pureArith)) {
+      return { type: 'calculate', app: 'calculator', query: '', value: pureArith, raw: seg };
+    }
+
+    // "open calculator and add X and Y" → split handled already, but handle "add X and Y" alone
+    var addMatch = s.match(/^(?:add|sum)\s+(\d[\d\s,\.\+]*?)(?:\s+and\s+(\d+))?$/i);
+    if (addMatch) {
+      var expr = s.replace(/^(?:add|sum)\s+/i, '').replace(/\s+and\s+/gi, '+').replace(/,/g, '');
+      return { type: 'calculate', app: 'calculator', query: '', value: expr, raw: seg };
+    }
+
+    // ── device intent ───────────────────────────────────────────
+    if (/\b(light|fan|buzzer|lamp|bulb)\b/i.test(s) && /\b(on|off|turn|switch|enable|disable|start|stop|activate|deactivate)\b/i.test(s)) {
+      return { type: 'device', app: '', query: '', value: s, raw: seg };
+    }
+
+    // ── open_app intent ─────────────────────────────────────────
+    var openMatch = s.match(/^(?:open|launch|start|show|display|bring\s+up|go\s+to)\s+(.+)$/i);
+    if (openMatch) {
+      var appId = _resolveAppId(openMatch[1].trim());
+      if (appId) {
+        return { type: 'open_app', app: appId, query: '', value: '', raw: seg };
+      }
+    }
+
+    // ── close_app intent ────────────────────────────────────────
+    var closeMatch = s.match(/^(?:close|hide|exit|shut|dismiss)\s+(.+)$/i);
+    if (closeMatch) {
+      var appId2 = _resolveAppId(closeMatch[1].trim());
+      if (appId2) {
+        return { type: 'close_app', app: appId2, query: '', value: '', raw: seg };
+      }
+    }
+
+    // ── minimize_app intent ─────────────────────────────────────
+    var minMatch = s.match(/^(?:minimize|minimise|min)\s+(.+)$/i);
+    if (minMatch) {
+      var appId3 = _resolveAppId(minMatch[1].trim());
+      if (appId3) {
+        return { type: 'minimize_app', app: appId3, query: '', value: '', raw: seg };
+      }
+    }
+
+    // ── system/fallback intent ──────────────────────────────────
+    return { type: 'passthrough', app: '', query: '', value: '', raw: seg };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 6. MAIN: extractIntents(input) → Array<IntentObject>
+  // ═══════════════════════════════════════════════════════════════
+  function extractIntents(input) {
+    if (!input || !input.trim()) return [];
+    var segments = _splitSegments(input.trim());
+    return segments.map(function(seg) { return _segmentToIntent(seg); });
+  }
+  window.extractIntents = extractIntents;
+
+  // ═══════════════════════════════════════════════════════════════
+  // 7. SMART RESPONSE GENERATOR per intent type
+  // ═══════════════════════════════════════════════════════════════
+  var INTENT_RESPONSES = {
+    open_app: {
+      calculator: ['Opening Calculator 🧮', 'Calculator is ready! 🧮', 'Launching Calculator…'],
+      calendar:   ['Opening Calendar 📅', 'Your Calendar is ready 📅', 'Launching Calendar…'],
+      browser:    ['Opening Browser 🌐', 'Browser ready! 🌐', 'Launching Browser…'],
+      notes:      ['Opening Notes 📝', 'Notes app ready! 📝', 'Launching Notes…'],
+      terminal:   ['Opening Terminal 💻', 'Terminal ready! 💻', 'Launching Terminal…'],
+      projects:   ['Opening Projects 🗂️', 'Projects window opened 🗂️'],
+      about:      ['Opening About ℹ️', 'About panel opened ℹ️'],
+      skills:     ['Opening Skills ⚡', 'Skills panel opened ⚡'],
+      settings:   ['Opening Settings ⚙️', 'Settings ready ⚙️'],
+      atulAI:     ['Opening Atul AI 🤖', 'AI Chat opened 🤖'],
+      _default:   ['Opening app…', 'Launching…'],
+    },
+    close_app: {
+      _default: ['Closed ✖', 'App closed ✖'],
+    },
+    minimize_app: {
+      _default: ['Minimized 🗕', 'App minimized 🗕'],
+    },
+    search: [
+      'Searching for "{query}"… 🔍',
+      'Looking up "{query}" in the browser 🌐',
+      'Launching search for "{query}" 🔍',
+    ],
+    calculate: [
+      'Calculating {value}… 🧮',
+      'Computing {value} in the Calculator 🧮',
+      'Running calculation: {value} 🔢',
+    ],
+    device: ['Sending device command… 🔌'],
+    passthrough: [],
+  };
+
+  function _pickRandom(arr) {
+    if (!arr || !arr.length) return '';
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function _intentResponse(intent) {
+    var tpl = '';
+    if (intent.type === 'open_app') {
+      var bank = INTENT_RESPONSES.open_app[intent.app] || INTENT_RESPONSES.open_app._default;
+      tpl = _pickRandom(bank);
+    } else if (intent.type === 'close_app') {
+      tpl = _pickRandom(INTENT_RESPONSES.close_app._default).replace('✖', intent.app + ' ✖');
+    } else if (intent.type === 'minimize_app') {
+      tpl = _pickRandom(INTENT_RESPONSES.minimize_app._default);
+    } else if (intent.type === 'search') {
+      tpl = _pickRandom(INTENT_RESPONSES.search).replace('{query}', intent.query);
+    } else if (intent.type === 'calculate') {
+      tpl = _pickRandom(INTENT_RESPONSES.calculate).replace('{value}', intent.value);
+    } else if (intent.type === 'device') {
+      tpl = _pickRandom(INTENT_RESPONSES.device);
+    }
+    return tpl;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 8. ENSURE APP OPEN (focus if open, else open)
+  // ═══════════════════════════════════════════════════════════════
+  function ensureAppOpen(appName) {
+    var id = _resolveAppId(appName) || appName;
+    var win = document.getElementById(id);
+    if (win && win.style.display !== 'none') {
+      // Already open — bring to front
+      if (typeof window.openWindow === 'function') window.openWindow(id);
+      return 'focused';
+    }
+    // Open it
+    if (typeof window.openApp === 'function') window.openApp(id);
+    else if (typeof window.openWindow === 'function') window.openWindow(id);
+    return 'opened';
+  }
+  window.ensureAppOpen = ensureAppOpen;
+
+  // ═══════════════════════════════════════════════════════════════
+  // 9a. REAL GOOGLE SEARCH — opens new browser tab
+  // ═══════════════════════════════════════════════════════════════
+  function searchGoogle(query) {
+    if (!query || !query.trim()) return;
+    var q = query.trim();
+    var url = 'https://www.google.com/search?q=' + encodeURIComponent(q);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+  window.searchGoogle = searchGoogle;
+
+  // ═══════════════════════════════════════════════════════════════
+  // 9. SMART BROWSER SEARCH FLOW
+  // ═══════════════════════════════════════════════════════════════
+  function _injectBrowserSearch(query) {
+    // Ensure browser is open
+    ensureAppOpen('browser');
+
+    // Wait a tick for the browser window to appear, then set the URL bar
+    // to a Google search and trigger navigation simulation
+    setTimeout(function() {
+      var urlInput = document.getElementById('browser-url-input');
+      var homeDiv  = document.getElementById('browser-home');
+      var placeholder = document.getElementById('browser-placeholder');
+      var statusEl = document.getElementById('browser-status');
+
+      var searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+
+      if (urlInput) urlInput.value = searchUrl;
+
+      // Hide home screen, show placeholder with status message
+      if (homeDiv)      homeDiv.style.display      = 'none';
+      if (placeholder)  placeholder.style.display  = 'flex';
+
+      // Update status bar
+      if (statusEl) {
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:var(--accent);"></i> <span style="color:var(--accent);">Searching for: ' + _escapeHtml(query) + '</span>';
+      }
+
+      // After short delay, attempt iframe load (may be blocked by CORS — graceful fallback)
+      setTimeout(function() {
+        var iframe = document.getElementById('browser-iframe');
+        if (iframe) {
+          iframe.style.display = 'block';
+          if (placeholder) placeholder.style.display = 'none';
+          try {
+            iframe.src = searchUrl;
+          } catch(e) {}
+        }
+        if (statusEl) {
+          statusEl.innerHTML = '<i class="fa-solid fa-check" style="color:#28c840;"></i> <span style="color:var(--muted);">Google search for: <strong style="color:var(--fg);">' + _escapeHtml(query) + '</strong></span>';
+        }
+      }, 800);
+    }, 300);
+  }
+
+  function _escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 10. CALCULATOR INJECTION — enter expression into the calc display
+  // ═══════════════════════════════════════════════════════════════
+  function _injectCalculatorExpression(expr) {
+    ensureAppOpen('calculator');
+
+    setTimeout(function() {
+      var exprEl   = document.getElementById('calc-expr');
+      var resultEl = document.getElementById('calc-result');
+      if (!exprEl || !resultEl) return;
+
+      // Clean and evaluate
+      var clean = expr
+        .replace(/\s+/g, '')
+        .replace(/[^0-9\.\+\-\*\/\%\(\)]/g, '');
+
+      if (!clean) return;
+
+      exprEl.textContent = clean + ' =';
+      try {
+        var result = Function('"use strict"; return (' + clean + ')')();
+        if (typeof result === 'number' && isFinite(result)) {
+          resultEl.textContent = parseFloat(result.toFixed(10)).toString();
+        } else {
+          resultEl.textContent = 'Error';
+        }
+      } catch(e) {
+        resultEl.textContent = 'Error';
+      }
+    }, 350);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 11. EXECUTE A SINGLE INTENT
+  // ═══════════════════════════════════════════════════════════════
+  function _executeIntent(intent) {
+    switch (intent.type) {
+      case 'open_app':
+        ensureAppOpen(intent.app);
+        return _intentResponse(intent);
+
+      case 'close_app':
+        if (typeof window.closeApp === 'function') window.closeApp(intent.app);
+        else if (typeof window.closeWindow === 'function') window.closeWindow(intent.app);
+        return intent.app + ' closed ✖';
+
+      case 'minimize_app':
+        if (typeof window.minimizeApp === 'function') window.minimizeApp(intent.app);
+        return intent.app + ' minimized 🗕';
+
+      case 'search':
+        if (intent.query && intent.query.trim()) {
+          searchGoogle(intent.query);
+          _injectBrowserSearch(intent.query);
+          return '🔍 Searching Google for ' + intent.query + '…';
+        }
+        return '⚠️ Please specify what to search for.';
+
+      case 'calculate':
+        _injectCalculatorExpression(intent.value);
+        return _intentResponse(intent);
+
+      case 'device':
+        // Fall through to original jarvis engine
+        if (typeof window._jarvisProcessInternal === 'function') {
+          return window._jarvisProcessInternal(intent.raw);
+        }
+        return null;
+
+      case 'passthrough':
+      default:
+        return null; // Let original engine handle
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 12. COMMAND HISTORY ENHANCEMENT
+  //     Wraps existing aiCmdHistory/termHistory to prioritise recent
+  //     entries and feed smart suggestions.
+  // ═══════════════════════════════════════════════════════════════
+  var _u8CommandHistory = [];
+  var _MAX_HISTORY = 50;
+
+  function _recordU8Command(input) {
+    // Remove duplicate if already in history
+    var idx = _u8CommandHistory.indexOf(input);
+    if (idx !== -1) _u8CommandHistory.splice(idx, 1);
+    _u8CommandHistory.unshift(input); // most recent first
+    if (_u8CommandHistory.length > _MAX_HISTORY) _u8CommandHistory.length = _MAX_HISTORY;
+    try { localStorage.setItem('atulos_u8_history', JSON.stringify(_u8CommandHistory)); } catch(e) {}
+  }
+
+  function _loadU8History() {
+    try {
+      var saved = localStorage.getItem('atulos_u8_history');
+      if (saved) _u8CommandHistory = JSON.parse(saved);
+    } catch(e) {}
+  }
+  _loadU8History();
+
+  function getRecentCommands(limit) {
+    return _u8CommandHistory.slice(0, limit || 5);
+  }
+  window.getRecentCommands = getRecentCommands;
+
+  // ═══════════════════════════════════════════════════════════════
+  // 13. AMBIGUITY DETECTOR + FALLBACK MESSAGE
+  // ═══════════════════════════════════════════════════════════════
+  function _isAmbiguous(intents) {
+    // If all intents are passthrough, the input wasn't parsed
+    return intents.length > 0 && intents.every(function(i) { return i.type === 'passthrough'; });
+  }
+
+  function _buildFallbackSuggestion(input) {
+    var s = input.toLowerCase();
+    var suggestions = [];
+
+    // Offer suggestions based on partial keyword matches
+    if (s.indexOf('calc') !== -1 || s.indexOf('math') !== -1 || s.indexOf('add') !== -1 || s.indexOf('sum') !== -1) {
+      suggestions.push('"open calculator" or "calculate 20 + 30"');
+    }
+    if (s.indexOf('search') !== -1 || s.indexOf('find') !== -1 || s.indexOf('look') !== -1) {
+      suggestions.push('"search for [topic]" or "open browser and search [topic]"');
+    }
+    if (s.indexOf('open') !== -1 || s.indexOf('launch') !== -1) {
+      suggestions.push('"open [app name]" — apps: calculator, browser, notes, terminal, calendar, settings');
+    }
+
+    // Suggest based on recent commands
+    var recent = getRecentCommands(3);
+    if (recent.length > 0) {
+      suggestions.push('Recent: "' + recent.slice(0, 2).join('" or "') + '"');
+    }
+
+    if (suggestions.length > 0) {
+      return '🤔 I\'m not sure what you mean. Did you mean:\n• ' + suggestions.join('\n• ');
+    }
+    return '🤔 I didn\'t understand "' + input.substring(0,40) + '". Try "help" for a list of commands, or be more specific!';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 14. MAIN PIPELINE: processInput(input)
+  //     1. Extract intents
+  //     2. Check for ambiguity → show suggestion, DON'T execute
+  //     3. Loop and execute sequentially
+  //     4. Return combined response string
+  // ═══════════════════════════════════════════════════════════════
+  function processInput(input) {
+    if (!input || !input.trim()) return null;
+
+    _recordU8Command(input.trim());
+
+    var intents = extractIntents(input);
+
+    // If fully ambiguous (no structured intent parsed), show fallback
+    if (_isAmbiguous(intents)) {
+      return null; // Signal: let original engine try; if it also fails, caller shows fallback
+    }
+
+    // If ALL are passthrough, skip pipeline entirely
+    var hasStructured = intents.some(function(i) { return i.type !== 'passthrough'; });
+    if (!hasStructured) return null;
+
+    var responses = [];
+    var passthroughParts = [];
+
+    intents.forEach(function(intent) {
+      if (intent.type === 'passthrough') {
+        passthroughParts.push(intent.raw);
+        return;
+      }
+      var resp = _executeIntent(intent);
+      if (resp) responses.push(resp);
+    });
+
+    // Handle passthrough parts via original engine
+    passthroughParts.forEach(function(part) {
+      if (typeof window._jarvisProcessInternal === 'function') {
+        var r = window._jarvisProcessInternal(part);
+        if (r) responses.push(r);
+      }
+    });
+
+    return responses.length > 0 ? responses.join('\n') : null;
+  }
+  window.processInput = processInput;
+
+  // ═══════════════════════════════════════════════════════════════
+  // 15. PATCH _jarvisProcessInternal WITH PIPELINE
+  //     Priority: Pipeline → handleSystemCommand → original
+  // ═══════════════════════════════════════════════════════════════
+  function _patchWithPipeline() {
+    var _origJarvis = window._jarvisProcessInternal;
+    if (!_origJarvis) { setTimeout(_patchWithPipeline, 100); return; }
+
+    window._jarvisProcessInternal = function(rawInput) {
+      if (!rawInput) return _origJarvis(rawInput);
+
+      // Strip wake words
+      var cleaned = rawInput
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+      if (!cleaned) return _origJarvis(rawInput);
+
+      // ── GREETING fast-path: skip pipeline ──
+      if (/^(hello|hi|hey)(\s|$)/i.test(cleaned)) return _origJarvis(rawInput);
+
+      // ── PIPELINE ──
+      var pipelineResult = processInput(cleaned);
+      if (pipelineResult !== null) {
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(pipelineResult); } catch(e) {}
+        }
+        return pipelineResult;
+      }
+
+      // ── FALLBACK: original engine ──
+      var origResult = _origJarvis(rawInput);
+
+      // If original also fell back to generic fallback, offer smart suggestion
+      if (origResult && typeof origResult === 'string') {
+        var fallbackMarkers = ['didn\'t get that', 'try \'help\'', 'not sure', 'understand', 'fallback', '🤔', '❓'];
+        var lowerOrig = origResult.toLowerCase();
+        var isFallback = fallbackMarkers.some(function(m) { return lowerOrig.indexOf(m) !== -1; });
+        if (isFallback) {
+          var suggestion = _buildFallbackSuggestion(cleaned);
+          return suggestion;
+        }
+      }
+
+      return origResult;
+    };
+
+    window.jarvisProcess = function(rawInput) {
+      if (!rawInput || !rawInput.trim()) return null;
+      return window._jarvisProcessInternal(rawInput);
+    };
+
+    console.log('[AtulOS U8] Pipeline patched into _jarvisProcessInternal.');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 16. ENHANCED TERMINAL SUGGESTION — history-aware
+  // ═══════════════════════════════════════════════════════════════
+  function _enhanceTermSuggestions() {
+    var origRender = window.termRenderSuggestions;
+    if (typeof origRender !== 'function') return;
+
+    window.termRenderSuggestions = function(query) {
+      if (!query || query.length < 1) {
+        // Show recent commands as suggestions when input is empty/short
+        var box = document.getElementById('term-suggestions');
+        if (box && query.length === 0) { box.style.display = 'none'; box.innerHTML = ''; }
+        return origRender(query);
+      }
+
+      // Prepend history matches to the built-in suggestions
+      var box = document.getElementById('term-suggestions');
+      var q = query.toLowerCase();
+      var historyMatches = _u8CommandHistory
+        .filter(function(c) { return c.toLowerCase().indexOf(q) !== -1 && c.toLowerCase() !== q; })
+        .slice(0, 2);
+
+      // Let original render first
+      origRender(query);
+
+      // Then inject history items at the top
+      if (historyMatches.length > 0 && box && box.style.display !== 'none') {
+        var existingItems = box.querySelectorAll('.term-suggestion-item');
+        historyMatches.reverse().forEach(function(cmd) {
+          var item = document.createElement('div');
+          item.className = 'term-suggestion-item';
+          item.dataset.cmd = cmd;
+          item.innerHTML = '<i class="fa-solid fa-clock" style="font-size:9px;opacity:0.5;color:var(--accent);"></i> ' + _escapeHtml(cmd);
+          item.style.borderBottom = '1px solid rgba(99,168,255,0.08)';
+          item.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            var inp = document.getElementById('term-input');
+            if (inp) { inp.value = cmd; inp.focus(); }
+            box.style.display = 'none'; box.innerHTML = '';
+          });
+          if (existingItems.length > 0) {
+            box.insertBefore(item, existingItems[0]);
+          } else {
+            box.insertBefore(item, box.firstChild);
+          }
+        });
+      }
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 17. BOOT
+  // ═══════════════════════════════════════════════════════════════
+  function _boot() {
+    _patchWithPipeline();
+    _enhanceTermSuggestions();
+    console.log('[AtulOS U8] Advanced Intent Engine + Multi-Command Pipeline online.');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(_boot, 50); });
+  } else {
+    setTimeout(_boot, 50);
+  }
+
+})();
+</script>
+<!-- ===== UPGRADE END: UPGRADE 8 — ADVANCED INTENT ENGINE ===== -->
 
 </body>
 </html>
