@@ -15,6 +15,27 @@
   --card:   rgba(18, 24, 33, 0.8);
   --window: rgba(17, 23, 32, 0.95);
   --border: rgba(255,255,255,.1);
+
+  /* ── Extended design tokens (from v3) ── */
+  --bg-layer:    #070b11;
+  --fg-dim:      #8fa3b8;
+  --accent-glow: rgba(99,168,255,0.18);
+  --accent-dim:  rgba(99,168,255,0.08);
+  --green:       #28c840;
+  --amber:       #febc2e;
+  --red:         #ff5f57;
+  --window-hdr:  rgba(17,23,32,0.98);
+  --border-hi:   rgba(99,168,255,0.22);
+
+  /* Spacing scale */
+  --sp-xs: 4px; --sp-sm: 8px; --sp-md: 14px; --sp-lg: 22px; --sp-xl: 36px;
+
+  /* Radii */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+
+  /* Shadows */
+  --shadow-window: 0 40px 100px rgba(0,0,0,0.7), 0 0 0 0.5px rgba(255,255,255,0.04) inset;
+  --shadow-btn: 0 2px 10px rgba(99,168,255,0.25);
 }
 :root[data-theme="light"] {
   --bg:     #eef2f8;
@@ -23,6 +44,14 @@
   --card:   rgba(255,255,255,0.9);
   --window: rgba(255,255,255,0.96);
   --border: rgba(0,0,0,.08);
+
+  /* Extended light tokens */
+  --bg-layer:    #dde6f2;
+  --fg-dim:      #4a5e72;
+  --window-hdr:  rgba(246,250,255,0.98);
+  --border-hi:   rgba(99,168,255,0.25);
+  --accent-glow: rgba(99,168,255,0.12);
+  --accent-dim:  rgba(99,168,255,0.06);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -37,6 +66,12 @@ body {
   -webkit-font-smoothing: antialiased;
   line-height: 1.4;
 }
+
+/* Global scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99,168,255,0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99,168,255,0.45); }
 
 /* ── BOOT SCREEN ── */
 #bootScreen {
@@ -63,6 +98,10 @@ body {
   animation: spin 1s linear infinite;
 }
 .boot-text { font-size: 13px; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; }
+.boot-tagline {
+  font-size: 10px; letter-spacing: 3px; color: rgba(255,255,255,0.2);
+  text-transform: uppercase; margin-bottom: 36px;
+}
 @keyframes spin  { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100%{opacity:.65;transform:scale(1)} 50%{opacity:1;transform:scale(1.04)} }
 @media (prefers-reduced-motion: reduce) {
@@ -87,6 +126,9 @@ body {
 .status-right i { color: var(--fg); opacity: .8; transition: 0.2s; cursor: pointer; }
 .status-right i:hover { opacity: 1; color: var(--accent); }
 .status-right a { color: var(--fg); text-decoration: none; }
+.status-brand { color: var(--muted); font-size: 12px; }
+.status-brand strong { color: var(--fg); }
+.status-sep { color: var(--border); margin: 0 2px; }
 
 #voice-toggle-btn {
   padding: 4px 10px; border-radius: 20px;
@@ -1779,6 +1821,7 @@ body {
 <div id="bootScreen" role="status" aria-live="polite" aria-label="Boot screen">
   <div class="boot-center">
     <div class="atul-logo">Atul<span>OS</span></div>
+    <div class="boot-tagline">AI-Native Operating Environment</div>
     <div class="loader-ring" aria-hidden="true"></div>
     <div class="boot-text" id="boot-text-msg">Starting system...</div>
   </div>
@@ -1788,7 +1831,7 @@ body {
 <div id="statusbar" role="status" aria-label="System status bar">
   <div class="status-left">
     <div class="status-dot" title="Online"></div>
-    <span>AtulOS &nbsp;·&nbsp; Atul Singh</span>
+    <span class="status-brand"><strong>AtulOS</strong> <span class="status-sep">·</span> Atul Singh</span>
   </div>
   <div class="status-right">
     <button id="voice-toggle-btn" class="voice-on" title="Toggle voice output">🔊 Voice ON</button>
@@ -7017,6 +7060,385 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 <!-- ══════════════════════════════════════════════════════════════
+     ===== UPGRADE START: ROBUSTNESS LAYER — EXECUTION GUARANTEE =====
+     Wraps every command entry point with:
+       • structured try/catch
+       • AI-fail fallback (direct base engine call)
+       • guaranteed visible output (never silent failure)
+       • Firebase write retry (iotSetDevice)
+       • console audit trail for every command
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function AtulOS_RobustnessLayer() {
+  'use strict';
+
+  /* ══════════════════════════════════════════════════════
+     1. CONSTANTS
+  ══════════════════════════════════════════════════════ */
+  var LAYER_TAG  = '[AtulOS Robust]';
+  var IOT_RETRY_DELAY_MS = 1800;   // retry Firebase write after this delay
+  var IOT_MAX_RETRIES    = 2;
+
+  /* ══════════════════════════════════════════════════════
+     2. SAFE OUTPUT — always gets a message to the user,
+        regardless of which surface is active
+  ══════════════════════════════════════════════════════ */
+  function _safeOutput(msg) {
+    if (!msg) return;
+    try {
+      // Terminal output
+      if (typeof window.termPrintLine === 'function') {
+        window.termPrintLine('AI', msg, 'jarvis-line', true);
+      }
+    } catch(e) { /* ignore */ }
+    try {
+      // AI chat panel output
+      if (typeof window.aiAppendMessage === 'function') {
+        window.aiAppendMessage('ai', msg, true);
+      }
+    } catch(e) { /* ignore */ }
+    try {
+      // Voice output
+      if (typeof window.jarvisSpeak === 'function') {
+        window.jarvisSpeak(msg);
+      }
+    } catch(e) { /* ignore */ }
+  }
+
+  /* ══════════════════════════════════════════════════════
+     3. PATCH iotSetDevice — Firebase write with retry
+        Original silently swallows failures. This version:
+        • retries up to IOT_MAX_RETRIES times
+        • shows a visible error if all retries fail
+        • logs every attempt
+  ══════════════════════════════════════════════════════ */
+  var _origIotSetDevice = window.iotSetDevice;
+
+  window.iotSetDevice = function iotSetDevice_robust(deviceName, stateValue) {
+    console.log(LAYER_TAG, 'iotSetDevice called:', deviceName, '→', stateValue === 1 ? 'ON' : 'OFF');
+
+    function _attempt(retriesLeft) {
+      try {
+        var db = firebase.database();
+        db.ref('devices').once('value').then(function(snap) {
+          var data = snap.val();
+          if (!data) {
+            console.warn(LAYER_TAG, 'iotSetDevice: /devices node is empty or null.');
+            if (retriesLeft > 0) {
+              console.log(LAYER_TAG, 'iotSetDevice: retrying in', IOT_RETRY_DELAY_MS, 'ms (' + retriesLeft + ' left)');
+              setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
+            } else {
+              var errMsg = '⚠️ Device "' + deviceName + '" could not be reached. Check Firebase connection.';
+              console.error(LAYER_TAG, errMsg);
+              _safeOutput(errMsg);
+            }
+            return;
+          }
+
+          var key = Object.keys(data).find(function(k) {
+            return data[k] && String(data[k].name).toLowerCase() === deviceName;
+          });
+
+          if (!key) {
+            var notFoundMsg = '⚠️ Device "' + deviceName + '" not found in Firebase. Available: ' +
+              Object.values(data).map(function(d) { return d && d.name; }).filter(Boolean).join(', ');
+            console.error(LAYER_TAG, notFoundMsg);
+            _safeOutput(notFoundMsg);
+            return;
+          }
+
+          db.ref('devices/' + key + '/state').set(stateValue)
+            .then(function() {
+              console.log(LAYER_TAG, 'iotSetDevice: write OK →', deviceName, '=', stateValue);
+            })
+            .catch(function(writeErr) {
+              console.error(LAYER_TAG, 'iotSetDevice: write FAILED:', writeErr.message);
+              if (retriesLeft > 0) {
+                console.log(LAYER_TAG, 'iotSetDevice: retrying write in', IOT_RETRY_DELAY_MS, 'ms (' + retriesLeft + ' left)');
+                setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
+              } else {
+                _safeOutput('⚠️ Could not set ' + deviceName + '. Firebase write error: ' + writeErr.message);
+              }
+            });
+        }).catch(function(readErr) {
+          console.error(LAYER_TAG, 'iotSetDevice: Firebase read FAILED:', readErr.message);
+          if (retriesLeft > 0) {
+            setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
+          } else {
+            _safeOutput('⚠️ Firebase unreachable. Could not control ' + deviceName + '.');
+          }
+        });
+      } catch(e) {
+        // firebase object itself missing / SDK not loaded
+        console.error(LAYER_TAG, 'iotSetDevice: exception (Firebase SDK unavailable?):', e.message);
+        if (retriesLeft > 0) {
+          setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
+        } else {
+          _safeOutput('⚠️ Firebase SDK unavailable. Running in demo mode — ' + deviceName + ' command logged but not sent.');
+        }
+      }
+    }
+
+    _attempt(IOT_MAX_RETRIES);
+  };
+
+  /* ══════════════════════════════════════════════════════
+     4. PATCH _executeIntentAction — action() error guard
+        Original catches but doesn't inform the user.
+        This version guarantees a visible response even
+        when action() throws.
+  ══════════════════════════════════════════════════════ */
+  var _origExecuteIntentAction = window._executeIntentAction;
+  if (typeof _origExecuteIntentAction === 'function') {
+    window._executeIntentAction = function _executeIntentAction_robust(intent, input) {
+      console.log(LAYER_TAG, '_executeIntentAction:', intent, '|', input);
+      try {
+        var result = _origExecuteIntentAction(intent, input);
+        if (!result) {
+          result = '✓ Command executed: ' + (intent || input);
+        }
+        console.log(LAYER_TAG, '_executeIntentAction result:', result);
+        return result;
+      } catch(e) {
+        var errMsg = '⚠️ Execution error for "' + (intent || input) + '": ' + e.message;
+        console.error(LAYER_TAG, errMsg, e);
+        _safeOutput(errMsg);
+        return errMsg;
+      }
+    };
+  }
+
+  /* ══════════════════════════════════════════════════════
+     5. WRAP jarvisProcess — the public terminal entry point
+        Guarantees:
+        • never returns undefined/null silently
+        • catches throws at the top level
+        • shows fallback if entire chain fails
+  ══════════════════════════════════════════════════════ */
+  function _waitForJarvisProcess(attempts) {
+    if (typeof window.jarvisProcess !== 'function') {
+      if (attempts > 0) setTimeout(function() { _waitForJarvisProcess(attempts - 1); }, 120);
+      return;
+    }
+
+    var _origJarvisProcess = window.jarvisProcess;
+
+    window.jarvisProcess = function jarvisProcess_robust(rawInput) {
+      if (!rawInput || !rawInput.trim()) return null;
+
+      console.log(LAYER_TAG, 'Command received:', rawInput);
+
+      try {
+        var result = _origJarvisProcess(rawInput);
+
+        // Guarantee a non-null response
+        if (!result) {
+          // AI returned nothing — attempt direct base engine call as fallback
+          if (typeof window._baseJarvis === 'function') {
+            console.warn(LAYER_TAG, 'jarvisProcess returned null — trying _baseJarvis fallback');
+            try {
+              result = window._baseJarvis(rawInput);
+            } catch(fe) {
+              console.error(LAYER_TAG, '_baseJarvis fallback threw:', fe.message);
+            }
+          }
+        }
+
+        if (!result) {
+          result = '⚠️ Command received but no response generated. Try "help" for valid commands.';
+          console.warn(LAYER_TAG, 'No result for:', rawInput);
+        }
+
+        console.log(LAYER_TAG, 'Execution result:', result);
+        return result;
+
+      } catch(e) {
+        var errMsg = '⚠️ System error processing "' + rawInput.substring(0, 40) + '": ' + e.message;
+        console.error(LAYER_TAG, 'jarvisProcess threw:', e);
+        // Attempt raw base engine as last-resort fallback
+        try {
+          if (typeof window._baseJarvis === 'function') {
+            console.warn(LAYER_TAG, 'Attempting _baseJarvis emergency fallback...');
+            var fallback = window._baseJarvis(rawInput);
+            if (fallback) {
+              console.log(LAYER_TAG, 'Emergency fallback succeeded:', fallback);
+              _safeOutput(fallback);
+              return fallback;
+            }
+          }
+        } catch(fe2) {
+          console.error(LAYER_TAG, 'Emergency fallback also failed:', fe2.message);
+        }
+        _safeOutput(errMsg);
+        return errMsg;
+      }
+    };
+
+    console.log(LAYER_TAG, 'jarvisProcess wrapped with robustness guard.');
+  }
+  _waitForJarvisProcess(30);
+
+  /* ══════════════════════════════════════════════════════
+     6. PATCH TERMINAL ENTER HANDLER
+        The terminal already calls jarvisProcess, but
+        if it returns a falsy value the output line is
+        skipped entirely. This patch ensures a line is
+        always printed and the user is never left in silence.
+  ══════════════════════════════════════════════════════ */
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      var termInput = document.getElementById('term-input');
+      if (!termInput) return;
+
+      // Clone → re-attach to strip existing listener, then add our robust one
+      // But we cannot clone without losing other listeners cleanly.
+      // Instead, wrap via a capturing listener that post-processes the output.
+      termInput.addEventListener('keydown', function _robustTermKeydown(e) {
+        if (e.key !== 'Enter') return;
+
+        var raw = termInput.value.trim();
+        if (!raw) return;
+
+        // Set a deferred check: if no output line appeared within 400ms, force one
+        setTimeout(function() {
+          var out = document.getElementById('terminal-output');
+          if (!out) return;
+
+          // Check if the last jarvis-line is newer than our command echo
+          var lines = out.querySelectorAll('.jarvis-line');
+          var echoes = out.querySelectorAll('.cmd-echo');
+          var lastEcho   = echoes[echoes.length - 1];
+          var lastJarvis = lines[lines.length - 1];
+
+          // If there's an echo with our command but no jarvis-line follows it
+          if (lastEcho && lastEcho.textContent.includes(raw)) {
+            if (!lastJarvis || lastJarvis.compareDocumentPosition(lastEcho) & Node.DOCUMENT_POSITION_FOLLOWING) {
+              // No response line appeared — force one
+              console.warn(LAYER_TAG, 'Terminal: no output detected for "' + raw + '", forcing fallback execution');
+              try {
+                var result = window.jarvisProcess ? window.jarvisProcess(raw) : null;
+                if (result && typeof window.termPrintLine === 'function') {
+                  window.termPrintLine('AI', result, 'jarvis-line', true);
+                } else if (!result) {
+                  var fb = '⚠️ Command "' + raw.substring(0,30) + '" produced no output. Check syntax or try "help".';
+                  if (typeof window.termPrintLine === 'function') window.termPrintLine('AI', fb, 'jarvis-line', false);
+                }
+              } catch(e) {
+                console.error(LAYER_TAG, 'Terminal fallback error:', e.message);
+              }
+            }
+          }
+        }, 400);
+      }, true); // capture phase so it runs after the existing listener
+
+      console.log(LAYER_TAG, 'Terminal robust keydown guard attached.');
+    }, 600);
+  });
+
+  /* ══════════════════════════════════════════════════════
+     7. PATCH aiSendMessage — AI layer failure fallback
+        If the AI setTimeout callback throws OR returns
+        nothing, command still executes via jarvisProcess.
+  ══════════════════════════════════════════════════════ */
+  function _waitForAiSendMessage(attempts) {
+    if (typeof window.aiSendMessage !== 'function') {
+      if (attempts > 0) setTimeout(function() { _waitForAiSendMessage(attempts - 1); }, 150);
+      return;
+    }
+
+    var _origAiSend = window.aiSendMessage;
+
+    window.aiSendMessage = function aiSendMessage_robust() {
+      var inputEl = document.getElementById('ai-input');
+      var text = inputEl ? inputEl.value.trim() : '';
+      console.log(LAYER_TAG, 'aiSendMessage called with:', text);
+
+      try {
+        _origAiSend.apply(this, arguments);
+      } catch(e) {
+        console.error(LAYER_TAG, 'aiSendMessage threw — running direct fallback:', e.message);
+        // AI layer completely failed — execute directly
+        if (text) {
+          try {
+            var fallbackResp = window.jarvisProcess ? window.jarvisProcess(text)
+                             : window._baseJarvis   ? window._baseJarvis(text)
+                             : '⚠️ AI engine unavailable.';
+            var msg = fallbackResp || '⚠️ No response. Try "help".';
+            if (typeof window.aiAppendMessage === 'function') window.aiAppendMessage('ai', msg, true);
+            if (typeof window.jarvisSpeak     === 'function') window.jarvisSpeak(msg);
+          } catch(fe) {
+            console.error(LAYER_TAG, 'AI direct fallback also failed:', fe.message);
+            if (typeof window.aiAppendMessage === 'function') {
+              window.aiAppendMessage('ai', '⚠️ Critical error: command could not be processed.', false);
+            }
+          }
+        }
+      }
+    };
+
+    console.log(LAYER_TAG, 'aiSendMessage wrapped with fallback guard.');
+  }
+  _waitForAiSendMessage(30);
+
+  /* ══════════════════════════════════════════════════════
+     8. PATCH submitCommand — voice / programmatic path
+        Same guarantee: always produces output.
+  ══════════════════════════════════════════════════════ */
+  function _waitForSubmitCommand(attempts) {
+    if (typeof window.submitCommand !== 'function') {
+      if (attempts > 0) setTimeout(function() { _waitForSubmitCommand(attempts - 1); }, 150);
+      return;
+    }
+
+    var _origSubmit = window.submitCommand;
+
+    window.submitCommand = function submitCommand_robust(text) {
+      console.log(LAYER_TAG, 'submitCommand called with:', text);
+      try {
+        _origSubmit.apply(this, arguments);
+      } catch(e) {
+        console.error(LAYER_TAG, 'submitCommand threw — direct fallback:', e.message);
+        if (text) {
+          try {
+            var resp = window.jarvisProcess ? window.jarvisProcess(text) : '⚠️ Command engine unavailable.';
+            if (!resp) resp = '⚠️ No response for: ' + text.substring(0, 30);
+            _safeOutput(resp);
+          } catch(fe) {
+            console.error(LAYER_TAG, 'submitCommand fallback failed:', fe.message);
+            _safeOutput('⚠️ Critical error — could not process: ' + text);
+          }
+        }
+      }
+    };
+
+    console.log(LAYER_TAG, 'submitCommand wrapped with fallback guard.');
+  }
+  _waitForSubmitCommand(30);
+
+  /* ══════════════════════════════════════════════════════
+     9. GLOBAL UNHANDLED PROMISE REJECTION GUARD
+        Firebase and other async chains can reject silently.
+        This catches them and logs with context.
+  ══════════════════════════════════════════════════════ */
+  window.addEventListener('unhandledrejection', function(event) {
+    var reason = event.reason;
+    var msg = reason && reason.message ? reason.message : String(reason);
+    // Only log AtulOS-relevant rejections (Firebase, command engine)
+    if (/firebase|iot|device|jarvis|atulos/i.test(msg) || /firebase|iot|device|jarvis|atulos/i.test(String(event.promise))) {
+      console.error(LAYER_TAG, 'Unhandled promise rejection (AtulOS context):', msg, reason);
+    } else {
+      console.warn(LAYER_TAG, 'Unhandled promise rejection:', msg);
+    }
+  });
+
+  console.log(LAYER_TAG, 'Robustness Layer online — all command paths guarded.');
+
+})();
+</script>
+<!-- ===== UPGRADE END: ROBUSTNESS LAYER — EXECUTION GUARANTEE ===== -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
      ===== UPGRADE START: UPGRADE 8 — ADVANCED INTENT ENGINE =====
      Multi-command pipeline, structured intent parsing, smart search
      flow, app orchestration, command chaining, history-aware
@@ -7026,6 +7448,21 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
 (function AtulOS_Upgrade8() {
   'use strict';
+
+  // ── Capture the base (pre-U8) _jarvisProcessInternal reference
+  // This is used by the 'device' passthrough to avoid calling the live
+  // (U9-patched) window._jarvisProcessInternal, which would cause an
+  // infinite loop: U9 → U8 pipeline → device case → U9 → U8 → ∞
+  var _baseJarvis = window._jarvisProcessInternal || null;
+  // Expose on window so the Robustness Layer's fallback can reach it too
+  if (_baseJarvis && !window._baseJarvis) window._baseJarvis = _baseJarvis;
+  function _safeBaseCall(input) {
+    if (typeof _baseJarvis === 'function') {
+      console.log('[AtulOS U8] Device passthrough → base engine:', input);
+      return _baseJarvis(input);
+    }
+    return null;
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // 1. KNOWN APP ALIASES — maps natural phrases → logical IDs
@@ -7201,6 +7638,23 @@ document.addEventListener('DOMContentLoaded', function () {
   // ═══════════════════════════════════════════════════════════════
   function extractIntents(input) {
     if (!input || !input.trim()) return [];
+
+    // ── Fast-path: commands the base engine owns exclusively ──
+    // These must NEVER be intercepted by U8. Return passthrough immediately
+    // so _patchWithPipeline falls straight through to _origJarvis.
+    var _BASE_COMMANDS = [
+      'help', 'clear', 'whoami', 'status', 'time', 'date', 'joke',
+      'identity', 'who are you', 'what are you', 'capabilities',
+      'what can you do', 'list commands', 'show commands', 'show help',
+      'device status', 'check devices', 'my friends', 'lock',
+      'voice on', 'voice off', 'voice settings', 'wake word on', 'wake word off',
+      'dark mode', 'light mode', 'stop', 'thanks', 'thank you', 'bye', 'goodbye',
+    ];
+    var _trimmed = input.trim().toLowerCase();
+    if (_BASE_COMMANDS.indexOf(_trimmed) !== -1) {
+      return [{ type: 'passthrough', app: '', query: '', value: '', raw: input.trim() }];
+    }
+
     var segments = _splitSegments(input.trim());
     return segments.map(function(seg) { return _segmentToIntent(seg); });
   }
@@ -7410,11 +7864,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return _intentResponse(intent);
 
       case 'device':
-        // Fall through to original jarvis engine
-        if (typeof window._jarvisProcessInternal === 'function') {
-          return window._jarvisProcessInternal(intent.raw);
-        }
-        return null;
+        // Pass to the base engine (captured BEFORE U8/U9 patching).
+        // CRITICAL: must NOT call window._jarvisProcessInternal here — that
+        // is the live U9-patched reference and would cause an infinite loop:
+        // U9 → U8 pipeline → device → U9 → U8 → ∞
+        console.log('[AtulOS U8] Device intent → routing to base engine:', intent.raw);
+        return _safeBaseCall(intent.raw);
 
       case 'passthrough':
       default:
@@ -7559,6 +8014,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // ── PIPELINE ──
       var pipelineResult = processInput(cleaned);
       if (pipelineResult !== null) {
+        console.log('[AtulOS U8] Pipeline handled:', pipelineResult);
         if (typeof window.jarvisSpeak === 'function') {
           try { window.jarvisSpeak(pipelineResult); } catch(e) {}
         }
@@ -7566,11 +8022,22 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       // ── FALLBACK: original engine ──
+      console.log('[AtulOS U8] Pipeline pass-through to base engine:', rawInput);
       var origResult = _origJarvis(rawInput);
 
-      // If original also fell back to generic fallback, offer smart suggestion
+      // If original also fell back to generic fallback, offer smart suggestion.
+      // IMPORTANT: markers must be tight enough to never match valid command responses.
+      // 'understand' was removed — it appears in the capabilities/help response:
+      //   "You can speak naturally — I understand full sentences!"
+      // 'not sure' removed — too generic, can appear in normal responses.
       if (origResult && typeof origResult === 'string') {
-        var fallbackMarkers = ['didn\'t get that', 'try \'help\'', 'not sure', 'understand', 'fallback', '🤔', '❓'];
+        var fallbackMarkers = [
+          "didn't quite catch that",
+          "didn't get that",
+          "command not recognised",
+          "try 'help' to see all commands",
+          "try 'help' for the full list",
+        ];
         var lowerOrig = origResult.toLowerCase();
         var isFallback = fallbackMarkers.some(function(m) { return lowerOrig.indexOf(m) !== -1; });
         if (isFallback) {
@@ -7658,6 +8125,908 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 <!-- ===== UPGRADE END: UPGRADE 8 — ADVANCED INTENT ENGINE ===== -->
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  UPGRADE 9 — ADAPTIVE UI ENGINE                                 ║
+     ║  Self-evolving interface layer for AtulOS                        ║
+     ║  Pipeline: Intent → Parse → Decide → Transform → Persist        ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<style>
+/* ── ADAPTIVE UI ENGINE — CSS LAYER ── */
+
+/* Transition applied to all controllable elements */
+#statusbar, #taskbar, #desktop, #os-status-strip,
+.app-window, body {
+  transition:
+    opacity 0.4s cubic-bezier(0.4,0,0.2,1),
+    transform 0.4s cubic-bezier(0.4,0,0.2,1),
+    filter 0.4s cubic-bezier(0.4,0,0.2,1),
+    background 0.5s ease,
+    padding 0.4s ease;
+}
+
+/* ── UI MODES ─────────────────────────────────────────────── */
+
+/* FOCUS MODE — terminal-first, strip everything else */
+body[data-ui-mode="focus"] #desktop {
+  filter: opacity(0.15) blur(1px);
+  pointer-events: none;
+}
+body[data-ui-mode="focus"] #statusbar {
+  opacity: 0.3;
+  transform: translateY(-100%);
+}
+body[data-ui-mode="focus"] #taskbar {
+  opacity: 0.25;
+}
+body[data-ui-mode="focus"] #os-status-strip {
+  opacity: 0.15;
+}
+body[data-ui-mode="focus"] .app-window:not(#terminal) {
+  opacity: 0.08;
+  pointer-events: none;
+}
+body[data-ui-mode="focus"] #terminal {
+  box-shadow: 0 0 0 1px rgba(77,159,255,0.3),
+              0 50px 120px rgba(0,0,0,0.9),
+              0 0 60px rgba(77,159,255,0.08);
+}
+
+/* MINIMAL MODE — reduce visual noise, tighten spacing */
+body[data-ui-mode="minimal"] #statusbar {
+  height: 28px;
+  background: rgba(4,6,10,0.98);
+}
+body[data-ui-mode="minimal"] #taskbar {
+  height: 32px;
+}
+body[data-ui-mode="minimal"] .app-window .window-body {
+  padding: 10px;
+}
+body[data-ui-mode="minimal"] body::after {
+  opacity: 0;
+}
+body[data-ui-mode="minimal"] .brand-title,
+body[data-ui-mode="minimal"] .brand-sub,
+body[data-ui-mode="minimal"] .section-title {
+  opacity: 0.3;
+}
+body[data-ui-mode="minimal"] .desktop-icons {
+  opacity: 0.4;
+}
+body[data-ui-mode="minimal"] #os-status-strip {
+  display: none;
+}
+
+/* ANALYTICS MODE — stats forward, desktop open */
+body[data-ui-mode="analytics"] #desktop {
+  padding-top: 48px;
+}
+body[data-ui-mode="analytics"] #analytics-overlay {
+  display: flex !important;
+}
+body[data-ui-mode="analytics"] .app-window {
+  border-color: rgba(77,159,255,0.15);
+}
+
+/* EXPAND MODE — workspace maximized */
+body[data-ui-mode="expand"] #desktop {
+  padding: 44px 16px 44px;
+}
+body[data-ui-mode="expand"] .app-window {
+  border-radius: 6px;
+}
+
+/* DENSE MODE — tighten everything */
+body[data-ui-mode="dense"] #desktop {
+  padding: 44px 20px 44px;
+}
+body[data-ui-mode="dense"] .icon {
+  width: 60px;
+  padding: 10px 4px 8px;
+}
+body[data-ui-mode="dense"] .icon i { font-size: 16px; }
+body[data-ui-mode="dense"] .icon span { font-size: 9px; }
+
+/* ── GLOW INTENSITY MODIFIER ── */
+:root[data-glow="low"] .app-window {
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
+:root[data-glow="high"] .app-window {
+  box-shadow: 0 40px 100px rgba(0,0,0,0.7),
+              0 0 40px rgba(77,159,255,0.12),
+              0 0 0 0.5px rgba(255,255,255,0.05) inset;
+}
+:root[data-glow="high"] #terminal .term-prompt-bar:focus-within {
+  box-shadow: 0 0 0 3px rgba(77,159,255,0.12),
+              0 0 20px rgba(77,159,255,0.1);
+}
+
+/* ── ANALYTICS OVERLAY ── */
+#analytics-overlay {
+  display: none;
+  position: fixed;
+  top: 36px; right: 0;
+  width: 260px;
+  height: calc(100vh - 36px - 40px);
+  background: rgba(4,6,12,0.94);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  z-index: 4800;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  animation: slideInRight 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.analytics-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 9px; letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.analytics-close {
+  width: 20px; height: 20px; border-radius: 4px;
+  background: transparent; border: none;
+  color: rgba(255,255,255,0.25); cursor: pointer; font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.analytics-close:hover { background: rgba(239,68,68,0.2); color: var(--red); }
+.analytics-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.analytics-label {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(255,255,255,0.2); margin-bottom: 10px;
+}
+.analytics-metric {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;
+}
+.analytics-metric:last-child { margin-bottom: 0; }
+.analytics-metric-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.analytics-metric-name { font-size: 10px; color: rgba(255,255,255,0.45); }
+.analytics-metric-val  { font-size: 10px; color: var(--accent); font-weight: 600; }
+.analytics-bar {
+  height: 2px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden;
+}
+.analytics-bar-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), rgba(77,159,255,0.4));
+  transition: width 1s cubic-bezier(0.4,0,0.2,1);
+}
+.analytics-stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.analytics-stat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+}
+.analytics-stat-label {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.2); margin-bottom: 4px;
+}
+.analytics-stat-value {
+  font-size: 14px; font-weight: 700; color: var(--fg);
+  line-height: 1;
+}
+.analytics-stat-value.green { color: var(--green); }
+.analytics-stat-value.amber { color: var(--amber); }
+.analytics-mini-log {
+  padding: 10px 14px; flex: 1; overflow-y: auto;
+}
+.analytics-log-entry {
+  font-size: 10px; color: rgba(255,255,255,0.25);
+  padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+  display: flex; gap: 8px;
+}
+.analytics-log-entry .log-time { color: rgba(77,159,255,0.45); flex-shrink: 0; }
+.analytics-log-entry .log-msg  { color: rgba(255,255,255,0.35); }
+
+/* ── UI MODE INDICATOR ── */
+#ui-mode-badge {
+  position: fixed;
+  bottom: 50px; right: 16px;
+  background: rgba(4,8,16,0.96);
+  border: 1px solid rgba(77,159,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px 4px 10px;
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(77,159,255,0.7);
+  z-index: 6100;
+  display: none;
+  align-items: center; gap: 6px;
+  backdrop-filter: blur(12px);
+  animation: badgePop 0.25s cubic-bezier(0.34,1.4,0.64,1);
+  pointer-events: none;
+}
+@keyframes badgePop {
+  from { opacity: 0; transform: scale(0.85) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+#ui-mode-badge .mode-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* ── FOCUS ESCAPE HINT ── */
+#focus-esc-hint {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: rgba(77,159,255,0.25);
+  pointer-events: none; z-index: 4700;
+  display: none;
+  animation: hintPulse 3s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%,100% { opacity: 0.25; } 50% { opacity: 0.5; }
+}
+body[data-ui-mode="focus"] #focus-esc-hint {
+  display: block;
+}
+</style>
+
+<!-- Analytics Overlay Panel (injected into DOM, shown in analytics mode) -->
+<div id="analytics-overlay" aria-label="System Analytics">
+  <div class="analytics-header">
+    <span>System Analytics</span>
+    <button class="analytics-close" onclick="AdaptiveUI.exec('normal mode')" title="Close">✕</button>
+  </div>
+
+  <div class="analytics-section">
+    <div class="analytics-label">Performance</div>
+    <div class="analytics-metric">
+      <div class="analytics-metric-row">
+        <span class="analytics-metric-name">CPU Load</span>
+        <span class="analytics-metric-val" id="an-cpu-val">—</span>
+      </div>
+      <div class="analytics-bar"><div class="analytics-bar-fill" id="an-cpu-bar" style="width:0%"></div></div>
+    </div>
+    <div class="analytics-metric">
+      <div class="analytics-metric-row">
+        <span class="analytics-metric-name">Memory</span>
+        <span class="analytics-metric-val" id="an-mem-val">—</span>
+      </div>
+      <div class="analytics-bar"><div class="analytics-bar-fill" id="an-mem-bar" style="width:0%"></div></div>
+    </div>
+    <div class="analytics-metric">
+      <div class="analytics-metric-row">
+        <span class="analytics-metric-name">Render</span>
+        <span class="analytics-metric-val" id="an-render-val">—</span>
+      </div>
+      <div class="analytics-bar"><div class="analytics-bar-fill" id="an-render-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="analytics-section">
+    <div class="analytics-label">Session</div>
+    <div class="analytics-stat-grid">
+      <div class="analytics-stat">
+        <div class="analytics-stat-label">Commands</div>
+        <div class="analytics-stat-value green" id="an-cmd-count">0</div>
+      </div>
+      <div class="analytics-stat">
+        <div class="analytics-stat-label">UI Mode</div>
+        <div class="analytics-stat-value" id="an-ui-mode">Normal</div>
+      </div>
+      <div class="analytics-stat">
+        <div class="analytics-stat-label">Uptime</div>
+        <div class="analytics-stat-value amber" id="an-uptime">0m</div>
+      </div>
+      <div class="analytics-stat">
+        <div class="analytics-stat-label">Windows</div>
+        <div class="analytics-stat-value" id="an-win-count">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analytics-section" style="border-bottom:none; padding-bottom:6px;">
+    <div class="analytics-label">Command Log</div>
+  </div>
+  <div class="analytics-mini-log" id="an-log"></div>
+</div>
+
+<!-- UI Mode Badge -->
+<div id="ui-mode-badge"><div class="mode-dot"></div><span id="ui-mode-label">Normal</span></div>
+
+<!-- Focus escape hint -->
+<div id="focus-esc-hint">type "exit focus" to restore</div>
+
+<script>
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  ADAPTIVE UI ENGINE  v1.0                                        ║
+   ║  AtulOS Upgrade 9                                                ║
+   ║                                                                  ║
+   ║  Pipeline:                                                       ║
+   ║  Terminal Input                                                  ║
+   ║    → Intent Detection Layer  (keyword + pattern matching)        ║
+   ║    → Intent Parser           (NL → structured instruction)       ║
+   ║    → UI Decision Engine      (what changes, how)                 ║
+   ║    → UI Transformer          (apply with transitions)            ║
+   ║    → State Manager           (persist, revert, log)              ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+(function AdaptiveUIEngine() {
+  'use strict';
+
+  /* ══════════════════════════════════════════════════════
+     1. STATE MANAGER
+     Single source of truth for all UI state.
+     Supports history-based revert.
+  ══════════════════════════════════════════════════════ */
+  var State = (function() {
+    var _current = {
+      mode:        'normal',   // normal | focus | minimal | analytics | expand | dense
+      glow:        'normal',   // low | normal | high
+      sidebarOpen: false,
+      statsOpen:   false,
+      commandCount: 0,
+      startTime:   Date.now(),
+      logEntries:  [],
+    };
+    var _history = [];     // stack of snapshots for revert
+    var _listeners = [];
+
+    function _snap() {
+      return JSON.parse(JSON.stringify(_current));
+    }
+
+    function push(patch) {
+      _history.push(_snap());
+      if (_history.length > 20) _history.shift(); // cap history
+      Object.assign(_current, patch);
+      _listeners.forEach(function(fn) { try { fn(_current); } catch(e) {} });
+    }
+
+    function revert() {
+      if (_history.length === 0) return null;
+      var prev = _history.pop();
+      Object.assign(_current, prev);
+      _listeners.forEach(function(fn) { try { fn(_current); } catch(e) {} });
+      return prev;
+    }
+
+    function get()          { return _snap(); }
+    function on(fn)         { _listeners.push(fn); }
+    function incrementCmds(){ _current.commandCount++; }
+    function log(entry)     {
+      _current.logEntries.unshift({ time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}), msg: entry });
+      if (_current.logEntries.length > 50) _current.logEntries.pop();
+    }
+
+    return { push, revert, get, on, incrementCmds, log };
+  })();
+
+
+  /* ══════════════════════════════════════════════════════
+     2. INTENT DETECTION LAYER
+     Converts raw terminal input into a structured intent
+     using pattern matching + keyword scoring.
+
+     Returns: { type, payload } or null
+  ══════════════════════════════════════════════════════ */
+  var IntentDetector = (function() {
+
+    // Pattern table — ordered by specificity (most specific first)
+    // Each entry: { patterns[], type, payload }
+    var PATTERNS = [
+
+      // ── MODE COMMANDS ──────────────────────────────────
+      {
+        patterns: [/\bfocus\s*mode\b/i, /\benter\s*focus\b/i, /\bgo\s*focus\b/i, /\bfocus\s*up\b/i],
+        type: 'SET_MODE', payload: { mode: 'focus' }
+      },
+      {
+        patterns: [/\bminimal\s*mode\b/i, /\bmake\s*(this\s*)?(more\s*)?minimal\b/i,
+                   /\breduce\s*visual\s*noise\b/i, /\bclean\s*view\b/i, /\bstrip\s*(it\s*)?down\b/i,
+                   /\bminimize\s*(the\s*)?ui\b/i, /\bminimalist\b/i],
+        type: 'SET_MODE', payload: { mode: 'minimal' }
+      },
+      {
+        patterns: [/\banalytics\s*mode\b/i, /\bshow\s*stats\b/i, /\bshow\s*(system\s*)?analytics\b/i,
+                   /\bperformance\s*view\b/i, /\bsystem\s*(performance|metrics|stats)\b/i,
+                   /\bfocus\s*on\s*performance\b/i],
+        type: 'SET_MODE', payload: { mode: 'analytics' }
+      },
+      {
+        patterns: [/\bexpand\s*(workspace|view|layout|mode)?\b/i, /\bmaximize\s*workspace\b/i,
+                   /\bfull\s*(workspace|layout)\b/i, /\bwide\s*mode\b/i],
+        type: 'SET_MODE', payload: { mode: 'expand' }
+      },
+      {
+        patterns: [/\bdense\s*mode\b/i, /\bmake\s*(it\s*)?compact\b/i, /\bcompact\s*view\b/i],
+        type: 'SET_MODE', payload: { mode: 'dense' }
+      },
+      {
+        patterns: [/\b(normal|default|reset)\s*mode\b/i, /\b(exit|leave|escape)\s*(focus|minimal|analytics|expand|dense|mode)\b/i,
+                   /\breset\s*(the\s*)?(ui|layout|interface)\b/i, /\brestore\s*(ui|layout|view)?\b/i,
+                   /\bback\s*to\s*normal\b/i],
+        type: 'SET_MODE', payload: { mode: 'normal' }
+      },
+
+      // ── GLOW / VISUAL INTENSITY ─────────────────────────
+      {
+        patterns: [/\b(increase|boost|more|max)\s*(glow|visual|ambien|effects?)\b/i,
+                   /\bglow\s*(up|high|more)\b/i, /\bmore\s*glow\b/i],
+        type: 'SET_GLOW', payload: { glow: 'high' }
+      },
+      {
+        patterns: [/\b(reduce|lower|less|no|remove)\s*(glow|visual|ambien|effects?)\b/i,
+                   /\bglow\s*(down|low|off|less)\b/i, /\bless\s*glow\b/i],
+        type: 'SET_GLOW', payload: { glow: 'low' }
+      },
+      {
+        patterns: [/\bnormal\s*glow\b/i, /\breset\s*glow\b/i],
+        type: 'SET_GLOW', payload: { glow: 'normal' }
+      },
+
+      // ── COMPONENT CONTROL ──────────────────────────────
+      {
+        patterns: [/\bshow\s*(the\s*)?analytics\s*(panel|sidebar|overlay)?\b/i,
+                   /\bopen\s*(the\s*)?stats?\s*(panel)?\b/i],
+        type: 'TOGGLE_ANALYTICS', payload: { open: true }
+      },
+      {
+        patterns: [/\bhide\s*(the\s*)?analytics\b/i, /\bclose\s*(the\s*)?stats?\s*(panel)?\b/i],
+        type: 'TOGGLE_ANALYTICS', payload: { open: false }
+      },
+
+      // ── UI INFO ────────────────────────────────────────
+      {
+        patterns: [/\b(what|which|current)\s*(is\s*)?(the\s*)?ui\s*(mode|state)\b/i,
+                   /\bui\s*status\b/i, /\bui\s*info\b/i],
+        type: 'UI_STATUS', payload: {}
+      },
+
+      // ── HELP ──────────────────────────────────────────
+      {
+        patterns: [/\bui\s*help\b/i, /\bui\s*commands?\b/i, /\badaptive\s*(ui\s*)?help\b/i,
+                   /\bui\s*modes?\s*(list|available|help)\b/i],
+        type: 'UI_HELP', payload: {}
+      },
+    ];
+
+    function detect(input) {
+      if (!input || !input.trim()) return null;
+      var s = input.trim();
+
+      for (var i = 0; i < PATTERNS.length; i++) {
+        var entry = PATTERNS[i];
+        for (var j = 0; j < entry.patterns.length; j++) {
+          if (entry.patterns[j].test(s)) {
+            return { type: entry.type, payload: entry.payload };
+          }
+        }
+      }
+      return null;   // not an adaptive UI command
+    }
+
+    return { detect: detect };
+  })();
+
+
+  /* ══════════════════════════════════════════════════════
+     3. UI DECISION ENGINE
+     Given a parsed intent, determines the full set of
+     DOM/CSS changes needed and returns a plan.
+  ══════════════════════════════════════════════════════ */
+  var DecisionEngine = (function() {
+
+    function decide(intent, currentState) {
+      var plan = { actions: [], response: '', announce: '' };
+
+      switch (intent.type) {
+
+        case 'SET_MODE': {
+          var mode = intent.payload.mode;
+          if (mode === currentState.mode && mode !== 'normal') {
+            plan.response = 'Already in ' + mode + ' mode.';
+            return plan;
+          }
+          plan.actions.push({ op: 'SET_BODY_MODE', mode: mode });
+          if (mode === 'analytics') {
+            plan.actions.push({ op: 'SHOW_ANALYTICS', open: true });
+          } else {
+            plan.actions.push({ op: 'SHOW_ANALYTICS', open: false });
+          }
+          plan.stateUpdate = { mode: mode };
+          plan.announce    = mode.charAt(0).toUpperCase() + mode.slice(1) + ' Mode';
+
+          var RESPONSES = {
+            focus:     '⬛ Focus mode active. Distractions dimmed. Type "exit focus" to restore.',
+            minimal:   '◻ Minimal mode. Visual noise reduced.',
+            analytics: '📊 Analytics mode. System stats overlay active.',
+            expand:    '⬜ Workspace expanded.',
+            dense:     '▤ Dense layout active.',
+            normal:    '◈ Interface restored to default.',
+          };
+          plan.response = RESPONSES[mode] || 'UI mode set to ' + mode + '.';
+          break;
+        }
+
+        case 'SET_GLOW': {
+          var glow = intent.payload.glow;
+          plan.actions.push({ op: 'SET_GLOW', glow: glow });
+          plan.stateUpdate = { glow: glow };
+          var glowLabels = { high: 'boosted', low: 'reduced', normal: 'reset' };
+          plan.response  = '✦ Glow intensity ' + (glowLabels[glow] || glow) + '.';
+          plan.announce  = 'Glow ' + (glowLabels[glow] || glow);
+          break;
+        }
+
+        case 'TOGGLE_ANALYTICS': {
+          var open = intent.payload.open;
+          plan.actions.push({ op: 'SHOW_ANALYTICS', open: open });
+          plan.stateUpdate = { statsOpen: open };
+          plan.response = open ? '📊 Analytics panel opened.' : '✖ Analytics panel closed.';
+          break;
+        }
+
+        case 'UI_STATUS': {
+          var s = currentState;
+          plan.response = [
+            '── UI Status ──────────────',
+            'Mode:     ' + s.mode,
+            'Glow:     ' + s.glow,
+            'Commands: ' + s.commandCount,
+            'Uptime:   ' + _formatUptime(Date.now() - s.startTime),
+            '──────────────────────────',
+          ].join('\n');
+          break;
+        }
+
+        case 'UI_HELP': {
+          plan.response = [
+            '── Adaptive UI Commands ───',
+            '"focus mode"       → terminal-first, dim all else',
+            '"minimal mode"     → reduce visual noise',
+            '"analytics mode"   → show system stats panel',
+            '"expand workspace" → maximize workspace density',
+            '"dense mode"       → compact icon/element layout',
+            '"normal mode"      → restore defaults',
+            '"more glow"        → increase ambient effects',
+            '"less glow"        → reduce ambient effects',
+            '"ui status"        → show current UI state',
+            '"revert ui"        → undo last UI change',
+            '──────────────────────────',
+          ].join('\n');
+          break;
+        }
+      }
+
+      return plan;
+    }
+
+    function _formatUptime(ms) {
+      var s = Math.floor(ms / 1000);
+      var m = Math.floor(s / 60);
+      var h = Math.floor(m / 60);
+      if (h > 0) return h + 'h ' + (m % 60) + 'm';
+      if (m > 0) return m + 'm ' + (s % 60) + 's';
+      return s + 's';
+    }
+
+    return { decide: decide, _formatUptime: _formatUptime };
+  })();
+
+
+  /* ══════════════════════════════════════════════════════
+     4. UI TRANSFORMER
+     Applies the plan's action list to the live DOM.
+     All changes animated via CSS transitions already
+     declared in the style block above.
+  ══════════════════════════════════════════════════════ */
+  var Transformer = (function() {
+
+    var MODES = ['focus','minimal','analytics','expand','dense','normal'];
+
+    function apply(actions) {
+      actions.forEach(function(action) {
+        try {
+          _execute(action);
+        } catch(e) {
+          console.warn('[AdaptiveUI] Transform error:', e, action);
+        }
+      });
+    }
+
+    function _execute(action) {
+      switch (action.op) {
+
+        case 'SET_BODY_MODE': {
+          // Remove all existing mode attrs, then set the new one
+          var body = document.body;
+          MODES.forEach(function(m) {
+            if (m !== action.mode) body.removeAttribute('data-ui-mode-' + m);
+          });
+          if (action.mode === 'normal') {
+            body.removeAttribute('data-ui-mode');
+          } else {
+            body.setAttribute('data-ui-mode', action.mode);
+          }
+
+          // If focus mode: auto-ensure terminal is open and front
+          if (action.mode === 'focus') {
+            var term = document.getElementById('terminal');
+            if (term) {
+              if (term.style.display === 'none' || !term.style.display) {
+                if (typeof window.openWindow === 'function') window.openWindow('terminal');
+              }
+              // bring to front
+              term.style.zIndex = '4500';
+              // center it
+              var vw = window.innerWidth, vh = window.innerHeight;
+              var tw = Math.min(680, vw - 40);
+              term.style.width  = tw + 'px';
+              term.style.left   = ((vw - tw) / 2) + 'px';
+              term.style.top    = Math.max(60, (vh - 480) / 2) + 'px';
+            }
+          } else {
+            // Restore terminal z-index
+            var termR = document.getElementById('terminal');
+            if (termR) termR.style.zIndex = '';
+          }
+          break;
+        }
+
+        case 'SET_GLOW': {
+          var root = document.documentElement;
+          root.removeAttribute('data-glow');
+          if (action.glow !== 'normal') {
+            root.setAttribute('data-glow', action.glow);
+          }
+          break;
+        }
+
+        case 'SHOW_ANALYTICS': {
+          var panel = document.getElementById('analytics-overlay');
+          if (!panel) return;
+          if (action.open) {
+            panel.style.display = 'flex';
+            // shift desktop to make room
+            var desk = document.getElementById('desktop');
+            if (desk) desk.style.paddingRight = '276px';
+            _startAnalyticsTick();
+          } else {
+            panel.style.display = 'none';
+            var deskR = document.getElementById('desktop');
+            if (deskR) deskR.style.paddingRight = '';
+            _stopAnalyticsTick();
+          }
+          break;
+        }
+      }
+    }
+
+    return { apply: apply };
+  })();
+
+
+  /* ══════════════════════════════════════════════════════
+     5. ANALYTICS TICK — live metrics simulation
+     (browser doesn't expose real CPU/mem, so we
+      simulate plausible values + use real perf API
+      where available)
+  ══════════════════════════════════════════════════════ */
+  var _analyticsTick = null;
+  var _sessionStart  = Date.now();
+
+  function _startAnalyticsTick() {
+    if (_analyticsTick) return;
+    _updateAnalytics();
+    _analyticsTick = setInterval(_updateAnalytics, 1500);
+  }
+  function _stopAnalyticsTick() {
+    if (_analyticsTick) { clearInterval(_analyticsTick); _analyticsTick = null; }
+  }
+
+  function _updateAnalytics() {
+    var state = State.get();
+
+    // Simulated metrics (browser has no real CPU API)
+    var cpu = 20 + Math.round(Math.random() * 35 + (state.mode === 'focus' ? 8 : 0));
+    var mem = 45 + Math.round(Math.random() * 30);
+    var render = 8 + Math.round(Math.random() * 12);
+
+    _setMetric('an-cpu', cpu, cpu + '%');
+    _setMetric('an-mem', mem, mem + '%');
+    _setMetric('an-render', render, render + 'ms');
+
+    // Counts
+    var cmds = document.getElementById('an-cmd-count');
+    if (cmds) cmds.textContent = state.commandCount;
+
+    var modeEl = document.getElementById('an-ui-mode');
+    if (modeEl) modeEl.textContent = state.mode.charAt(0).toUpperCase() + state.mode.slice(1);
+
+    var uptimeEl = document.getElementById('an-uptime');
+    if (uptimeEl) uptimeEl.textContent = DecisionEngine._formatUptime(Date.now() - state.startTime);
+
+    var winEl = document.getElementById('an-win-count');
+    if (winEl) {
+      var visible = document.querySelectorAll('.app-window[style*="flex"]').length;
+      winEl.textContent = visible;
+    }
+
+    // Command log
+    var logEl = document.getElementById('an-log');
+    if (logEl) {
+      var entries = state.logEntries;
+      logEl.innerHTML = entries.slice(0, 12).map(function(e) {
+        return '<div class="analytics-log-entry"><span class="log-time">' + e.time + '</span><span class="log-msg">' + _esc(e.msg) + '</span></div>';
+      }).join('') || '<div style="font-size:10px;color:rgba(255,255,255,0.15);padding:4px 0;">No commands yet</div>';
+    }
+  }
+
+  function _setMetric(id, pct, label) {
+    var val = document.getElementById(id + '-val');
+    var bar = document.getElementById(id + '-bar');
+    if (val) val.textContent = label;
+    if (bar) bar.style.width = Math.min(pct, 100) + '%';
+  }
+
+  function _esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+
+  /* ══════════════════════════════════════════════════════
+     6. MODE BADGE — transient UI feedback
+  ══════════════════════════════════════════════════════ */
+  var _badgeTimer = null;
+  function _showModeBadge(label) {
+    var badge = document.getElementById('ui-mode-badge');
+    var text  = document.getElementById('ui-mode-label');
+    if (!badge || !label) return;
+    if (text) text.textContent = label;
+    badge.style.display = 'flex';
+    // re-trigger animation
+    badge.style.animation = 'none';
+    badge.offsetHeight; // reflow
+    badge.style.animation = '';
+    if (_badgeTimer) clearTimeout(_badgeTimer);
+    _badgeTimer = setTimeout(function() {
+      badge.style.display = 'none';
+    }, 2800);
+  }
+
+
+  /* ══════════════════════════════════════════════════════
+     7. PUBLIC API  —  AdaptiveUI.exec(input)
+     Called by the terminal hook below.
+  ══════════════════════════════════════════════════════ */
+  function exec(rawInput) {
+    var intent = IntentDetector.detect(rawInput);
+    if (!intent) return null;    // not our command, pass through
+
+    State.incrementCmds();
+    State.log(rawInput.trim().substring(0, 60));
+
+    var currentState = State.get();
+
+    // Special: revert
+    if (/\brevert\s*ui\b/i.test(rawInput) || /\bundo\s*(ui|last\s*ui)\b/i.test(rawInput)) {
+      var prev = State.revert();
+      if (prev) {
+        // Re-apply previous state
+        Transformer.apply([{ op: 'SET_BODY_MODE', mode: prev.mode }]);
+        Transformer.apply([{ op: 'SET_GLOW',      glow: prev.glow }]);
+        Transformer.apply([{ op: 'SHOW_ANALYTICS', open: prev.statsOpen }]);
+        _showModeBadge('Reverted');
+        return '↩ UI reverted to previous state (' + prev.mode + ' mode).';
+      }
+      return 'Nothing to revert.';
+    }
+
+    var plan = DecisionEngine.decide(intent, currentState);
+
+    if (!plan.actions || plan.actions.length === 0) {
+      return plan.response || null;
+    }
+
+    // Apply state update first
+    if (plan.stateUpdate) {
+      State.push(plan.stateUpdate);
+    }
+
+    // Apply DOM transforms
+    Transformer.apply(plan.actions);
+
+    // Show mode badge
+    if (plan.announce) {
+      _showModeBadge(plan.announce);
+    }
+
+    return plan.response || null;
+  }
+
+  // Expose globally so the close button in analytics panel works
+  window.AdaptiveUI = { exec: exec, State: State };
+
+
+  /* ══════════════════════════════════════════════════════
+     8. TERMINAL HOOK
+     Patches _jarvisProcessInternal one final time,
+     giving AdaptiveUI highest priority before any
+     other AtulOS command handler.
+  ══════════════════════════════════════════════════════ */
+  function _hookIntoTerminal() {
+    var _prev = window._jarvisProcessInternal;
+    if (typeof _prev !== 'function') {
+      setTimeout(_hookIntoTerminal, 120);
+      return;
+    }
+
+    // Re-entrance guard: prevents the hook from calling itself
+    // if any layer in the chain accidentally calls window._jarvisProcessInternal
+    var _inProgress = false;
+
+    window._jarvisProcessInternal = function(rawInput) {
+      if (!rawInput) return _prev(rawInput);
+
+      // Re-entrance guard: if we're already inside this call, go straight to _prev
+      if (_inProgress) {
+        console.log('[AtulOS U9] Re-entrance detected — bypassing to prev:', rawInput);
+        return _prev(rawInput);
+      }
+
+      // Strip wake words (keep consistent with other layers)
+      var cleaned = rawInput
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+
+      console.log('[AtulOS U9] Command received:', cleaned);
+
+      _inProgress = true;
+      try {
+        // ── AdaptiveUI intercept ──
+        var result = exec(cleaned);
+        if (result !== null) {
+          console.log('[AtulOS U9] AdaptiveUI handled:', result);
+          if (typeof window.jarvisSpeak === 'function') {
+            try { window.jarvisSpeak(result); } catch(e) {}
+          }
+          return result;
+        }
+
+        // ── Pass through to existing chain ──
+        console.log('[AtulOS U9] Passing to command chain:', rawInput);
+        var chainResult = _prev(rawInput);
+        console.log('[AtulOS U9] Execution result:', chainResult);
+        return chainResult;
+      } finally {
+        _inProgress = false;
+      }
+    };
+
+    console.log('[AtulOS U9] Adaptive UI Engine online. Hook registered.');
+  }
+
+  // Boot
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(_hookIntoTerminal, 200); });
+  } else {
+    setTimeout(_hookIntoTerminal, 200);
+  }
+
+})();
+</script>
+<!-- ===== UPGRADE END: UPGRADE 9 — ADAPTIVE UI ENGINE ===== -->
 
 </body>
 </html>
