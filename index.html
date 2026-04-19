@@ -4107,8 +4107,107 @@ const RESPONSE_BANK = {
     "AtulAI v3, powered by a unified speech engine. I control windows, IoT, and everything in this OS.",
     "I'm the AI core of AtulOS. You built me, Atul. 😄",
   ],
+  // HELP RESPONSE — Updated to reflect all commands discovered across:
+  //   INTENT_MAP (Module 4.6), JARVIS_INTENTS (Module 5), ACTION_MAP (Module 4.8),
+  //   handleSystemCommand / APP_MAP / VERB_GROUPS (Module 5 Upgrade 7),
+  //   APP_ALIASES + extractIntents (Upgrade 8 pipeline),
+  //   AdaptiveUI IntentDetector PATTERNS (Upgrade 9),
+  //   and _extendAIIntents() (Upgrade 6).
+  //
+  // Commands are grouped by functional category.
+  // Auth-required commands are marked 🔐.
+  // No commands were invented — every entry is explicitly implemented.
   capabilities:  [
-    `Here's what I can do:\n\n🖥  Apps     : open/close terminal, projects, about, skills, settings\n💡  IoT      : light on/off, fan on/off, buzzer on/off\n🎨  UI       : dark mode, light mode\n🔊  Voice    : voice on/off, voice settings\n🎙️  Wake     : hey atulos / hello atulos\n⏰  Info     : time, date, status, whoami, joke\n👥  Social   : my friends (auth required)\n📡  Devices  : device status, check devices\n🔒  Security : lock device control\n🧹  Util     : clear, help, stop\n\nYou can speak naturally — I understand full sentences!`,
+    `Here's everything I can do:\n\n` +
+
+    // ── DISCOVERED IN: APP_MAP (Upgrade 7), JARVIS_INTENTS (Module 5),
+    //    _extendAIIntents (Upgrade 6), APP_ALIASES (Upgrade 8)
+    // Apps: terminal, projects, about, skills, settings, atulAI, calculator,
+    //        calendar, browser, notes — all confirmed in openApp/closeApp/minimizeApp/toggleApp
+    `🖥  APPLICATIONS\n` +
+    `  open / launch / show [app]\n` +
+    `  close / exit / hide [app]\n` +
+    `  minimize [app]\n` +
+    `  toggle [app]\n` +
+    `  Apps: terminal · projects · about · skills · settings\n` +
+    `         calculator · calendar · browser · notes · ai\n\n` +
+
+    // ── DISCOVERED IN: INTENT_MAP light_on/off, fan_on/off, buzzer_on/off (requiresAuth:true),
+    //    ACTION_MAP iotSetDevice calls, JARVIS_INTENTS device patterns
+    `💡  IoT DEVICE CONTROL  🔐 auth required\n` +
+    `  light on  ·  light off\n` +
+    `  fan on    ·  fan off\n` +
+    `  buzzer on ·  buzzer off\n\n` +
+
+    // ── DISCOVERED IN: extractIntents() search pattern (Upgrade 8 pipeline),
+    //    searchGoogle(), _injectBrowserSearch() — all verified in U8 _segmentToIntent
+    `🔍  SEARCH\n` +
+    `  search [query]\n` +
+    `  look up [query]\n` +
+    `  google [query]\n` +
+    `  find [query]\n\n` +
+
+    // ── DISCOVERED IN: extractIntents() calculate pattern + pureArith regex (Upgrade 8),
+    //    _injectCalculatorExpression() — verified in U8 _segmentToIntent
+    `🧮  CALCULATE\n` +
+    `  calculate [expression]\n` +
+    `  compute [expression]\n` +
+    `  [math expression]  e.g. 20 + 30  or  100 * 5\n\n` +
+
+    // ── DISCOVERED IN: INTENT_MAP dark_mode / light_mode, ACTION_MAP setTheme() calls
+    `🎨  THEME\n` +
+    `  dark mode\n` +
+    `  light mode\n\n` +
+
+    // ── DISCOVERED IN: INTENT_MAP voice_on/off/settings, ACTION_MAP jarvisTTSOn/Off,
+    //    wake_enable/wake_disable → SpeechEngine.enableWakeMode/disableWakeMode
+    `🔊  VOICE & WAKE\n` +
+    `  voice on    ·  voice off\n` +
+    `  voice settings\n` +
+    `  wake word on ·  wake word off\n` +
+    `  stop\n\n` +
+
+    // ── DISCOVERED IN: AdaptiveUI IntentDetector PATTERNS (Upgrade 9 — SET_MODE,
+    //    SET_GLOW, TOGGLE_ANALYTICS, UI_STATUS, UI_HELP), exec() revert handler
+    `🖼  ADAPTIVE UI  (Upgrade 9)\n` +
+    `  focus mode     · minimal mode\n` +
+    `  analytics mode · expand workspace\n` +
+    `  dense mode     · normal mode\n` +
+    `  more glow      · less glow  ·  reset glow\n` +
+    `  show analytics · hide analytics\n` +
+    `  ui status      · ui help\n` +
+    `  revert ui\n\n` +
+
+    // ── DISCOVERED IN: INTENT_MAP device_status → getDeviceStatusAsync(),
+    //    INTENT_MAP lock_system → _deviceAuthReset()
+    `📡  DEVICE INFO & SECURITY\n` +
+    `  device status  ·  check devices\n` +
+    `  lock device control\n\n` +
+
+    // ── DISCOVERED IN: INTENT_MAP system_status, time, date, joke, whoami, clear
+    //    — all confirmed in RESPONSE_BANK + generateResponse()
+    `⏰  SYSTEM INFO\n` +
+    `  time  ·  date  ·  status\n` +
+    `  whoami  ·  joke\n\n` +
+
+    // ── DISCOVERED IN: INTENT_MAP friends (requiresAuth:true) → RESPONSE_BANK.friends
+    `👥  SOCIAL  🔐 auth required\n` +
+    `  my friends\n\n` +
+
+    // ── DISCOVERED IN: INTENT_MAP clear → ACTION_MAP clear(), help → capabilities intent,
+    //    TERM_COMMANDS array (Module 7)
+    `🧹  UTILITY\n` +
+    `  help  ·  clear  ·  whoami\n\n` +
+
+    // ── DISCOVERED IN: _splitSegments() in Upgrade 8 — splits on "and", "then",
+    //    "also", "after that", comma — confirmed in extractIntents()
+    `🔗  MULTI-COMMAND CHAINING\n` +
+    `  [cmd] and [cmd]          e.g. open terminal and turn on light\n` +
+    `  [cmd] then [cmd]         e.g. dark mode then open projects\n` +
+    `  [cmd], also [cmd]\n\n` +
+
+    `🎤  Speak naturally — I understand full sentences!\n` +
+    `    Say "Hey AtulOS" to activate wake mode.`,
   ],
   light_on:      ["Light is ON. 💡","Done — activating the light.","Light turned on. Brightening up! ☀️","Sure, light's on."],
   light_off:     ["Light is OFF. 🌑","Done — light deactivated.","Lights out. 🌙","Light switched off."],
@@ -8147,7 +8246,92 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /* ── UI MODES ─────────────────────────────────────────────── */
 
-/* FOCUS MODE — terminal-first, strip everything else */
+/* ═══════════════════════════════════════════════════════════════
+   FOCUS MODE — terminal-first, strip everything else
+   ENHANCED: Premium dark background system with depth layers
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── LAYER 1: Rich multi-point dark gradient replacing the flat default body bg ──
+   Uses the same --bg base (#05070b) but adds depth via directional tonal pools.
+   Cool navy at top-left (where terminal typically sits), deep indigo at bottom-right,
+   and a faint warm-neutral at center — creates subtle spatial warmth without brightness. */
+body[data-ui-mode="focus"] {
+  background:
+    radial-gradient(ellipse 70% 55% at 38% 42%, #0d1628 0%, transparent 65%),
+    radial-gradient(ellipse 55% 45% at 78% 72%, #0a1220 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 15% 85%, #070d18 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 88% 15%, #0c1422 0%, transparent 50%),
+    #04060b;
+  transition: background 0.6s ease;
+}
+
+/* ── LAYER 2: Grain / noise texture overlay ──
+   SVG turbulence filter at near-zero opacity adds analog depth.
+   Prevents the "screen" feeling of a perfectly clean gradient.
+   z-index: -1 so it never interferes with any UI element. */
+body[data-ui-mode="focus"]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  /* Fine grain via repeating SVG noise pattern */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+
+  /* Very low opacity — grain should be felt, not seen */
+  opacity: 0.028;
+
+  /* Vignette: dark edges draw attention inward to the terminal center */
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,0,0.6) 100%);
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,0,0.6) 100%);
+}
+
+/* ── LAYER 3: Ambient breathe glow centered at viewport mid-point ──
+   A single large radial accent bloom, very low opacity, slow-pulsing.
+   Gives the dark canvas a living quality — matches AtulOS futuristic system feel.
+   Placed with z-index: 0 — below all UI content but above the base bg. */
+body[data-ui-mode="focus"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  /* Centered soft accent radial — accent color at ~4% opacity max */
+  background: radial-gradient(
+    ellipse 65% 50% at 50% 52%,
+    rgba(63, 140, 255, 0.055) 0%,
+    rgba(40, 90, 180, 0.025) 40%,
+    transparent 70%
+  );
+
+  /* Slow ambient pulse — 6s cycle, subtle scale shift only */
+  animation: focusAmbientGlow 6s ease-in-out infinite;
+}
+
+/* Gentle breathing animation — opacity only, no position shift */
+@keyframes focusAmbientGlow {
+  0%,  100% { opacity: 0.6; }
+  50%        { opacity: 1;   }
+}
+
+/* ── CONTENT LAYERS: ensure all UI sits above the bg pseudo-layers ──
+   These z-index values match the existing stacking context exactly —
+   only applied in focus mode to lift content above ::before / ::after. */
+body[data-ui-mode="focus"] #statusbar,
+body[data-ui-mode="focus"] #taskbar,
+body[data-ui-mode="focus"] #desktop,
+body[data-ui-mode="focus"] .app-window,
+body[data-ui-mode="focus"] #os-status-strip,
+body[data-ui-mode="focus"] #focus-esc-hint {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── UI ELEMENT DIMMING (unchanged logic, preserved exactly) ── */
 body[data-ui-mode="focus"] #desktop {
   filter: opacity(0.15) blur(1px);
   pointer-events: none;
@@ -8166,10 +8350,20 @@ body[data-ui-mode="focus"] .app-window:not(#terminal) {
   opacity: 0.08;
   pointer-events: none;
 }
+
+/* ── TERMINAL: enhanced premium glow (same structure, richer depth) ──
+   Added a third outer ring of very subtle diffuse blue — elevates the
+   terminal visually against the now-richer background without changing
+   its size, position, or border. */
 body[data-ui-mode="focus"] #terminal {
-  box-shadow: 0 0 0 1px rgba(77,159,255,0.3),
-              0 50px 120px rgba(0,0,0,0.9),
-              0 0 60px rgba(77,159,255,0.08);
+  box-shadow:
+    0 0 0 1px rgba(77,159,255,0.32),
+    0 0 0 1px rgba(99,168,255,0.08) inset,
+    0 50px 120px rgba(0,0,0,0.92),
+    0 0 80px rgba(63,140,255,0.10),
+    0 0 160px rgba(40,90,200,0.06);
+  position: relative;
+  z-index: 2; /* sits above the ambient glow layers */
 }
 
 /* MINIMAL MODE — reduce visual noise, tighten spacing */
