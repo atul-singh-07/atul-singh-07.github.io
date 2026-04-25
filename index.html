@@ -104,7 +104,7 @@ body {
 
 /* ── SPEAKING INDICATOR ── */
 #speaking-indicator {
-  position: fixed; bottom: 56px; left: 20px;
+  position: fixed; bottom: 72px; left: 20px;
   background: rgba(10,15,22,0.95);
   border: 1px solid rgba(40,200,64,0.35);
   border-radius: 20px; padding: 6px 14px;
@@ -112,13 +112,18 @@ body {
   z-index: 6001; display: none;
   align-items: center; gap: 6px;
   backdrop-filter: blur(12px);
-  animation: fadeSlideUp 0.2s ease;
+  animation: none;
 }
 .speak-wave { display: flex; gap: 2px; align-items: center; }
 .speak-wave span {
   width: 3px; border-radius: 2px;
   background: #28c840;
   animation: wave-bar 0.8s ease-in-out infinite;
+  /* FIX: pause animation when parent is hidden to save CPU */
+  animation-play-state: paused;
+}
+#speaking-indicator[style*="flex"] .speak-wave span {
+  animation-play-state: running;
 }
 .speak-wave span:nth-child(1) { height: 6px;  animation-delay: 0s; }
 .speak-wave span:nth-child(2) { height: 10px; animation-delay: 0.1s; }
@@ -244,6 +249,11 @@ body {
 @keyframes fadeSlideUp {
   from{opacity:0;transform:translateY(8px) translateX(-50%)}
   to  {opacity:1;transform:translateY(0) translateX(-50%)}
+}
+/* FIX: speaking indicator uses left-aligned position, needs its own animation */
+@keyframes fadeSlideUpLeft {
+  from{opacity:0;transform:translateY(8px)}
+  to  {opacity:1;transform:translateY(0)}
 }
 
 /* ── DESKTOP ── */
@@ -2650,9 +2660,198 @@ body {
   pointer-events: none;
 }
 
+
+/* ═══════════════════════════════════════════
+   AI ORB — FUTURISTIC REACTIVE GLOBE
+   Controls via body.ai-speaking class
+═══════════════════════════════════════════ */
+#ai-orb {
+  position: fixed;
+  bottom: 120px;
+  right: 22px;
+  width: 56px;
+  height: 56px;
+  z-index: 7500;
+  cursor: pointer;
+  user-select: none;
+}
+.ai-orb-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(0, 220, 255, 0.85) 0%,
+    rgba(0, 160, 220, 0.6)  35%,
+    rgba(10, 40, 80, 0.9)   70%,
+    rgba(0, 10, 30, 0.98)   100%
+  );
+  box-shadow:
+    0 0 16px rgba(0, 200, 255, 0.45),
+    0 0 32px rgba(0, 200, 255, 0.2),
+    inset 0 0 12px rgba(0, 200, 255, 0.15);
+  transition: box-shadow 0.3s ease;
+  animation: orbIdlePulse 3s ease-in-out infinite;
+}
+.ai-orb-ring1, .ai-orb-ring2, .ai-orb-ring3 {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  animation: orbRingExpand 3s ease-out infinite;
+  pointer-events: none;
+}
+.ai-orb-ring1 { inset: -6px;  animation-delay: 0s;    border-color: rgba(0,200,255,0.25); }
+.ai-orb-ring2 { inset: -14px; animation-delay: 1s;    border-color: rgba(0,200,255,0.15); }
+.ai-orb-ring3 { inset: -22px; animation-delay: 2s;    border-color: rgba(0,200,255,0.08); }
+.ai-orb-dot {
+  position: absolute;
+  width: 6px; height: 6px;
+  background: #00d4ff;
+  border-radius: 50%;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 6px #00d4ff;
+  animation: orbDotBlink 2s ease-in-out infinite;
+}
+.ai-orb-scanline {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,220,255,0.04) 2px,
+    rgba(0,220,255,0.04) 3px
+  );
+  pointer-events: none;
+}
+.ai-orb-label {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: rgba(0,200,255,0.5);
+  white-space: nowrap;
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
+  transition: color 0.3s;
+}
+
+/* Orb idle animation */
+@keyframes orbIdlePulse {
+  0%,100% { box-shadow: 0 0 14px rgba(0,200,255,0.4), 0 0 28px rgba(0,200,255,0.15), inset 0 0 10px rgba(0,200,255,0.12); }
+  50%     { box-shadow: 0 0 22px rgba(0,200,255,0.65), 0 0 44px rgba(0,200,255,0.25), inset 0 0 16px rgba(0,200,255,0.2); }
+}
+
+@keyframes orbRingExpand {
+  0%   { opacity: 0.6; transform: scale(1); }
+  80%  { opacity: 0; }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+@keyframes orbDotBlink {
+  0%,100%{ opacity:1; } 50%{ opacity:0.2; }
+}
+
+/* SPEAKING STATE — body.ai-speaking */
+@keyframes orbBeat {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.18); }
+  50%  { transform: scale(1.08); }
+  75%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+@keyframes orbBeatRing {
+  0%   { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+
+body.ai-speaking #ai-orb .ai-orb-core {
+  animation: orbBeat 0.5s ease-in-out infinite, orbIdlePulse 3s ease-in-out infinite;
+  box-shadow:
+    0 0 28px rgba(0,200,255,0.85),
+    0 0 56px rgba(0,200,255,0.45),
+    0 0 90px rgba(0,200,255,0.2),
+    inset 0 0 20px rgba(0,200,255,0.3);
+  background: radial-gradient(circle at 35% 35%,
+    rgba(100, 240, 255, 0.95) 0%,
+    rgba(0,  200, 255, 0.75)  30%,
+    rgba(10,  60, 120, 0.9)   65%,
+    rgba(0,   10,  30, 0.98)  100%
+  );
+}
+body.ai-speaking #ai-orb .ai-orb-ring1 {
+  animation: orbBeatRing 0.5s ease-out infinite;
+  border-color: rgba(0,200,255,0.6);
+}
+body.ai-speaking #ai-orb .ai-orb-ring2 {
+  animation: orbBeatRing 0.5s ease-out infinite 0.15s;
+  border-color: rgba(0,200,255,0.4);
+}
+body.ai-speaking #ai-orb .ai-orb-ring3 {
+  animation: orbBeatRing 0.5s ease-out infinite 0.3s;
+  border-color: rgba(0,200,255,0.25);
+}
+body.ai-speaking #ai-orb .ai-orb-dot {
+  background: #fff;
+  box-shadow: 0 0 10px #fff, 0 0 20px #00d4ff;
+  animation: orbDotBlink 0.3s ease-in-out infinite;
+}
+body.ai-speaking #ai-orb .ai-orb-label {
+  color: rgba(0,200,255,0.9);
+}
+
+/* Orb hover */
+#ai-orb:hover .ai-orb-core {
+  box-shadow: 0 0 24px rgba(0,200,255,0.7), 0 0 48px rgba(0,200,255,0.3), inset 0 0 18px rgba(0,200,255,0.2);
+}
+
+/* Speaking indicator - use correct left-aligned animation */
+#speaking-indicator[style*="flex"] { animation: fadeSlideUpLeft 0.2s ease forwards; }
+
+/* Voice toggle button consistent colors */
+#voice-toggle-btn.voice-on  { color: #28c840 !important; }
+#voice-toggle-btn.voice-off { color: #ff5f57 !important; }
+
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════
+     GLOBAL systemState (Central State)
+═══════════════════════════════════════ -->
+<script>
+window.systemState = {
+  voiceEnabled:      false,
+  micActive:         false,
+  aiSpeaking:        false,
+  firebaseConnected: false,
+  termAuthenticated: false,
+  evCharging:        false,
+};
+// Keep in sync with VoiceState after it loads
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof VoiceState !== 'undefined') {
+      window.systemState.voiceEnabled = VoiceState.enabled;
+    }
+  }, 500);
+});
+</script>
+
+<!-- ═══════════════════════════════════════
+     AI ORB — REACTIVE INTELLIGENCE GLOBE
+═══════════════════════════════════════ -->
+<div id="ai-orb" title="AtulAI — Click to toggle voice" onclick="if(typeof VoiceState!=='undefined'){if(VoiceState.enabled){if(typeof jarvisTTSOff==='function')jarvisTTSOff();}else{if(typeof jarvisTTSOn==='function')jarvisTTSOn();}if(typeof updateVoiceToggleUI==='function')updateVoiceToggleUI();}">
+  <div class="ai-orb-core"></div>
+  <div class="ai-orb-ring1"></div>
+  <div class="ai-orb-ring2"></div>
+  <div class="ai-orb-ring3"></div>
+  <div class="ai-orb-dot"></div>
+  <div class="ai-orb-scanline"></div>
+  <div class="ai-orb-label">AtulAI</div>
+</div>
 
 <!-- ═══════════════════════════════════════
      eDEX BOOT SCREEN (replaces old boot)
@@ -3729,7 +3928,7 @@ body {
   </div>
 </div>
 
-<!-- ── TASKBAR ── -->
+<!-- ══════════════════════════════════════════════════════════════
      FIREBASE SDK
 ════════════════════════════════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -3747,6 +3946,7 @@ const firebaseConfig = {
 
 try {
   firebase.initializeApp(firebaseConfig);
+  if (typeof window.systemState !== 'undefined') window.systemState.firebaseConnected = true;
 
   function getDefaultPin(deviceName) {
     const PIN_MAP = { light: 5, fan: 18, buzzer: 19 };
@@ -3901,8 +4101,22 @@ const VoiceState = (function () {
 
   const speakingEl = document.getElementById('speaking-indicator');
 
-  function showSpeaking() { if (speakingEl) speakingEl.style.display = 'flex'; }
-  function hideSpeaking()  { if (speakingEl) speakingEl.style.display = 'none'; }
+  function showSpeaking() {
+    if (speakingEl) speakingEl.style.display = 'flex';
+    // Activate AI orb
+    if (typeof systemState !== 'undefined') systemState.aiSpeaking = true;
+    document.body.classList.add('ai-speaking');
+    const orb = document.getElementById('ai-orb');
+    if (orb) orb.classList.add('speaking');
+  }
+  function hideSpeaking() {
+    if (speakingEl) speakingEl.style.display = 'none';
+    // Deactivate AI orb
+    if (typeof systemState !== 'undefined') systemState.aiSpeaking = false;
+    document.body.classList.remove('ai-speaking');
+    const orb = document.getElementById('ai-orb');
+    if (orb) orb.classList.remove('speaking');
+  }
 
   function stopSpeaking() {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -4025,16 +4239,34 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateVoiceToggleUI() {
-  const btn = document.getElementById('voice-toggle-btn');
-  if (!btn) return;
-  if (VoiceState.enabled) {
-    btn.textContent = '🔊 Voice ON';
-    btn.className   = 'voice-on';
-    btn.title       = 'Click to turn voice OFF';
-  } else {
-    btn.textContent = '🔇 Voice OFF';
-    btn.className   = 'voice-off';
-    btn.title       = 'Click to turn voice ON';
+  // FIX: update systemState first
+  if (typeof systemState !== 'undefined') systemState.voiceEnabled = VoiceState.enabled;
+
+  // FIX: handle eDEX topbar button (preserves os-topbar-icon class)
+  const topBtn = document.getElementById('voice-toggle-btn');
+  if (topBtn) {
+    if (VoiceState.enabled) {
+      topBtn.textContent = '🔊 VOICE';
+      topBtn.classList.remove('voice-off');
+      topBtn.classList.add('voice-on');
+      topBtn.title = 'Click to disable voice';
+    } else {
+      topBtn.textContent = '🔇 VOICE';
+      topBtn.classList.remove('voice-on');
+      topBtn.classList.add('voice-off');
+      topBtn.title = 'Click to enable voice';
+    }
+  }
+  // FIX: also update classic statusbar button
+  const classicBtn = document.getElementById('voice-toggle-btn-classic');
+  if (classicBtn) {
+    if (VoiceState.enabled) {
+      classicBtn.textContent = '🔊 Voice ON';
+      classicBtn.className   = 'voice-on';
+    } else {
+      classicBtn.textContent = '🔇 Voice OFF';
+      classicBtn.className   = 'voice-off';
+    }
   }
   const voiceVal = document.getElementById('jap-voice-val');
   const voiceBar = document.getElementById('jap-voice-bar');
@@ -4116,9 +4348,13 @@ const SpeechEngine = (function () {
     micBadge.className      = isInterim ? 'interim' : '';
     micBadgeTxt.textContent = msg || 'Listening…';
     micBadge.style.display  = 'flex';
+    // FIX: sync systemState
+    if (typeof window.systemState !== 'undefined') window.systemState.micActive = true;
   }
   function hideMicBadge() {
     if (micBadge) micBadge.style.display = 'none';
+    // FIX: sync systemState
+    if (typeof window.systemState !== 'undefined') window.systemState.micActive = false;
   }
   function setMicBtnActive(active) {
     if (!micBtn) return;
@@ -4131,6 +4367,18 @@ const SpeechEngine = (function () {
       micBtn.title       = 'Voice input — click to start';
       micBtn.classList.remove('active');
     }
+    // FIX: sync eDEX mic button too
+    var edexMicBtn = document.getElementById('edex-mic-btn');
+    if (edexMicBtn) {
+      if (active) {
+        edexMicBtn.style.color       = '#ff5f57';
+        edexMicBtn.style.borderColor = 'rgba(255,95,87,0.4)';
+      } else {
+        edexMicBtn.style.color       = '';
+        edexMicBtn.style.borderColor = '';
+      }
+    }
+    if (typeof window.systemState !== 'undefined') window.systemState.micActive = active;
   }
 
   function safeStart() {
@@ -4273,6 +4521,11 @@ const SpeechEngine = (function () {
 
     recognition.onend = function () {
       isListening = false;
+      // FIX: if not in wake mode restart, always clear mic badge to prevent ghost state
+      if (currentMode !== MODE.WAKE || !wakeModeEnabled) {
+        hideMicBadge();
+        setMicBtnActive(false);
+      }
       if (currentMode === MODE.WAKE && wakeModeEnabled) {
         safeStart();
       }
@@ -5947,28 +6200,29 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
 (function () {
   'use strict';
 
-  /* ── BOOT SCREEN ── */
-  const bootMessages = ['Initializing AtulOS…','Loading AtulAI engine…','Connecting to Firebase…','Mounting file system…','Starting system…'];
-  let bmIdx = 0;
+  /* ── BOOT SCREEN (legacy - eDEX boot handles display now) ── */
+  // FIX: clear the interval immediately - eDEX boot module owns boot sequence
+  // The original #bootScreen is set display:none in HTML, so this is a no-op guard
   const bootMsgEl  = document.getElementById('boot-text-msg');
-  const bmInterval = setInterval(() => {
-    bmIdx = (bmIdx + 1) % bootMessages.length;
-    if (bootMsgEl) bootMsgEl.textContent = bootMessages[bmIdx];
-  }, 600);
+  // No interval needed - eDEX boot runs its own sequence
 
   window.addEventListener('load', () => {
     setTimeout(() => {
-      clearInterval(bmInterval);
+      // FIX: guard null - bootScreen is hidden by eDEX boot
       const boot = document.getElementById('bootScreen');
-      boot.style.opacity = '0';
-      boot.setAttribute('aria-hidden', 'true');
-      setTimeout(() => { boot.style.display = 'none'; }, 1000);
+      if (boot && boot.style.display !== 'none') {
+        boot.style.opacity = '0';
+        boot.setAttribute('aria-hidden', 'true');
+        setTimeout(() => { boot.style.display = 'none'; }, 1000);
+      }
     }, 3000);
   });
 
   /* ── CLOCK ── */
   function updateClock() {
-    document.getElementById('clock').textContent =
+    // FIX: guard null - clock div may be hidden in OS mode
+    const clkEl = document.getElementById('clock');
+    if (clkEl) clkEl.textContent =
       new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
   setInterval(updateClock, 1000);
@@ -6257,19 +6511,31 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
 
   function termResetAuth() {
     isAuthenticatedFlag = false;
-    document.getElementById('terminal-auth-overlay').style.display  = 'block';
+    // FIX: reset eDEX auth panel
+    const edexAuth = document.getElementById('edex-term-auth');
+    if (edexAuth) edexAuth.style.display = 'block';
+    // FIX: reset classic terminal window auth
+    const classicOverlay = document.getElementById('terminal-auth-overlay');
+    if (classicOverlay) classicOverlay.style.display = 'block';
     document.getElementById('statusPanel').style.display             = 'none';
     document.getElementById('terminal-output').style.display         = 'none';
     document.getElementById('terminal-input-area').style.display     = 'none';
-    const authMsg = document.getElementById('term-auth-msg');
-    const pwInput = document.getElementById('term-password-input');
-    if (authMsg) { authMsg.textContent = ''; authMsg.style.color = ''; }
-    if (pwInput) { pwInput.value = ''; setTimeout(() => pwInput.focus(), 100); }
+    // FIX: clear ALL auth message/input elements with these IDs (takes first match)
+    const authMsgs = document.querySelectorAll('#term-auth-msg');
+    const pwInputs = document.querySelectorAll('#term-password-input');
+    authMsgs.forEach(el => { el.textContent = ''; el.style.color = ''; });
+    pwInputs.forEach(el => { el.value = ''; });
+    if (pwInputs[0]) setTimeout(() => pwInputs[0].focus(), 100);
   }
 
   function termUnlock() {
     isAuthenticatedFlag = true;
-    document.getElementById('terminal-auth-overlay').style.display  = 'none';
+    // FIX: sync all state objects
+    if (typeof window.systemState !== 'undefined') window.systemState.termAuthenticated = true;
+    // FIX: sync eDEX module _state if accessible via global marker
+    window._atulOSTermAuthed = true;
+    const classicOverlay = document.getElementById('terminal-auth-overlay');
+    if (classicOverlay) classicOverlay.style.display = 'none';
     document.getElementById('statusPanel').style.display             = 'block';
     document.getElementById('terminal-output').style.display         = 'block';
     document.getElementById('terminal-input-area').style.display     = 'block';
@@ -6284,8 +6550,17 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
   }
 
   function termTryAuth() {
-    const pwInput = document.getElementById('term-password-input');
-    const authMsg = document.getElementById('term-auth-msg');
+    // FIX: query all matching elements - eDEX panel renders first in DOM
+    const pwInputs = document.querySelectorAll('#term-password-input');
+    const authMsgs = document.querySelectorAll('#term-auth-msg');
+    // Use the FIRST visible one (eDEX panel when in OS mode)
+    let pwInput = null;
+    let authMsg = null;
+    pwInputs.forEach(el => { if (!pwInput && el.offsetParent !== null) pwInput = el; });
+    authMsgs.forEach(el => { if (!authMsg && el.offsetParent !== null) authMsg = el; });
+    // Fallback to first element if none visible
+    if (!pwInput) pwInput = pwInputs[0];
+    if (!authMsg) authMsg = authMsgs[0];
     if (!pwInput || !authMsg) return;
     if (pwInput.value === TERMINAL_PASSWORD) {
       authMsg.textContent = '✔ Access granted. Welcome, Atul.';
@@ -6304,10 +6579,13 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    const authBtn = document.getElementById('term-auth-btn');
-    const pwInput = document.getElementById('term-password-input');
-    if (authBtn) authBtn.addEventListener('click', termTryAuth);
-    if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') termTryAuth(); });
+    // FIX: wire ALL auth buttons/inputs (deduped via termTryAuth's smart query)
+    document.querySelectorAll('#term-auth-btn').forEach(btn => {
+      btn.addEventListener('click', termTryAuth);
+    });
+    document.querySelectorAll('#term-password-input').forEach(inp => {
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') termTryAuth(); });
+    });
   });
 
   window.termResetAuth   = termResetAuth;
@@ -9062,10 +9340,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // 8. DEVICE TOGGLE (calls existing iotSetDevice)
   // ═══════════════════════════════════════════════════════════════
   window.osToggleDevice = function(name) {
-    if (!_state.termAuth) {
-      // Require auth — trigger auth popup
+    // FIX: use canonical isAuthenticated (synced with real termUnlock)
+    var authed = (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) || _state.termAuth || window._atulOSTermAuthed;
+    if (!authed) {
       _printEdexLine('err', 'Authentication required. Unlock terminal first.');
-      // Show the existing auth overlay if DeviceAuth exists
       if (typeof DeviceAuth !== 'undefined') {
         DeviceAuth.gate('toggle ' + name);
       }
@@ -9367,7 +9645,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Auth check for device commands
     var isDeviceCmd = /(light|fan|buzzer).*(on|off)|turn.*(on|off).*(light|fan|buzzer)/i.test(lower);
-    if (isDeviceCmd && !_state.termAuth) {
+    var authed = (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) || _state.termAuth || window._atulOSTermAuthed;
+    if (isDeviceCmd && !authed) {
       _printEdexLine('err', 'Device control locked. Authenticate terminal first (use UNLOCK button above).');
       return;
     }
@@ -9449,6 +9728,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (pwInput.value === TERMINAL_PASSWORD) {
       _state.termAuth = true;
+      if (typeof window.systemState !== 'undefined') window.systemState.termAuthenticated = true;
       if (msg)     { msg.textContent = '✔ Access granted.'; msg.style.color = '#28c840'; }
       setTimeout(function() {
         if (authDiv)  authDiv.style.display  = 'none';
@@ -9460,12 +9740,10 @@ document.addEventListener('DOMContentLoaded', function () {
         _printEdexLine('sys', 'Welcome back, Atul. All systems operational.');
         var cmdInp = document.getElementById('edex-cmd-input');
         if (cmdInp) cmdInp.focus();
-        // Also unlock original terminal
+        // FIX: use the canonical termUnlock to set isAuthenticatedFlag properly
         if (typeof termUnlock === 'function') termUnlock();
-        // Mark global isAuthenticated
-        if (typeof window.isAuthenticated !== 'function') {
-          window.isAuthenticated = function() { return _state.termAuth; };
-        }
+        // FIX: sync systemState
+        if (typeof window.systemState !== 'undefined') window.systemState.termAuthenticated = true;
       }, 500);
     } else {
       if (msg) { msg.textContent = '✖ Incorrect password.'; msg.style.color = '#ff5f57'; }
@@ -9511,22 +9789,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ═══════════════════════════════════════════════════════════════
   // 14. VOICE TOGGLE SYNC (eDEX topbar button)
+  // FIX: Do NOT add a second click listener - updateVoiceToggleUI already
+  // handles the topbar btn. Just call it once to sync the initial state.
   // ═══════════════════════════════════════════════════════════════
   function _syncVoiceToggle() {
-    // Mirror the existing voice-toggle-btn logic for the eDEX topbar
-    var topBtn = document.getElementById('voice-toggle-btn');
-    if (!topBtn) return;
-    topBtn.addEventListener('click', function() {
-      if (typeof VoiceState !== 'undefined') {
-        if (VoiceState.enabled) {
-          if (typeof jarvisTTSOff === 'function') jarvisTTSOff();
-          topBtn.textContent = '🔇 VOICE';
-        } else {
-          if (typeof jarvisTTSOn === 'function') jarvisTTSOn();
-          topBtn.textContent = '🔊 VOICE';
-        }
-      }
-    });
+    // Defer until after DOMContentLoaded listeners have run
+    setTimeout(function() {
+      if (typeof updateVoiceToggleUI === 'function') updateVoiceToggleUI();
+    }, 200);
   }
 
   // ═══════════════════════════════════════════════════════════════
