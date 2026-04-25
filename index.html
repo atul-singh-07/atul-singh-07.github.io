@@ -15,27 +15,6 @@
   --card:   rgba(18, 24, 33, 0.8);
   --window: rgba(17, 23, 32, 0.95);
   --border: rgba(255,255,255,.1);
-
-  /* ── Extended design tokens (from v3) ── */
-  --bg-layer:    #070b11;
-  --fg-dim:      #8fa3b8;
-  --accent-glow: rgba(99,168,255,0.18);
-  --accent-dim:  rgba(99,168,255,0.08);
-  --green:       #28c840;
-  --amber:       #febc2e;
-  --red:         #ff5f57;
-  --window-hdr:  rgba(17,23,32,0.98);
-  --border-hi:   rgba(99,168,255,0.22);
-
-  /* Spacing scale */
-  --sp-xs: 4px; --sp-sm: 8px; --sp-md: 14px; --sp-lg: 22px; --sp-xl: 36px;
-
-  /* Radii */
-  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
-
-  /* Shadows */
-  --shadow-window: 0 40px 100px rgba(0,0,0,0.7), 0 0 0 0.5px rgba(255,255,255,0.04) inset;
-  --shadow-btn: 0 2px 10px rgba(99,168,255,0.25);
 }
 :root[data-theme="light"] {
   --bg:     #eef2f8;
@@ -44,14 +23,6 @@
   --card:   rgba(255,255,255,0.9);
   --window: rgba(255,255,255,0.96);
   --border: rgba(0,0,0,.08);
-
-  /* Extended light tokens */
-  --bg-layer:    #dde6f2;
-  --fg-dim:      #4a5e72;
-  --window-hdr:  rgba(246,250,255,0.98);
-  --border-hi:   rgba(99,168,255,0.25);
-  --accent-glow: rgba(99,168,255,0.12);
-  --accent-dim:  rgba(99,168,255,0.06);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -66,12 +37,6 @@ body {
   -webkit-font-smoothing: antialiased;
   line-height: 1.4;
 }
-
-/* Global scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(99,168,255,0.25); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(99,168,255,0.45); }
 
 /* ── BOOT SCREEN ── */
 #bootScreen {
@@ -98,10 +63,6 @@ body {
   animation: spin 1s linear infinite;
 }
 .boot-text { font-size: 13px; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; }
-.boot-tagline {
-  font-size: 10px; letter-spacing: 3px; color: rgba(255,255,255,0.2);
-  text-transform: uppercase; margin-bottom: 36px;
-}
 @keyframes spin  { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100%{opacity:.65;transform:scale(1)} 50%{opacity:1;transform:scale(1.04)} }
 @media (prefers-reduced-motion: reduce) {
@@ -126,9 +87,6 @@ body {
 .status-right i { color: var(--fg); opacity: .8; transition: 0.2s; cursor: pointer; }
 .status-right i:hover { opacity: 1; color: var(--accent); }
 .status-right a { color: var(--fg); text-decoration: none; }
-.status-brand { color: var(--muted); font-size: 12px; }
-.status-brand strong { color: var(--fg); }
-.status-sep { color: var(--border); margin: 0 2px; }
 
 #voice-toggle-btn {
   padding: 4px 10px; border-radius: 20px;
@@ -1798,17 +1756,934 @@ body {
 #atul-auth-cancel:hover { color: rgba(255,255,255,0.6); }
 /* ===== ATUL AUTH SYSTEM END ===== */
 
+/* ═══════════════════════════════════════════════
+   eDEX-UI INSPIRED OS DASHBOARD — NEW LAYER
+   Added on top of existing AtulOS styles.
+   Preserves ALL original styles above.
+═══════════════════════════════════════════════ */
+
+/* ── EDEX ROOT OVERRIDES ── */
+:root {
+  --edex-bg:       #020408;
+  --edex-panel:    rgba(4,10,18,0.96);
+  --edex-border:   rgba(0,200,255,0.18);
+  --edex-glow:     #00c8ff;
+  --edex-green:    #28c840;
+  --edex-red:      #ff5f57;
+  --edex-amber:    #febc2e;
+  --edex-purple:   #bf5af2;
+  --edex-cyan:     #00d4ff;
+  --edex-blue:     #63a8ff;
+  --edex-dim:      rgba(0,200,255,0.06);
+  --scan-line:     rgba(0,220,255,0.015);
+}
+
+/* ── OS DASHBOARD WRAPPER ── */
+#os-dashboard {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--edex-bg);
+  font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* CRT Scanline overlay on dashboard */
+#os-dashboard::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scan-line) 2px,
+    var(--scan-line) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── TOP STRIP (system bar) ── */
+#os-topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 36px;
+  background: rgba(2,6,12,0.98);
+  border-bottom: 1px solid var(--edex-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+  box-shadow: 0 0 30px rgba(0,200,255,0.08);
+}
+.os-topbar-brand {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--edex-cyan);
+  text-shadow: 0 0 14px rgba(0,212,255,0.7);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.os-topbar-brand::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--edex-green);
+  box-shadow: 0 0 8px var(--edex-green);
+  animation: blink-dot 1.5s ease-in-out infinite;
+}
+.os-topbar-center {
+  font-size: 11px;
+  color: rgba(0,200,255,0.4);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.os-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+}
+#os-topbar-clock {
+  color: var(--edex-cyan);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(0,212,255,0.5);
+}
+.os-topbar-icon {
+  cursor: pointer;
+  color: rgba(255,255,255,0.4);
+  transition: color 0.2s;
+  font-size: 13px;
+}
+.os-topbar-icon:hover { color: var(--edex-cyan); }
+
+/* ── 3-PANEL LAYOUT ── */
+#os-panels {
+  position: absolute;
+  top: 36px; left: 0; right: 0; bottom: 0;
+  display: grid;
+  grid-template-columns: 260px 1fr 280px;
+  gap: 0;
+}
+
+/* ── SHARED PANEL STYLES ── */
+.os-panel {
+  border-right: 1px solid var(--edex-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.os-panel:last-child { border-right: none; }
+
+/* Panel scanline overlay */
+.os-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 3px,
+    rgba(0,200,255,0.008) 3px,
+    rgba(0,200,255,0.008) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.os-panel-header {
+  padding: 8px 14px;
+  background: rgba(0,200,255,0.04);
+  border-bottom: 1px solid var(--edex-border);
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--edex-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.os-panel-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.os-panel-header-title::before {
+  content: '';
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--edex-cyan);
+  box-shadow: 0 0 6px var(--edex-cyan);
+  animation: blink-dot 2s ease-in-out infinite;
+}
+.os-panel-badge {
+  font-size: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0,200,255,0.1);
+  border: 1px solid rgba(0,200,255,0.25);
+  color: var(--edex-cyan);
+  letter-spacing: 1px;
+}
+
+/* ── LEFT PANEL ── */
+#panel-left {
+  background: linear-gradient(180deg, rgba(0,10,20,0.98) 0%, rgba(0,6,14,0.99) 100%);
+}
+.os-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.os-panel-body::-webkit-scrollbar { width: 3px; }
+.os-panel-body::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius: 2px; }
+
+/* System stats card */
+.os-stat-card {
+  background: rgba(0,200,255,0.04);
+  border: 1px solid var(--edex-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  position: relative;
+  overflow: hidden;
+}
+.os-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 2px; height: 100%;
+  background: linear-gradient(180deg, var(--edex-cyan), transparent);
+  opacity: 0.6;
+}
+.os-stat-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(0,200,255,0.5);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.os-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--edex-cyan);
+  text-shadow: 0 0 12px rgba(0,200,255,0.5);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.os-stat-bar-wrap {
+  height: 3px;
+  background: rgba(0,200,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.os-stat-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--edex-cyan), var(--edex-blue));
+  border-radius: 2px;
+  transition: width 0.8s ease;
+  box-shadow: 0 0 8px rgba(0,200,255,0.4);
+}
+
+/* 2-col stats row */
+.os-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Device card */
+.os-device-card {
+  background: rgba(0,200,255,0.03);
+  border: 1px solid rgba(0,200,255,0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.os-device-card:hover {
+  border-color: rgba(0,200,255,0.3);
+  background: rgba(0,200,255,0.07);
+}
+.os-device-card.device-on {
+  border-color: rgba(40,200,64,0.35);
+  background: rgba(40,200,64,0.05);
+}
+.os-device-card.device-on .os-device-led { background: var(--edex-green); box-shadow: 0 0 8px var(--edex-green); }
+.os-device-info { display: flex; align-items: center; gap: 8px; }
+.os-device-led {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  flex-shrink: 0;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.os-device-name { font-size: 11px; color: rgba(255,255,255,0.7); letter-spacing: 0.5px; }
+.os-device-state { font-size: 9px; letter-spacing: 1px; color: rgba(255,255,255,0.3); }
+.os-device-state.on { color: var(--edex-green); }
+.os-device-toggle {
+  width: 28px; height: 15px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.os-device-toggle.on {
+  background: rgba(40,200,64,0.3);
+  border-color: rgba(40,200,64,0.4);
+}
+.os-device-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  transition: transform 0.2s, background 0.2s;
+}
+.os-device-toggle.on::after {
+  transform: translateX(13px);
+  background: var(--edex-green);
+  box-shadow: 0 0 6px var(--edex-green);
+}
+
+/* Section label in panels */
+.os-section-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(0,200,255,0.4);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0,200,255,0.08);
+  margin-bottom: 6px;
+}
+
+/* Network row */
+.os-network-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: rgba(0,200,255,0.03);
+  border: 1px solid rgba(0,200,255,0.1);
+  border-radius: 6px;
+  font-size: 10px;
+}
+.os-network-status { display: flex; align-items: center; gap: 6px; color: var(--edex-green); }
+.os-network-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--edex-green); box-shadow: 0 0 6px var(--edex-green); animation: blink-dot 2s infinite; }
+.os-network-ip { color: rgba(255,255,255,0.3); font-size: 9px; letter-spacing: 0.5px; }
+
+/* EV panel in left */
+.os-ev-mini {
+  background: rgba(0,200,255,0.03);
+  border: 1px solid rgba(0,200,255,0.12);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.os-ev-mini-label { font-size: 8px; letter-spacing: 2px; color: rgba(0,200,255,0.5); text-transform: uppercase; margin-bottom: 8px; }
+.os-ev-battery-wrap { display: flex; align-items: center; gap: 8px; }
+.os-ev-battery-visual {
+  width: 40px; height: 18px;
+  border: 1.5px solid rgba(0,200,255,0.4);
+  border-radius: 3px;
+  position: relative;
+  flex-shrink: 0;
+}
+.os-ev-battery-visual::after {
+  content: '';
+  position: absolute;
+  right: -5px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 8px;
+  background: rgba(0,200,255,0.4);
+  border-radius: 0 2px 2px 0;
+}
+.os-ev-battery-fill {
+  position: absolute;
+  inset: 2px;
+  background: linear-gradient(90deg, var(--edex-cyan), var(--edex-blue));
+  border-radius: 1px;
+  transition: width 1s ease;
+  box-shadow: 0 0 6px rgba(0,200,255,0.4);
+}
+.os-ev-battery-pct { font-size: 16px; font-weight: 700; color: var(--edex-cyan); }
+
+/* ── CENTER PANEL ── */
+#panel-center {
+  background: rgba(2,6,12,0.99);
+  border-right: 1px solid var(--edex-border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Terminal area in center panel */
+#edex-terminal-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#edex-term-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  position: relative;
+  z-index: 1;
+}
+#edex-term-output::-webkit-scrollbar { width: 4px; }
+#edex-term-output::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius: 2px; }
+
+.edex-line { display: block; margin: 0; padding: 0; }
+.edex-line-ai { color: var(--edex-cyan); }
+.edex-line-cmd { color: var(--edex-green); }
+.edex-line-err { color: var(--edex-red); }
+.edex-line-sys { color: rgba(0,200,255,0.4); font-style: italic; font-size: 10px; }
+.edex-line-ev  { color: var(--edex-amber); }
+.edex-line-ok  { color: var(--edex-green); }
+
+.edex-prompt-prefix {
+  color: rgba(0,200,255,0.4);
+  user-select: none;
+  margin-right: 4px;
+}
+
+/* Center input area */
+#edex-input-area {
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.5);
+  border-top: 1px solid var(--edex-border);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+.edex-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(0,200,255,0.04);
+  border: 1px solid rgba(0,200,255,0.2);
+  border-radius: 6px;
+  padding: 0 10px;
+  transition: border-color 0.2s;
+}
+.edex-input-bar:focus-within {
+  border-color: rgba(0,200,255,0.5);
+  box-shadow: 0 0 16px rgba(0,200,255,0.08);
+}
+.edex-input-prompt {
+  color: var(--edex-green);
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: none;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+.edex-input-prompt .host { color: var(--edex-amber); }
+.edex-input-prompt .sep  { color: rgba(255,255,255,0.3); }
+#edex-cmd-input {
+  flex: 1;
+  padding: 10px 8px;
+  border: none !important;
+  background: transparent !important;
+  color: #fff !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  outline: none !important;
+  caret-color: var(--edex-cyan);
+}
+#edex-cmd-input::placeholder { color: rgba(255,255,255,0.2); }
+.edex-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.edex-input-btn {
+  width: 26px; height: 26px;
+  background: rgba(0,200,255,0.08);
+  border: 1px solid rgba(0,200,255,0.2);
+  border-radius: 5px;
+  color: var(--edex-cyan);
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.edex-input-btn:hover { background: rgba(0,200,255,0.18); border-color: rgba(0,200,255,0.4); }
+
+/* History & suggestion dropdown */
+#edex-history-hint {
+  font-size: 9px;
+  color: rgba(0,200,255,0.3);
+  padding: 4px 12px 0;
+  letter-spacing: 1px;
+}
+
+/* Center bottom: quick command pills */
+#edex-quickcmds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(0,200,255,0.06);
+  background: rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+.edex-qcmd {
+  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(0,200,255,0.06);
+  border: 1px solid rgba(0,200,255,0.15);
+  color: rgba(0,200,255,0.6);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.edex-qcmd:hover { background: rgba(0,200,255,0.14); color: var(--edex-cyan); border-color: rgba(0,200,255,0.3); }
+
+/* ── RIGHT PANEL ── */
+#panel-right {
+  background: linear-gradient(180deg, rgba(0,8,18,0.98) 0%, rgba(2,4,10,0.99) 100%);
+  border-left: 1px solid var(--edex-border);
+}
+
+/* EV charging card */
+.os-ev-card {
+  background: rgba(0,200,255,0.04);
+  border: 1px solid var(--edex-border);
+  border-radius: 8px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.os-ev-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--edex-cyan), var(--edex-blue), transparent);
+}
+.os-ev-card-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(0,200,255,0.5);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.os-ev-card-title i { color: var(--edex-amber); font-size: 11px; }
+
+/* Big battery display */
+.os-ev-big-battery {
+  width: 100%;
+  height: 20px;
+  background: rgba(0,0,0,0.4);
+  border: 1.5px solid rgba(0,200,255,0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  position: relative;
+}
+.os-ev-big-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00c8ff, #63a8ff);
+  border-radius: 2px;
+  transition: width 1.2s ease;
+  box-shadow: 0 0 12px rgba(0,200,255,0.5);
+  position: relative;
+}
+.os-ev-big-fill.charging { animation: charge-pulse 1.5s ease-in-out infinite; }
+@keyframes charge-pulse {
+  0%,100% { box-shadow: 0 0 8px rgba(0,200,255,0.4); }
+  50%      { box-shadow: 0 0 20px rgba(0,200,255,0.8); }
+}
+.os-ev-pct-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.os-ev-pct-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--edex-cyan);
+  text-shadow: 0 0 16px rgba(0,200,255,0.6);
+  line-height: 1;
+}
+.os-ev-status-badge {
+  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.os-ev-status-badge.charging { color: var(--edex-amber); background: rgba(254,188,46,0.12); border: 1px solid rgba(254,188,46,0.3); }
+.os-ev-status-badge.idle     { color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+.os-ev-status-badge.full     { color: var(--edex-green); background: rgba(40,200,64,0.1); border: 1px solid rgba(40,200,64,0.3); }
+
+.os-ev-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.os-ev-btn {
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: 1px solid;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-weight: 700;
+}
+.os-ev-btn.start {
+  background: rgba(40,200,64,0.1);
+  border-color: rgba(40,200,64,0.35);
+  color: var(--edex-green);
+}
+.os-ev-btn.start:hover { background: rgba(40,200,64,0.22); box-shadow: 0 0 14px rgba(40,200,64,0.25); }
+.os-ev-btn.stop {
+  background: rgba(255,95,87,0.08);
+  border-color: rgba(255,95,87,0.3);
+  color: var(--edex-red);
+}
+.os-ev-btn.stop:hover  { background: rgba(255,95,87,0.18); box-shadow: 0 0 14px rgba(255,95,87,0.2); }
+
+.os-ev-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0,200,255,0.08);
+}
+.os-ev-info-val { color: rgba(0,200,255,0.7); font-weight: 700; }
+
+/* Parking card */
+.os-parking-card {
+  background: rgba(0,200,255,0.03);
+  border: 1px solid var(--edex-border);
+  border-radius: 8px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.os-parking-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--edex-purple), transparent);
+}
+.os-parking-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin: 10px 0;
+}
+.os-slot {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  border: 1px solid rgba(0,200,255,0.15);
+  background: rgba(0,200,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: rgba(0,200,255,0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.os-slot.occupied {
+  background: rgba(255,95,87,0.12);
+  border-color: rgba(255,95,87,0.3);
+  color: rgba(255,95,87,0.6);
+}
+.os-slot.booked {
+  background: rgba(254,188,46,0.12);
+  border-color: rgba(254,188,46,0.3);
+  color: rgba(254,188,46,0.7);
+}
+.os-slot:not(.occupied):not(.booked):hover {
+  background: rgba(0,200,255,0.12);
+  border-color: rgba(0,200,255,0.35);
+  color: var(--edex-cyan);
+}
+.os-slot-label { font-size: 7px; font-weight: 700; letter-spacing: 0.5px; }
+
+.os-parking-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.os-park-stat {
+  text-align: center;
+  padding: 6px 4px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,200,255,0.08);
+  border-radius: 6px;
+}
+.os-park-stat-num { font-size: 18px; font-weight: 700; line-height: 1; }
+.os-park-stat-lbl { font-size: 7px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-top: 2px; }
+.os-park-stat.avail .os-park-stat-num { color: var(--edex-green); }
+.os-park-stat.taken .os-park-stat-num { color: var(--edex-red); }
+.os-park-stat.booked .os-park-stat-num { color: var(--edex-amber); }
+
+/* Booking form */
+.os-booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.os-booking-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.os-booking-select, .os-booking-input {
+  flex: 1;
+  padding: 7px 10px;
+  background: rgba(0,200,255,0.04);
+  border: 1px solid rgba(0,200,255,0.18);
+  border-radius: 6px;
+  color: rgba(255,255,255,0.8);
+  font-family: inherit;
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.os-booking-select:focus, .os-booking-input:focus { border-color: rgba(0,200,255,0.4); }
+.os-booking-select option { background: #0a1020; }
+.os-booking-btn {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(191,90,242,0.4);
+  background: rgba(191,90,242,0.1);
+  color: var(--edex-purple);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.os-booking-btn:hover { background: rgba(191,90,242,0.2); box-shadow: 0 0 12px rgba(191,90,242,0.2); }
+.os-booking-cost {
+  font-size: 11px;
+  padding: 7px 12px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,200,255,0.1);
+  border-radius: 6px;
+  color: rgba(0,200,255,0.7);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.os-booking-cost strong { color: var(--edex-cyan); font-size: 13px; }
+
+/* ── VIEW TOGGLE (switch between OS mode and classic mode) ── */
+#os-view-toggle {
+  position: fixed;
+  bottom: 54px;
+  right: 14px;
+  z-index: 7000;
+  display: flex;
+  gap: 6px;
+}
+.os-view-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+.os-view-btn.active {
+  background: rgba(0,200,255,0.18);
+  border-color: var(--edex-cyan);
+  color: var(--edex-cyan);
+  box-shadow: 0 0 12px rgba(0,200,255,0.2);
+}
+.os-view-btn:not(.active) {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.4);
+}
+.os-view-btn:not(.active):hover {
+  border-color: rgba(0,200,255,0.3);
+  color: rgba(0,200,255,0.7);
+}
+
+/* ── EDEX BOOT SCREEN ── */
+#edex-boot {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  transition: opacity 0.8s ease;
+}
+.edex-boot-logo {
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 12px;
+  color: #fff;
+  text-shadow: 0 0 30px rgba(0,200,255,0.8), 0 0 80px rgba(0,200,255,0.3);
+  margin-bottom: 8px;
+}
+.edex-boot-logo span { color: #00d4ff; }
+.edex-boot-version {
+  font-size: 10px;
+  letter-spacing: 6px;
+  color: rgba(0,200,255,0.4);
+  margin-bottom: 40px;
+  text-transform: uppercase;
+}
+.edex-boot-ring {
+  width: 50px; height: 50px;
+  border: 2px solid rgba(0,200,255,0.15);
+  border-top: 2px solid #00d4ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 20px;
+}
+.edex-boot-msgs {
+  font-size: 11px;
+  color: rgba(0,200,255,0.5);
+  letter-spacing: 1.5px;
+  text-align: center;
+  min-height: 20px;
+}
+.edex-boot-bar-wrap {
+  width: 220px;
+  height: 2px;
+  background: rgba(0,200,255,0.1);
+  border-radius: 1px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+.edex-boot-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00c8ff, #63a8ff);
+  border-radius: 1px;
+  width: 0%;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(0,200,255,0.6);
+}
+
+/* ── SENSOR DISPLAY ── */
+.os-sensor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0,200,255,0.06);
+  font-size: 10px;
+}
+.os-sensor-row:last-child { border-bottom: none; }
+.os-sensor-name { color: rgba(255,255,255,0.4); letter-spacing: 0.5px; }
+.os-sensor-val  { color: var(--edex-cyan); font-weight: 700; }
+
+/* ── RESPONSIVE HIDE for very small screens ── */
+@media (max-width: 900px) {
+  #os-panels { grid-template-columns: 0 1fr 0; }
+  #panel-left, #panel-right { display: none; }
+}
+
+/* ── GLOW ACCENT LINE animation ── */
+@keyframes glow-sweep {
+  0%   { left: -100%; }
+  100% { left: 200%; }
+}
+.glow-sweep {
+  position: absolute;
+  top: 0; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0,200,255,0.06), transparent);
+  animation: glow-sweep 3s linear infinite;
+  pointer-events: none;
+}
+
 </style>
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════
+     eDEX BOOT SCREEN (replaces old boot)
+═══════════════════════════════════════ -->
+<div id="edex-boot" role="status" aria-live="polite">
+  <div class="edex-boot-logo">Atul<span>OS</span></div>
+  <div class="edex-boot-version">v2.2 — Unified Intelligence Engine</div>
+  <div class="edex-boot-ring"></div>
+  <div class="edex-boot-msgs" id="edex-boot-msg">Initializing kernel...</div>
+  <div class="edex-boot-bar-wrap"><div class="edex-boot-bar" id="edex-boot-bar"></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ORIGINAL BOOT SCREEN (kept hidden for compatibility)
+═══════════════════════════════════════ -->
+<div id="bootScreen" role="status" aria-live="polite" aria-label="Boot screen" style="display:none;">
+  <div class="boot-center">
+    <div class="atul-logo">Atul<span>OS</span></div>
+    <div class="loader-ring" aria-hidden="true"></div>
+    <div class="boot-text" id="boot-text-msg">Starting system...</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     AUTH OVERLAY (original — preserved)
+═══════════════════════════════════════ -->
 <div id="atul-auth-overlay" role="dialog" aria-modal="true" aria-label="ATUL Authentication">
   <div id="atul-auth-box">
     <div class="auth-logo">A T U L</div>
     <div class="auth-subtitle">ATUL AUTH SYSTEM v1.0</div>
-    <div class="auth-ring">
-      <i class="fa-solid fa-lock"></i>
-    </div>
+    <div class="auth-ring"><i class="fa-solid fa-lock"></i></div>
     <div class="auth-label">ENTER ACCESS CODE</div>
     <input id="atul-auth-input" type="password" placeholder="••••••••" autocomplete="off" spellcheck="false" />
     <div id="atul-auth-msg"></div>
@@ -1817,56 +2692,27 @@ body {
   </div>
 </div>
 
-<!-- ── BOOT SCREEN ── -->
-<div id="bootScreen" role="status" aria-live="polite" aria-label="Boot screen">
-  <div class="boot-center">
-    <div class="atul-logo">Atul<span>OS</span></div>
-    <div class="boot-tagline">AI-Native Operating Environment</div>
-    <div class="loader-ring" aria-hidden="true"></div>
-    <div class="boot-text" id="boot-text-msg">Starting system...</div>
-  </div>
-</div>
-
-<!-- ── STATUS BAR ── -->
-<div id="statusbar" role="status" aria-label="System status bar">
-  <div class="status-left">
-    <div class="status-dot" title="Online"></div>
-    <span class="status-brand"><strong>AtulOS</strong> <span class="status-sep">·</span> Atul Singh</span>
-  </div>
-  <div class="status-right">
-    <button id="voice-toggle-btn" class="voice-on" title="Toggle voice output">🔊 Voice ON</button>
-    <button id="voice-settings-open-btn" title="Voice Settings"
-      style="background:transparent;border:none;cursor:pointer;color:var(--fg);font-size:13px;opacity:0.7;padding:2px 4px;"
-      onclick="openVoiceSettings()">⚙️</button>
-    <i class="fa-solid fa-wifi" title="WiFi Connected"></i>
-    <i class="fa-solid fa-battery-three-quarters" title="Battery 75%"></i>
-    <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" title="GitHub"><i class="fab fa-github"></i></a>
-    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
-    <div id="clock" class="small"></div>
-  </div>
-</div>
-
-<!-- ── SPEAKING INDICATOR ── -->
+<!-- ═══════════════════════════════════════
+     SPEAKING INDICATOR
+═══════════════════════════════════════ -->
 <div id="speaking-indicator">
-  <div class="speak-wave">
-    <span></span><span></span><span></span><span></span><span></span>
-  </div>
+  <div class="speak-wave"><span></span><span></span><span></span><span></span><span></span></div>
   🔊 Speaking...
 </div>
 
-<!-- ── MIC STATUS BADGE ── -->
+<!-- MIC STATUS BADGE -->
 <div id="mic-status-badge">
   <div class="mic-pulse-ring"></div>
   <span id="mic-status-text">Listening…</span>
 </div>
 
-<!-- ── SPEECH ENGINE MODE INDICATOR ── -->
+<!-- SPEECH MODE BADGE -->
 <div id="speech-mode-badge">
   <div class="mode-pulse"></div>
   <span id="speech-mode-text">Wake mode active</span>
 </div>
 
-<!-- ── VOICE SETTINGS MODAL ── -->
+<!-- VOICE SETTINGS MODAL (original — preserved) -->
 <div id="voice-settings-overlay" role="dialog" aria-labelledby="vs-title" aria-modal="true">
   <div id="voice-settings-panel">
     <div class="vs-header">
@@ -1876,9 +2722,7 @@ body {
     <div class="vs-body">
       <div class="vs-row">
         <label>Voice</label>
-        <select id="vs-voice-select" aria-label="Select voice">
-          <option value="">— Loading voices… —</option>
-        </select>
+        <select id="vs-voice-select" aria-label="Select voice"><option value="">— Loading voices… —</option></select>
       </div>
       <div class="vs-row">
         <label>Speed &nbsp;<span id="vs-rate-val" style="color:var(--accent);">1.0</span></label>
@@ -1911,42 +2755,365 @@ body {
   </div>
 </div>
 
-<!-- ── DESKTOP ── -->
-<main id="desktop" role="main" aria-label="Desktop">
+<!-- ═══════════════════════════════════════
+     eDEX-UI OS DASHBOARD
+═══════════════════════════════════════ -->
+<div id="os-dashboard">
+
+  <!-- TOP BAR -->
+  <div id="os-topbar">
+    <div class="os-topbar-brand">ATULOS</div>
+    <div class="os-topbar-center">UNIFIED INTELLIGENCE INTERFACE v2.2</div>
+    <div class="os-topbar-right">
+      <button id="voice-toggle-btn" class="voice-on os-topbar-icon" style="background:transparent;border:none;cursor:pointer;font-size:12px;letter-spacing:1px;" title="Toggle voice">🔊 VOICE</button>
+      <i class="fa-solid fa-wifi os-topbar-icon" title="WiFi"></i>
+      <i class="fa-solid fa-battery-three-quarters os-topbar-icon" title="Battery"></i>
+      <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" title="GitHub" style="color:inherit;text-decoration:none;"><i class="fab fa-github os-topbar-icon"></i></a>
+      <div id="os-topbar-clock">00:00</div>
+      <div id="clock" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- 3-PANEL LAYOUT -->
+  <div id="os-panels">
+
+    <!-- ══════════════ LEFT PANEL — SYSTEM STATUS ══════════════ -->
+    <div class="os-panel" id="panel-left">
+      <div class="os-panel-header">
+        <div class="os-panel-header-title">SYSTEM STATUS</div>
+        <div class="os-panel-badge">LIVE</div>
+      </div>
+      <div class="os-panel-body">
+
+        <!-- CPU & RAM -->
+        <div class="os-section-label">RESOURCES</div>
+        <div class="os-stats-row">
+          <div class="os-stat-card">
+            <div class="os-stat-label">CPU <span id="left-cpu-val" style="color:var(--edex-cyan);">—</span></div>
+            <div class="os-stat-value" id="left-cpu-num">0%</div>
+            <div class="os-stat-bar-wrap"><div class="os-stat-bar" id="left-cpu-bar" style="width:0%"></div></div>
+          </div>
+          <div class="os-stat-card">
+            <div class="os-stat-label">RAM <span id="left-ram-val" style="color:var(--edex-cyan);">—</span></div>
+            <div class="os-stat-value" id="left-ram-num">0%</div>
+            <div class="os-stat-bar-wrap"><div class="os-stat-bar" id="left-ram-bar" style="width:0%;background:linear-gradient(90deg,#bf5af2,#63a8ff)"></div></div>
+          </div>
+        </div>
+
+        <!-- Network -->
+        <div class="os-section-label">NETWORK</div>
+        <div class="os-network-row">
+          <div class="os-network-status"><div class="os-network-dot"></div>CONNECTED</div>
+          <div class="os-network-ip">Firebase ● Active</div>
+        </div>
+
+        <!-- IoT Devices -->
+        <div class="os-section-label">IoT DEVICES</div>
+
+        <div class="os-device-card" id="dev-card-light" onclick="osToggleDevice('light')">
+          <div class="os-device-info">
+            <div class="os-device-led" id="led-light"></div>
+            <div>
+              <div class="os-device-name">💡 Light</div>
+              <div class="os-device-state" id="state-light">OFF</div>
+            </div>
+          </div>
+          <div class="os-device-toggle" id="toggle-light"></div>
+        </div>
+
+        <div class="os-device-card" id="dev-card-fan" onclick="osToggleDevice('fan')">
+          <div class="os-device-info">
+            <div class="os-device-led" id="led-fan"></div>
+            <div>
+              <div class="os-device-name">🌀 Fan</div>
+              <div class="os-device-state" id="state-fan">OFF</div>
+            </div>
+          </div>
+          <div class="os-device-toggle" id="toggle-fan"></div>
+        </div>
+
+        <div class="os-device-card" id="dev-card-buzzer" onclick="osToggleDevice('buzzer')">
+          <div class="os-device-info">
+            <div class="os-device-led" id="led-buzzer"></div>
+            <div>
+              <div class="os-device-name">🔊 Buzzer</div>
+              <div class="os-device-state" id="state-buzzer">OFF</div>
+            </div>
+          </div>
+          <div class="os-device-toggle" id="toggle-buzzer"></div>
+        </div>
+
+        <!-- Sensors -->
+        <div class="os-section-label">SENSORS</div>
+        <div class="os-stat-card">
+          <div class="os-sensor-row">
+            <span class="os-sensor-name">Sensor 1 (Temp)</span>
+            <span class="os-sensor-val" id="sensor1-val">—</span>
+          </div>
+          <div class="os-sensor-row">
+            <span class="os-sensor-name">Sensor 2 (Humidity)</span>
+            <span class="os-sensor-val" id="sensor2-val">—</span>
+          </div>
+          <div class="os-sensor-row">
+            <span class="os-sensor-name">EV Sensor</span>
+            <span class="os-sensor-val" id="sensor-ev-val">—</span>
+          </div>
+        </div>
+
+        <!-- EV mini preview -->
+        <div class="os-section-label">EV CHARGING</div>
+        <div class="os-ev-mini">
+          <div class="os-ev-mini-label">BATTERY LEVEL</div>
+          <div class="os-ev-battery-wrap">
+            <div class="os-ev-battery-visual">
+              <div class="os-ev-battery-fill" id="ev-mini-fill" style="width:65%"></div>
+            </div>
+            <div class="os-ev-battery-pct" id="ev-mini-pct">65%</div>
+          </div>
+        </div>
+
+        <!-- Hidden original statusText preserved for Firebase compat -->
+        <div id="statusPanel" style="display:none;">
+          <pre id="statusText">DEVICES STATUS</pre>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════ CENTER PANEL — TERMINAL ══════════════ -->
+    <div class="os-panel" id="panel-center">
+      <div class="os-panel-header">
+        <div class="os-panel-header-title">TERMINAL — AtulAI ENGINE</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="os-panel-badge" id="edex-auth-badge" style="color:#ff5f57;border-color:rgba(255,95,87,0.3);">LOCKED</div>
+          <div class="os-panel-badge">v2.2</div>
+        </div>
+      </div>
+
+      <!-- Terminal Auth (center panel) -->
+      <div id="edex-term-auth" style="padding:16px;border-bottom:1px solid var(--edex-border);background:rgba(0,0,0,0.4);">
+        <div style="font-size:11px;color:rgba(0,200,255,0.6);margin-bottom:10px;letter-spacing:1px;">🔐 AUTHENTICATION REQUIRED</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:11px;color:var(--edex-green);white-space:nowrap;">root@AtulOS:~$</span>
+          <input id="term-password-input" type="password" placeholder="enter password..." autocomplete="off"
+            style="flex:1;padding:7px 12px;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.2);border-radius:6px;color:#fff;font-family:inherit;font-size:12px;outline:none;letter-spacing:3px;" />
+          <button id="term-auth-btn"
+            style="padding:7px 14px;border-radius:6px;background:rgba(0,200,255,0.15);border:1px solid rgba(0,200,255,0.35);color:var(--edex-cyan);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;">
+            UNLOCK
+          </button>
+        </div>
+        <div id="term-auth-msg" style="font-size:11px;margin-top:6px;min-height:16px;font-family:monospace;"></div>
+      </div>
+
+      <!-- Terminal Output -->
+      <div id="edex-term-output" style="display:none;">
+        <span class="edex-line edex-line-sys">AtulOS Terminal v2.2 — Unified Intelligence Engine active.</span>
+        <span class="edex-line edex-line-sys">Type 'help' for commands or use AI command parser below.</span>
+      </div>
+
+      <!-- Quick Commands -->
+      <div id="edex-quickcmds" style="display:none;">
+        <div class="edex-qcmd" onclick="edexRunCmd('device status')">📡 Status</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('light on')">💡 Light ON</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('light off')">💡 Light OFF</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('fan on')">🌀 Fan ON</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('fan off')">🌀 Fan OFF</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('start charging EV')">⚡ Charge EV</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('stop charging EV')">🛑 Stop EV</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('book slot for 1 hour')">🅿 Book 1hr</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('clear')">🧹 Clear</div>
+        <div class="edex-qcmd" onclick="edexRunCmd('help')">❓ Help</div>
+      </div>
+
+      <!-- Input Area -->
+      <div id="edex-input-area" style="display:none;">
+        <div id="edex-history-hint">↑↓ history · TAB autocomplete · Enter to run</div>
+        <div class="edex-input-bar">
+          <span class="edex-input-prompt">
+            <span style="color:#28c840;">atul</span>@<span class="host">AtulOS</span><span class="sep">:~$</span>&nbsp;
+          </span>
+          <input id="edex-cmd-input" type="text" placeholder="type command or natural language..." autocomplete="off" spellcheck="false" aria-label="OS Command input" />
+          <div class="edex-input-actions">
+            <button class="edex-input-btn" id="edex-mic-btn" title="Voice input"><i class="fa-solid fa-microphone"></i></button>
+            <button class="edex-input-btn" onclick="edexSendCmd()" title="Execute"><i class="fa-solid fa-play"></i></button>
+          </div>
+        </div>
+        <div id="term-suggestions" style="display:none;"></div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ RIGHT PANEL — CONTROL ══════════════ -->
+    <div class="os-panel" id="panel-right">
+      <div class="os-panel-header">
+        <div class="os-panel-header-title">CONTROL CENTER</div>
+        <div class="os-panel-badge">INTERACTIVE</div>
+      </div>
+      <div class="os-panel-body">
+
+        <!-- EV CHARGING -->
+        <div class="os-section-label">EV CHARGING SYSTEM</div>
+        <div class="os-ev-card">
+          <div class="os-ev-card-title"><i class="fa-solid fa-bolt"></i> EV BATTERY STATUS</div>
+          <div class="os-ev-pct-display">
+            <div class="os-ev-pct-num" id="ev-pct-big">65%</div>
+            <div class="os-ev-status-badge idle" id="ev-status-badge">IDLE</div>
+          </div>
+          <div class="os-ev-big-battery">
+            <div class="os-ev-big-fill" id="ev-big-fill" style="width:65%"></div>
+          </div>
+          <div class="os-ev-controls">
+            <button class="os-ev-btn start" onclick="osEVStart()"><i class="fa-solid fa-bolt"></i> START</button>
+            <button class="os-ev-btn stop"  onclick="osEVStop()"><i class="fa-solid fa-stop"></i> STOP</button>
+          </div>
+          <div class="os-ev-info-row">
+            <span>Rate: <span class="os-ev-info-val" id="ev-rate-val">7.4kW</span></span>
+            <span>Time: <span class="os-ev-info-val" id="ev-time-val">—</span></span>
+            <span>Est: <span class="os-ev-info-val" id="ev-eta-val">—</span></span>
+          </div>
+        </div>
+
+        <!-- SMART PARKING -->
+        <div class="os-section-label">SMART PARKING</div>
+        <div class="os-parking-card">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(191,90,242,0.6);margin-bottom:8px;">SLOT AVAILABILITY</div>
+
+          <div class="os-parking-stats">
+            <div class="os-park-stat avail">
+              <div class="os-park-stat-num" id="park-avail-num">6</div>
+              <div class="os-park-stat-lbl">Available</div>
+            </div>
+            <div class="os-park-stat taken">
+              <div class="os-park-stat-num" id="park-taken-num">2</div>
+              <div class="os-park-stat-lbl">Occupied</div>
+            </div>
+            <div class="os-park-stat booked">
+              <div class="os-park-stat-num" id="park-booked-num">0</div>
+              <div class="os-park-stat-lbl">Booked</div>
+            </div>
+          </div>
+
+          <div class="os-parking-grid" id="parking-grid">
+            <!-- slots rendered by JS -->
+          </div>
+
+          <!-- Booking Form -->
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(191,90,242,0.5);margin:10px 0 6px;border-top:1px solid rgba(191,90,242,0.12);padding-top:8px;">PREPAID BOOKING</div>
+          <div class="os-booking-form">
+            <div class="os-booking-row">
+              <select class="os-booking-select" id="booking-slot-select">
+                <option value="">Select Slot</option>
+                <option value="A1">Slot A1</option>
+                <option value="A2">Slot A2</option>
+                <option value="B1">Slot B1</option>
+                <option value="B2">Slot B2</option>
+                <option value="C1">Slot C1</option>
+                <option value="C2">Slot C2</option>
+              </select>
+              <select class="os-booking-select" id="booking-duration-select" onchange="updateBookingCost()">
+                <option value="1">1 Hour</option>
+                <option value="2">2 Hours</option>
+                <option value="3">3 Hours</option>
+                <option value="4">4 Hours</option>
+                <option value="6">6 Hours</option>
+                <option value="12">12 Hours</option>
+                <option value="24">24 Hours</option>
+              </select>
+            </div>
+            <div class="os-booking-cost">
+              <span>Total Cost</span>
+              <strong id="booking-cost-val">₹20</strong>
+            </div>
+            <button class="os-booking-btn" onclick="osBookSlot()">⚡ BOOK NOW</button>
+          </div>
+        </div>
+
+        <!-- QUICK CONTROLS -->
+        <div class="os-section-label">QUICK APPS</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+          <div onclick="openWindow('terminal')" style="cursor:pointer;padding:8px 4px;text-align:center;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.12);border-radius:7px;transition:all 0.15s;" class="os-quick-app">
+            <div style="font-size:16px;margin-bottom:3px;">💻</div>
+            <div style="font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.4);">TERMINAL</div>
+          </div>
+          <div onclick="openWindow('atulAI')" style="cursor:pointer;padding:8px 4px;text-align:center;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.12);border-radius:7px;transition:all 0.15s;" class="os-quick-app">
+            <div style="font-size:16px;margin-bottom:3px;">🤖</div>
+            <div style="font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.4);">ATUL AI</div>
+          </div>
+          <div onclick="openWindow('projects')" style="cursor:pointer;padding:8px 4px;text-align:center;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.12);border-radius:7px;transition:all 0.15s;" class="os-quick-app">
+            <div style="font-size:16px;margin-bottom:3px;">📁</div>
+            <div style="font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.4);">PROJECTS</div>
+          </div>
+          <div onclick="openWindow('about')" style="cursor:pointer;padding:8px 4px;text-align:center;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.12);border-radius:7px;transition:all 0.15s;" class="os-quick-app">
+            <div style="font-size:16px;margin-bottom:3px;">👤</div>
+            <div style="font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.4);">ABOUT</div>
+          </div>
+          <div onclick="openWindow('settings')" style="cursor:pointer;padding:8px 4px;text-align:center;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.12);border-radius:7px;transition:all 0.15s;" class="os-quick-app">
+            <div style="font-size:16px;margin-bottom:3px;">⚙️</div>
+            <div style="font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.4);">SETTINGS</div>
+          </div>
+          <div onclick="openWindow('calculator')" style="cursor:pointer;padding:8px 4px;text-align:center;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.12);border-radius:7px;transition:all 0.15s;" class="os-quick-app">
+            <div style="font-size:16px;margin-bottom:3px;">🧮</div>
+            <div style="font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.4);">CALC</div>
+          </div>
+        </div>
+        <style>.os-quick-app:hover{background:rgba(0,200,255,0.1)!important;border-color:rgba(0,200,255,0.3)!important;}</style>
+
+      </div>
+    </div>
+
+  </div><!-- end #os-panels -->
+
+</div><!-- end #os-dashboard -->
+
+<!-- ═══════════════════════════════════════
+     CLASSIC MODE — ORIGINAL DESKTOP (hidden by default)
+═══════════════════════════════════════ -->
+<div id="statusbar" role="status" aria-label="System status bar" style="display:none;">
+  <div class="status-left">
+    <div class="status-dot" title="Online"></div>
+    <span>AtulOS &nbsp;·&nbsp; Atul Singh</span>
+  </div>
+  <div class="status-right">
+    <button id="voice-toggle-btn-classic" class="voice-on" title="Toggle voice output" onclick="if(typeof updateVoiceToggleUI==='function')updateVoiceToggleUI()">🔊 Voice ON</button>
+    <button id="voice-settings-open-btn" title="Voice Settings" style="background:transparent;border:none;cursor:pointer;color:var(--fg);font-size:13px;opacity:0.7;padding:2px 4px;" onclick="openVoiceSettings()">⚙️</button>
+    <i class="fa-solid fa-wifi" title="WiFi Connected"></i>
+    <i class="fa-solid fa-battery-three-quarters" title="Battery 75%"></i>
+    <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" title="GitHub"><i class="fab fa-github"></i></a>
+    <a href="https://www.linkedin.com/in/atul-singh-o7" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+  </div>
+</div>
+
+<main id="desktop" role="main" aria-label="Desktop" style="display:none;">
   <h1 class="brand-title">Atul Singh</h1>
   <p class="brand-sub">Electronics &nbsp;·&nbsp; Systems &nbsp;·&nbsp; Programming</p>
-  <h2 class="section-title">
-    <i class="fa-solid fa-terminal" style="font-size:13px;"></i>
-    Main Console
-  </h2>
+  <h2 class="section-title"><i class="fa-solid fa-terminal" style="font-size:13px;"></i> Main Console</h2>
   <div class="desktop-icons" role="list">
-    <div class="icon" role="button" tabindex="0" aria-label="Open Projects"
-         onclick="openWindow('projects')" onkeydown="if(event.key==='Enter') openWindow('projects')">
+    <div class="icon" role="button" tabindex="0" aria-label="Open Projects" onclick="openWindow('projects')" onkeydown="if(event.key==='Enter') openWindow('projects')">
       <i class="fa-solid fa-folder-open"></i><span>Projects</span>
     </div>
-    <div class="icon" role="button" tabindex="0" aria-label="Open About"
-         onclick="openWindow('about')" onkeydown="if(event.key==='Enter') openWindow('about')">
+    <div class="icon" role="button" tabindex="0" aria-label="Open About" onclick="openWindow('about')" onkeydown="if(event.key==='Enter') openWindow('about')">
       <i class="fa-solid fa-circle-info"></i><span>About</span>
     </div>
-    <div class="icon" role="button" tabindex="0" aria-label="Open Skills"
-         onclick="openWindow('skills')" onkeydown="if(event.key==='Enter') openWindow('skills')">
+    <div class="icon" role="button" tabindex="0" aria-label="Open Skills" onclick="openWindow('skills')" onkeydown="if(event.key==='Enter') openWindow('skills')">
       <i class="fa-solid fa-microchip"></i><span>Skills</span>
     </div>
-    <div class="icon" role="button" tabindex="0" aria-label="Open Terminal"
-         onclick="openWindow('terminal')" onkeydown="if(event.key==='Enter') openWindow('terminal')">
+    <div class="icon" role="button" tabindex="0" aria-label="Open Terminal" onclick="openWindow('terminal')" onkeydown="if(event.key==='Enter') openWindow('terminal')">
       <i class="fa-solid fa-terminal"></i><span>Terminal</span>
     </div>
-    <div class="icon" role="button" tabindex="0" aria-label="Open Settings"
-         onclick="openWindow('settings')" onkeydown="if(event.key==='Enter') openWindow('settings')">
+    <div class="icon" role="button" tabindex="0" aria-label="Open Settings" onclick="openWindow('settings')" onkeydown="if(event.key==='Enter') openWindow('settings')">
       <i class="fa-solid fa-gear"></i><span>Settings</span>
     </div>
-    <div class="icon" role="button" tabindex="0" aria-label="Open Atul AI"
-         onclick="openWindow('atulAI')" onkeydown="if(event.key==='Enter') openWindow('atulAI')">
+    <div class="icon" role="button" tabindex="0" aria-label="Open Atul AI" onclick="openWindow('atulAI')" onkeydown="if(event.key==='Enter') openWindow('atulAI')">
       <i class="fa-solid fa-robot"></i><span>Atul AI</span>
     </div>
   </div>
 </main>
 
+<!-- VIEW TOGGLE BUTTON -->
+<div id="os-view-toggle">
+  <button class="os-view-btn active" id="btn-os-mode" onclick="switchToOSMode()">⬡ OS MODE</button>
+  <button class="os-view-btn" id="btn-classic-mode" onclick="switchToClassicMode()">⬜ CLASSIC</button>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════
      WINDOWS
@@ -2563,35 +3730,6 @@ body {
 </div>
 
 <!-- ── TASKBAR ── -->
-<div id="taskbar" role="toolbar" aria-label="Minimized windows taskbar">
-  <!-- START BUTTON injected by initStartMenu() JS below -->
-</div>
-
-<!-- ══════════════════════════════════════════════════════════════
-     START MENU PANEL
-════════════════════════════════════════════════════════════════ -->
-<div id="start-menu" role="dialog" aria-label="Start Menu" aria-modal="false">
-  <div id="start-search-wrap">
-    <i id="start-search-icon" class="fa-solid fa-magnifying-glass"></i>
-    <input id="start-search" type="text" placeholder="Search apps&#x2026;" autocomplete="off" aria-label="Search apps" />
-  </div>
-  <span class="start-section-label">All Apps</span>
-  <div id="start-app-grid" role="list"></div>
-  <div id="start-no-results">No apps found</div>
-  <div class="start-divider"></div>
-  <div id="start-footer">
-    <div class="start-footer-user">
-      <div class="start-footer-avatar">A</div>
-      <span>AtulOS User</span>
-    </div>
-    <button class="start-power-btn" title="Reload AtulOS" onclick="location.reload()" aria-label="Reload AtulOS">
-      <i class="fa-solid fa-power-off"></i>
-    </button>
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════════════════════════════════
      FIREBASE SDK
 ════════════════════════════════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -4107,107 +5245,8 @@ const RESPONSE_BANK = {
     "AtulAI v3, powered by a unified speech engine. I control windows, IoT, and everything in this OS.",
     "I'm the AI core of AtulOS. You built me, Atul. 😄",
   ],
-  // HELP RESPONSE — Updated to reflect all commands discovered across:
-  //   INTENT_MAP (Module 4.6), JARVIS_INTENTS (Module 5), ACTION_MAP (Module 4.8),
-  //   handleSystemCommand / APP_MAP / VERB_GROUPS (Module 5 Upgrade 7),
-  //   APP_ALIASES + extractIntents (Upgrade 8 pipeline),
-  //   AdaptiveUI IntentDetector PATTERNS (Upgrade 9),
-  //   and _extendAIIntents() (Upgrade 6).
-  //
-  // Commands are grouped by functional category.
-  // Auth-required commands are marked 🔐.
-  // No commands were invented — every entry is explicitly implemented.
   capabilities:  [
-    `Here's everything I can do:\n\n` +
-
-    // ── DISCOVERED IN: APP_MAP (Upgrade 7), JARVIS_INTENTS (Module 5),
-    //    _extendAIIntents (Upgrade 6), APP_ALIASES (Upgrade 8)
-    // Apps: terminal, projects, about, skills, settings, atulAI, calculator,
-    //        calendar, browser, notes — all confirmed in openApp/closeApp/minimizeApp/toggleApp
-    `🖥  APPLICATIONS\n` +
-    `  open / launch / show [app]\n` +
-    `  close / exit / hide [app]\n` +
-    `  minimize [app]\n` +
-    `  toggle [app]\n` +
-    `  Apps: terminal · projects · about · skills · settings\n` +
-    `         calculator · calendar · browser · notes · ai\n\n` +
-
-    // ── DISCOVERED IN: INTENT_MAP light_on/off, fan_on/off, buzzer_on/off (requiresAuth:true),
-    //    ACTION_MAP iotSetDevice calls, JARVIS_INTENTS device patterns
-    `💡  IoT DEVICE CONTROL  🔐 auth required\n` +
-    `  light on  ·  light off\n` +
-    `  fan on    ·  fan off\n` +
-    `  buzzer on ·  buzzer off\n\n` +
-
-    // ── DISCOVERED IN: extractIntents() search pattern (Upgrade 8 pipeline),
-    //    searchGoogle(), _injectBrowserSearch() — all verified in U8 _segmentToIntent
-    `🔍  SEARCH\n` +
-    `  search [query]\n` +
-    `  look up [query]\n` +
-    `  google [query]\n` +
-    `  find [query]\n\n` +
-
-    // ── DISCOVERED IN: extractIntents() calculate pattern + pureArith regex (Upgrade 8),
-    //    _injectCalculatorExpression() — verified in U8 _segmentToIntent
-    `🧮  CALCULATE\n` +
-    `  calculate [expression]\n` +
-    `  compute [expression]\n` +
-    `  [math expression]  e.g. 20 + 30  or  100 * 5\n\n` +
-
-    // ── DISCOVERED IN: INTENT_MAP dark_mode / light_mode, ACTION_MAP setTheme() calls
-    `🎨  THEME\n` +
-    `  dark mode\n` +
-    `  light mode\n\n` +
-
-    // ── DISCOVERED IN: INTENT_MAP voice_on/off/settings, ACTION_MAP jarvisTTSOn/Off,
-    //    wake_enable/wake_disable → SpeechEngine.enableWakeMode/disableWakeMode
-    `🔊  VOICE & WAKE\n` +
-    `  voice on    ·  voice off\n` +
-    `  voice settings\n` +
-    `  wake word on ·  wake word off\n` +
-    `  stop\n\n` +
-
-    // ── DISCOVERED IN: AdaptiveUI IntentDetector PATTERNS (Upgrade 9 — SET_MODE,
-    //    SET_GLOW, TOGGLE_ANALYTICS, UI_STATUS, UI_HELP), exec() revert handler
-    `🖼  ADAPTIVE UI  (Upgrade 9)\n` +
-    `  focus mode     · minimal mode\n` +
-    `  analytics mode · expand workspace\n` +
-    `  dense mode     · normal mode\n` +
-    `  more glow      · less glow  ·  reset glow\n` +
-    `  show analytics · hide analytics\n` +
-    `  ui status      · ui help\n` +
-    `  revert ui\n\n` +
-
-    // ── DISCOVERED IN: INTENT_MAP device_status → getDeviceStatusAsync(),
-    //    INTENT_MAP lock_system → _deviceAuthReset()
-    `📡  DEVICE INFO & SECURITY\n` +
-    `  device status  ·  check devices\n` +
-    `  lock device control\n\n` +
-
-    // ── DISCOVERED IN: INTENT_MAP system_status, time, date, joke, whoami, clear
-    //    — all confirmed in RESPONSE_BANK + generateResponse()
-    `⏰  SYSTEM INFO\n` +
-    `  time  ·  date  ·  status\n` +
-    `  whoami  ·  joke\n\n` +
-
-    // ── DISCOVERED IN: INTENT_MAP friends (requiresAuth:true) → RESPONSE_BANK.friends
-    `👥  SOCIAL  🔐 auth required\n` +
-    `  my friends\n\n` +
-
-    // ── DISCOVERED IN: INTENT_MAP clear → ACTION_MAP clear(), help → capabilities intent,
-    //    TERM_COMMANDS array (Module 7)
-    `🧹  UTILITY\n` +
-    `  help  ·  clear  ·  whoami\n\n` +
-
-    // ── DISCOVERED IN: _splitSegments() in Upgrade 8 — splits on "and", "then",
-    //    "also", "after that", comma — confirmed in extractIntents()
-    `🔗  MULTI-COMMAND CHAINING\n` +
-    `  [cmd] and [cmd]          e.g. open terminal and turn on light\n` +
-    `  [cmd] then [cmd]         e.g. dark mode then open projects\n` +
-    `  [cmd], also [cmd]\n\n` +
-
-    `🎤  Speak naturally — I understand full sentences!\n` +
-    `    Say "Hey AtulOS" to activate wake mode.`,
+    `Here's what I can do:\n\n🖥  Apps     : open/close terminal, projects, about, skills, settings\n💡  IoT      : light on/off, fan on/off, buzzer on/off\n🎨  UI       : dark mode, light mode\n🔊  Voice    : voice on/off, voice settings\n🎙️  Wake     : hey atulos / hello atulos\n⏰  Info     : time, date, status, whoami, joke\n👥  Social   : my friends (auth required)\n📡  Devices  : device status, check devices\n🔒  Security : lock device control\n🧹  Util     : clear, help, stop\n\nYou can speak naturally — I understand full sentences!`,
   ],
   light_on:      ["Light is ON. 💡","Done — activating the light.","Light turned on. Brightening up! ☀️","Sure, light's on."],
   light_off:     ["Light is OFF. 🌑","Done — light deactivated.","Lights out. 🌙","Light switched off."],
@@ -7159,385 +8198,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     ===== UPGRADE START: ROBUSTNESS LAYER — EXECUTION GUARANTEE =====
-     Wraps every command entry point with:
-       • structured try/catch
-       • AI-fail fallback (direct base engine call)
-       • guaranteed visible output (never silent failure)
-       • Firebase write retry (iotSetDevice)
-       • console audit trail for every command
-════════════════════════════════════════════════════════════════ -->
-<script>
-(function AtulOS_RobustnessLayer() {
-  'use strict';
-
-  /* ══════════════════════════════════════════════════════
-     1. CONSTANTS
-  ══════════════════════════════════════════════════════ */
-  var LAYER_TAG  = '[AtulOS Robust]';
-  var IOT_RETRY_DELAY_MS = 1800;   // retry Firebase write after this delay
-  var IOT_MAX_RETRIES    = 2;
-
-  /* ══════════════════════════════════════════════════════
-     2. SAFE OUTPUT — always gets a message to the user,
-        regardless of which surface is active
-  ══════════════════════════════════════════════════════ */
-  function _safeOutput(msg) {
-    if (!msg) return;
-    try {
-      // Terminal output
-      if (typeof window.termPrintLine === 'function') {
-        window.termPrintLine('AI', msg, 'jarvis-line', true);
-      }
-    } catch(e) { /* ignore */ }
-    try {
-      // AI chat panel output
-      if (typeof window.aiAppendMessage === 'function') {
-        window.aiAppendMessage('ai', msg, true);
-      }
-    } catch(e) { /* ignore */ }
-    try {
-      // Voice output
-      if (typeof window.jarvisSpeak === 'function') {
-        window.jarvisSpeak(msg);
-      }
-    } catch(e) { /* ignore */ }
-  }
-
-  /* ══════════════════════════════════════════════════════
-     3. PATCH iotSetDevice — Firebase write with retry
-        Original silently swallows failures. This version:
-        • retries up to IOT_MAX_RETRIES times
-        • shows a visible error if all retries fail
-        • logs every attempt
-  ══════════════════════════════════════════════════════ */
-  var _origIotSetDevice = window.iotSetDevice;
-
-  window.iotSetDevice = function iotSetDevice_robust(deviceName, stateValue) {
-    console.log(LAYER_TAG, 'iotSetDevice called:', deviceName, '→', stateValue === 1 ? 'ON' : 'OFF');
-
-    function _attempt(retriesLeft) {
-      try {
-        var db = firebase.database();
-        db.ref('devices').once('value').then(function(snap) {
-          var data = snap.val();
-          if (!data) {
-            console.warn(LAYER_TAG, 'iotSetDevice: /devices node is empty or null.');
-            if (retriesLeft > 0) {
-              console.log(LAYER_TAG, 'iotSetDevice: retrying in', IOT_RETRY_DELAY_MS, 'ms (' + retriesLeft + ' left)');
-              setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
-            } else {
-              var errMsg = '⚠️ Device "' + deviceName + '" could not be reached. Check Firebase connection.';
-              console.error(LAYER_TAG, errMsg);
-              _safeOutput(errMsg);
-            }
-            return;
-          }
-
-          var key = Object.keys(data).find(function(k) {
-            return data[k] && String(data[k].name).toLowerCase() === deviceName;
-          });
-
-          if (!key) {
-            var notFoundMsg = '⚠️ Device "' + deviceName + '" not found in Firebase. Available: ' +
-              Object.values(data).map(function(d) { return d && d.name; }).filter(Boolean).join(', ');
-            console.error(LAYER_TAG, notFoundMsg);
-            _safeOutput(notFoundMsg);
-            return;
-          }
-
-          db.ref('devices/' + key + '/state').set(stateValue)
-            .then(function() {
-              console.log(LAYER_TAG, 'iotSetDevice: write OK →', deviceName, '=', stateValue);
-            })
-            .catch(function(writeErr) {
-              console.error(LAYER_TAG, 'iotSetDevice: write FAILED:', writeErr.message);
-              if (retriesLeft > 0) {
-                console.log(LAYER_TAG, 'iotSetDevice: retrying write in', IOT_RETRY_DELAY_MS, 'ms (' + retriesLeft + ' left)');
-                setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
-              } else {
-                _safeOutput('⚠️ Could not set ' + deviceName + '. Firebase write error: ' + writeErr.message);
-              }
-            });
-        }).catch(function(readErr) {
-          console.error(LAYER_TAG, 'iotSetDevice: Firebase read FAILED:', readErr.message);
-          if (retriesLeft > 0) {
-            setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
-          } else {
-            _safeOutput('⚠️ Firebase unreachable. Could not control ' + deviceName + '.');
-          }
-        });
-      } catch(e) {
-        // firebase object itself missing / SDK not loaded
-        console.error(LAYER_TAG, 'iotSetDevice: exception (Firebase SDK unavailable?):', e.message);
-        if (retriesLeft > 0) {
-          setTimeout(function() { _attempt(retriesLeft - 1); }, IOT_RETRY_DELAY_MS);
-        } else {
-          _safeOutput('⚠️ Firebase SDK unavailable. Running in demo mode — ' + deviceName + ' command logged but not sent.');
-        }
-      }
-    }
-
-    _attempt(IOT_MAX_RETRIES);
-  };
-
-  /* ══════════════════════════════════════════════════════
-     4. PATCH _executeIntentAction — action() error guard
-        Original catches but doesn't inform the user.
-        This version guarantees a visible response even
-        when action() throws.
-  ══════════════════════════════════════════════════════ */
-  var _origExecuteIntentAction = window._executeIntentAction;
-  if (typeof _origExecuteIntentAction === 'function') {
-    window._executeIntentAction = function _executeIntentAction_robust(intent, input) {
-      console.log(LAYER_TAG, '_executeIntentAction:', intent, '|', input);
-      try {
-        var result = _origExecuteIntentAction(intent, input);
-        if (!result) {
-          result = '✓ Command executed: ' + (intent || input);
-        }
-        console.log(LAYER_TAG, '_executeIntentAction result:', result);
-        return result;
-      } catch(e) {
-        var errMsg = '⚠️ Execution error for "' + (intent || input) + '": ' + e.message;
-        console.error(LAYER_TAG, errMsg, e);
-        _safeOutput(errMsg);
-        return errMsg;
-      }
-    };
-  }
-
-  /* ══════════════════════════════════════════════════════
-     5. WRAP jarvisProcess — the public terminal entry point
-        Guarantees:
-        • never returns undefined/null silently
-        • catches throws at the top level
-        • shows fallback if entire chain fails
-  ══════════════════════════════════════════════════════ */
-  function _waitForJarvisProcess(attempts) {
-    if (typeof window.jarvisProcess !== 'function') {
-      if (attempts > 0) setTimeout(function() { _waitForJarvisProcess(attempts - 1); }, 120);
-      return;
-    }
-
-    var _origJarvisProcess = window.jarvisProcess;
-
-    window.jarvisProcess = function jarvisProcess_robust(rawInput) {
-      if (!rawInput || !rawInput.trim()) return null;
-
-      console.log(LAYER_TAG, 'Command received:', rawInput);
-
-      try {
-        var result = _origJarvisProcess(rawInput);
-
-        // Guarantee a non-null response
-        if (!result) {
-          // AI returned nothing — attempt direct base engine call as fallback
-          if (typeof window._baseJarvis === 'function') {
-            console.warn(LAYER_TAG, 'jarvisProcess returned null — trying _baseJarvis fallback');
-            try {
-              result = window._baseJarvis(rawInput);
-            } catch(fe) {
-              console.error(LAYER_TAG, '_baseJarvis fallback threw:', fe.message);
-            }
-          }
-        }
-
-        if (!result) {
-          result = '⚠️ Command received but no response generated. Try "help" for valid commands.';
-          console.warn(LAYER_TAG, 'No result for:', rawInput);
-        }
-
-        console.log(LAYER_TAG, 'Execution result:', result);
-        return result;
-
-      } catch(e) {
-        var errMsg = '⚠️ System error processing "' + rawInput.substring(0, 40) + '": ' + e.message;
-        console.error(LAYER_TAG, 'jarvisProcess threw:', e);
-        // Attempt raw base engine as last-resort fallback
-        try {
-          if (typeof window._baseJarvis === 'function') {
-            console.warn(LAYER_TAG, 'Attempting _baseJarvis emergency fallback...');
-            var fallback = window._baseJarvis(rawInput);
-            if (fallback) {
-              console.log(LAYER_TAG, 'Emergency fallback succeeded:', fallback);
-              _safeOutput(fallback);
-              return fallback;
-            }
-          }
-        } catch(fe2) {
-          console.error(LAYER_TAG, 'Emergency fallback also failed:', fe2.message);
-        }
-        _safeOutput(errMsg);
-        return errMsg;
-      }
-    };
-
-    console.log(LAYER_TAG, 'jarvisProcess wrapped with robustness guard.');
-  }
-  _waitForJarvisProcess(30);
-
-  /* ══════════════════════════════════════════════════════
-     6. PATCH TERMINAL ENTER HANDLER
-        The terminal already calls jarvisProcess, but
-        if it returns a falsy value the output line is
-        skipped entirely. This patch ensures a line is
-        always printed and the user is never left in silence.
-  ══════════════════════════════════════════════════════ */
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-      var termInput = document.getElementById('term-input');
-      if (!termInput) return;
-
-      // Clone → re-attach to strip existing listener, then add our robust one
-      // But we cannot clone without losing other listeners cleanly.
-      // Instead, wrap via a capturing listener that post-processes the output.
-      termInput.addEventListener('keydown', function _robustTermKeydown(e) {
-        if (e.key !== 'Enter') return;
-
-        var raw = termInput.value.trim();
-        if (!raw) return;
-
-        // Set a deferred check: if no output line appeared within 400ms, force one
-        setTimeout(function() {
-          var out = document.getElementById('terminal-output');
-          if (!out) return;
-
-          // Check if the last jarvis-line is newer than our command echo
-          var lines = out.querySelectorAll('.jarvis-line');
-          var echoes = out.querySelectorAll('.cmd-echo');
-          var lastEcho   = echoes[echoes.length - 1];
-          var lastJarvis = lines[lines.length - 1];
-
-          // If there's an echo with our command but no jarvis-line follows it
-          if (lastEcho && lastEcho.textContent.includes(raw)) {
-            if (!lastJarvis || lastJarvis.compareDocumentPosition(lastEcho) & Node.DOCUMENT_POSITION_FOLLOWING) {
-              // No response line appeared — force one
-              console.warn(LAYER_TAG, 'Terminal: no output detected for "' + raw + '", forcing fallback execution');
-              try {
-                var result = window.jarvisProcess ? window.jarvisProcess(raw) : null;
-                if (result && typeof window.termPrintLine === 'function') {
-                  window.termPrintLine('AI', result, 'jarvis-line', true);
-                } else if (!result) {
-                  var fb = '⚠️ Command "' + raw.substring(0,30) + '" produced no output. Check syntax or try "help".';
-                  if (typeof window.termPrintLine === 'function') window.termPrintLine('AI', fb, 'jarvis-line', false);
-                }
-              } catch(e) {
-                console.error(LAYER_TAG, 'Terminal fallback error:', e.message);
-              }
-            }
-          }
-        }, 400);
-      }, true); // capture phase so it runs after the existing listener
-
-      console.log(LAYER_TAG, 'Terminal robust keydown guard attached.');
-    }, 600);
-  });
-
-  /* ══════════════════════════════════════════════════════
-     7. PATCH aiSendMessage — AI layer failure fallback
-        If the AI setTimeout callback throws OR returns
-        nothing, command still executes via jarvisProcess.
-  ══════════════════════════════════════════════════════ */
-  function _waitForAiSendMessage(attempts) {
-    if (typeof window.aiSendMessage !== 'function') {
-      if (attempts > 0) setTimeout(function() { _waitForAiSendMessage(attempts - 1); }, 150);
-      return;
-    }
-
-    var _origAiSend = window.aiSendMessage;
-
-    window.aiSendMessage = function aiSendMessage_robust() {
-      var inputEl = document.getElementById('ai-input');
-      var text = inputEl ? inputEl.value.trim() : '';
-      console.log(LAYER_TAG, 'aiSendMessage called with:', text);
-
-      try {
-        _origAiSend.apply(this, arguments);
-      } catch(e) {
-        console.error(LAYER_TAG, 'aiSendMessage threw — running direct fallback:', e.message);
-        // AI layer completely failed — execute directly
-        if (text) {
-          try {
-            var fallbackResp = window.jarvisProcess ? window.jarvisProcess(text)
-                             : window._baseJarvis   ? window._baseJarvis(text)
-                             : '⚠️ AI engine unavailable.';
-            var msg = fallbackResp || '⚠️ No response. Try "help".';
-            if (typeof window.aiAppendMessage === 'function') window.aiAppendMessage('ai', msg, true);
-            if (typeof window.jarvisSpeak     === 'function') window.jarvisSpeak(msg);
-          } catch(fe) {
-            console.error(LAYER_TAG, 'AI direct fallback also failed:', fe.message);
-            if (typeof window.aiAppendMessage === 'function') {
-              window.aiAppendMessage('ai', '⚠️ Critical error: command could not be processed.', false);
-            }
-          }
-        }
-      }
-    };
-
-    console.log(LAYER_TAG, 'aiSendMessage wrapped with fallback guard.');
-  }
-  _waitForAiSendMessage(30);
-
-  /* ══════════════════════════════════════════════════════
-     8. PATCH submitCommand — voice / programmatic path
-        Same guarantee: always produces output.
-  ══════════════════════════════════════════════════════ */
-  function _waitForSubmitCommand(attempts) {
-    if (typeof window.submitCommand !== 'function') {
-      if (attempts > 0) setTimeout(function() { _waitForSubmitCommand(attempts - 1); }, 150);
-      return;
-    }
-
-    var _origSubmit = window.submitCommand;
-
-    window.submitCommand = function submitCommand_robust(text) {
-      console.log(LAYER_TAG, 'submitCommand called with:', text);
-      try {
-        _origSubmit.apply(this, arguments);
-      } catch(e) {
-        console.error(LAYER_TAG, 'submitCommand threw — direct fallback:', e.message);
-        if (text) {
-          try {
-            var resp = window.jarvisProcess ? window.jarvisProcess(text) : '⚠️ Command engine unavailable.';
-            if (!resp) resp = '⚠️ No response for: ' + text.substring(0, 30);
-            _safeOutput(resp);
-          } catch(fe) {
-            console.error(LAYER_TAG, 'submitCommand fallback failed:', fe.message);
-            _safeOutput('⚠️ Critical error — could not process: ' + text);
-          }
-        }
-      }
-    };
-
-    console.log(LAYER_TAG, 'submitCommand wrapped with fallback guard.');
-  }
-  _waitForSubmitCommand(30);
-
-  /* ══════════════════════════════════════════════════════
-     9. GLOBAL UNHANDLED PROMISE REJECTION GUARD
-        Firebase and other async chains can reject silently.
-        This catches them and logs with context.
-  ══════════════════════════════════════════════════════ */
-  window.addEventListener('unhandledrejection', function(event) {
-    var reason = event.reason;
-    var msg = reason && reason.message ? reason.message : String(reason);
-    // Only log AtulOS-relevant rejections (Firebase, command engine)
-    if (/firebase|iot|device|jarvis|atulos/i.test(msg) || /firebase|iot|device|jarvis|atulos/i.test(String(event.promise))) {
-      console.error(LAYER_TAG, 'Unhandled promise rejection (AtulOS context):', msg, reason);
-    } else {
-      console.warn(LAYER_TAG, 'Unhandled promise rejection:', msg);
-    }
-  });
-
-  console.log(LAYER_TAG, 'Robustness Layer online — all command paths guarded.');
-
-})();
-</script>
-<!-- ===== UPGRADE END: ROBUSTNESS LAYER — EXECUTION GUARANTEE ===== -->
-
-
-<!-- ══════════════════════════════════════════════════════════════
      ===== UPGRADE START: UPGRADE 8 — ADVANCED INTENT ENGINE =====
      Multi-command pipeline, structured intent parsing, smart search
      flow, app orchestration, command chaining, history-aware
@@ -7547,21 +8207,6 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
 (function AtulOS_Upgrade8() {
   'use strict';
-
-  // ── Capture the base (pre-U8) _jarvisProcessInternal reference
-  // This is used by the 'device' passthrough to avoid calling the live
-  // (U9-patched) window._jarvisProcessInternal, which would cause an
-  // infinite loop: U9 → U8 pipeline → device case → U9 → U8 → ∞
-  var _baseJarvis = window._jarvisProcessInternal || null;
-  // Expose on window so the Robustness Layer's fallback can reach it too
-  if (_baseJarvis && !window._baseJarvis) window._baseJarvis = _baseJarvis;
-  function _safeBaseCall(input) {
-    if (typeof _baseJarvis === 'function') {
-      console.log('[AtulOS U8] Device passthrough → base engine:', input);
-      return _baseJarvis(input);
-    }
-    return null;
-  }
 
   // ═══════════════════════════════════════════════════════════════
   // 1. KNOWN APP ALIASES — maps natural phrases → logical IDs
@@ -7737,23 +8382,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // ═══════════════════════════════════════════════════════════════
   function extractIntents(input) {
     if (!input || !input.trim()) return [];
-
-    // ── Fast-path: commands the base engine owns exclusively ──
-    // These must NEVER be intercepted by U8. Return passthrough immediately
-    // so _patchWithPipeline falls straight through to _origJarvis.
-    var _BASE_COMMANDS = [
-      'help', 'clear', 'whoami', 'status', 'time', 'date', 'joke',
-      'identity', 'who are you', 'what are you', 'capabilities',
-      'what can you do', 'list commands', 'show commands', 'show help',
-      'device status', 'check devices', 'my friends', 'lock',
-      'voice on', 'voice off', 'voice settings', 'wake word on', 'wake word off',
-      'dark mode', 'light mode', 'stop', 'thanks', 'thank you', 'bye', 'goodbye',
-    ];
-    var _trimmed = input.trim().toLowerCase();
-    if (_BASE_COMMANDS.indexOf(_trimmed) !== -1) {
-      return [{ type: 'passthrough', app: '', query: '', value: '', raw: input.trim() }];
-    }
-
     var segments = _splitSegments(input.trim());
     return segments.map(function(seg) { return _segmentToIntent(seg); });
   }
@@ -7963,12 +8591,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return _intentResponse(intent);
 
       case 'device':
-        // Pass to the base engine (captured BEFORE U8/U9 patching).
-        // CRITICAL: must NOT call window._jarvisProcessInternal here — that
-        // is the live U9-patched reference and would cause an infinite loop:
-        // U9 → U8 pipeline → device → U9 → U8 → ∞
-        console.log('[AtulOS U8] Device intent → routing to base engine:', intent.raw);
-        return _safeBaseCall(intent.raw);
+        // Fall through to original jarvis engine
+        if (typeof window._jarvisProcessInternal === 'function') {
+          return window._jarvisProcessInternal(intent.raw);
+        }
+        return null;
 
       case 'passthrough':
       default:
@@ -8113,7 +8740,6 @@ document.addEventListener('DOMContentLoaded', function () {
       // ── PIPELINE ──
       var pipelineResult = processInput(cleaned);
       if (pipelineResult !== null) {
-        console.log('[AtulOS U8] Pipeline handled:', pipelineResult);
         if (typeof window.jarvisSpeak === 'function') {
           try { window.jarvisSpeak(pipelineResult); } catch(e) {}
         }
@@ -8121,22 +8747,11 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       // ── FALLBACK: original engine ──
-      console.log('[AtulOS U8] Pipeline pass-through to base engine:', rawInput);
       var origResult = _origJarvis(rawInput);
 
-      // If original also fell back to generic fallback, offer smart suggestion.
-      // IMPORTANT: markers must be tight enough to never match valid command responses.
-      // 'understand' was removed — it appears in the capabilities/help response:
-      //   "You can speak naturally — I understand full sentences!"
-      // 'not sure' removed — too generic, can appear in normal responses.
+      // If original also fell back to generic fallback, offer smart suggestion
       if (origResult && typeof origResult === 'string') {
-        var fallbackMarkers = [
-          "didn't quite catch that",
-          "didn't get that",
-          "command not recognised",
-          "try 'help' to see all commands",
-          "try 'help' for the full list",
-        ];
+        var fallbackMarkers = ['didn\'t get that', 'try \'help\'', 'not sure', 'understand', 'fallback', '🤔', '❓'];
         var lowerOrig = origResult.toLowerCase();
         var isFallback = fallbackMarkers.some(function(m) { return lowerOrig.indexOf(m) !== -1; });
         if (isFallback) {
@@ -8225,1002 +8840,755 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <!-- ===== UPGRADE END: UPGRADE 8 — ADVANCED INTENT ENGINE ===== -->
 
-<!-- ╔══════════════════════════════════════════════════════════════════╗
-     ║  UPGRADE 9 — ADAPTIVE UI ENGINE                                 ║
-     ║  Self-evolving interface layer for AtulOS                        ║
-     ║  Pipeline: Intent → Parse → Decide → Transform → Persist        ║
-     ╚══════════════════════════════════════════════════════════════════╝ -->
-<style>
-/* ── ADAPTIVE UI ENGINE — CSS LAYER ── */
-
-/* Transition applied to all controllable elements */
-#statusbar, #taskbar, #desktop, #os-status-strip,
-.app-window, body {
-  transition:
-    opacity 0.4s cubic-bezier(0.4,0,0.2,1),
-    transform 0.4s cubic-bezier(0.4,0,0.2,1),
-    filter 0.4s cubic-bezier(0.4,0,0.2,1),
-    background 0.5s ease,
-    padding 0.4s ease;
-}
-
-/* ── UI MODES ─────────────────────────────────────────────── */
-
-/* ═══════════════════════════════════════════════════════════════
-   FOCUS MODE — terminal-first, strip everything else
-   ENHANCED: Premium dark background system with depth layers
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ── LAYER 1: Rich multi-point dark gradient replacing the flat default body bg ──
-   Uses the same --bg base (#05070b) but adds depth via directional tonal pools.
-   Cool navy at top-left (where terminal typically sits), deep indigo at bottom-right,
-   and a faint warm-neutral at center — creates subtle spatial warmth without brightness. */
-body[data-ui-mode="focus"] {
-  background:
-    radial-gradient(ellipse 70% 55% at 38% 42%, #0d1628 0%, transparent 65%),
-    radial-gradient(ellipse 55% 45% at 78% 72%, #0a1220 0%, transparent 55%),
-    radial-gradient(ellipse 40% 30% at 15% 85%, #070d18 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 88% 15%, #0c1422 0%, transparent 50%),
-    #04060b;
-  transition: background 0.6s ease;
-}
-
-/* ── LAYER 2: Grain / noise texture overlay ──
-   SVG turbulence filter at near-zero opacity adds analog depth.
-   Prevents the "screen" feeling of a perfectly clean gradient.
-   z-index: -1 so it never interferes with any UI element. */
-body[data-ui-mode="focus"]::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-
-  /* Fine grain via repeating SVG noise pattern */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 200px 200px;
-
-  /* Very low opacity — grain should be felt, not seen */
-  opacity: 0.028;
-
-  /* Vignette: dark edges draw attention inward to the terminal center */
-  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,0,0.6) 100%);
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,0,0.6) 100%);
-}
-
-/* ── LAYER 3: Ambient breathe glow centered at viewport mid-point ──
-   A single large radial accent bloom, very low opacity, slow-pulsing.
-   Gives the dark canvas a living quality — matches AtulOS futuristic system feel.
-   Placed with z-index: 0 — below all UI content but above the base bg. */
-body[data-ui-mode="focus"]::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-
-  /* Centered soft accent radial — accent color at ~4% opacity max */
-  background: radial-gradient(
-    ellipse 65% 50% at 50% 52%,
-    rgba(63, 140, 255, 0.055) 0%,
-    rgba(40, 90, 180, 0.025) 40%,
-    transparent 70%
-  );
-
-  /* Slow ambient pulse — 6s cycle, subtle scale shift only */
-  animation: focusAmbientGlow 6s ease-in-out infinite;
-}
-
-/* Gentle breathing animation — opacity only, no position shift */
-@keyframes focusAmbientGlow {
-  0%,  100% { opacity: 0.6; }
-  50%        { opacity: 1;   }
-}
-
-/* ── CONTENT LAYERS: ensure all UI sits above the bg pseudo-layers ──
-   These z-index values match the existing stacking context exactly —
-   only applied in focus mode to lift content above ::before / ::after. */
-body[data-ui-mode="focus"] #statusbar,
-body[data-ui-mode="focus"] #taskbar,
-body[data-ui-mode="focus"] #desktop,
-body[data-ui-mode="focus"] .app-window,
-body[data-ui-mode="focus"] #os-status-strip,
-body[data-ui-mode="focus"] #focus-esc-hint {
-  position: relative;
-  z-index: 1;
-}
-
-/* ── UI ELEMENT DIMMING (unchanged logic, preserved exactly) ── */
-body[data-ui-mode="focus"] #desktop {
-  filter: opacity(0.15) blur(1px);
-  pointer-events: none;
-}
-body[data-ui-mode="focus"] #statusbar {
-  opacity: 0.3;
-  transform: translateY(-100%);
-}
-body[data-ui-mode="focus"] #taskbar {
-  opacity: 0.25;
-}
-body[data-ui-mode="focus"] #os-status-strip {
-  opacity: 0.15;
-}
-body[data-ui-mode="focus"] .app-window:not(#terminal) {
-  opacity: 0.08;
-  pointer-events: none;
-}
-
-/* ── TERMINAL: enhanced premium glow (same structure, richer depth) ──
-   Added a third outer ring of very subtle diffuse blue — elevates the
-   terminal visually against the now-richer background without changing
-   its size, position, or border. */
-body[data-ui-mode="focus"] #terminal {
-  box-shadow:
-    0 0 0 1px rgba(77,159,255,0.32),
-    0 0 0 1px rgba(99,168,255,0.08) inset,
-    0 50px 120px rgba(0,0,0,0.92),
-    0 0 80px rgba(63,140,255,0.10),
-    0 0 160px rgba(40,90,200,0.06);
-  position: relative;
-  z-index: 2; /* sits above the ambient glow layers */
-}
-
-/* MINIMAL MODE — reduce visual noise, tighten spacing */
-body[data-ui-mode="minimal"] #statusbar {
-  height: 28px;
-  background: rgba(4,6,10,0.98);
-}
-body[data-ui-mode="minimal"] #taskbar {
-  height: 32px;
-}
-body[data-ui-mode="minimal"] .app-window .window-body {
-  padding: 10px;
-}
-body[data-ui-mode="minimal"] body::after {
-  opacity: 0;
-}
-body[data-ui-mode="minimal"] .brand-title,
-body[data-ui-mode="minimal"] .brand-sub,
-body[data-ui-mode="minimal"] .section-title {
-  opacity: 0.3;
-}
-body[data-ui-mode="minimal"] .desktop-icons {
-  opacity: 0.4;
-}
-body[data-ui-mode="minimal"] #os-status-strip {
-  display: none;
-}
-
-/* ANALYTICS MODE — stats forward, desktop open */
-body[data-ui-mode="analytics"] #desktop {
-  padding-top: 48px;
-}
-body[data-ui-mode="analytics"] #analytics-overlay {
-  display: flex !important;
-}
-body[data-ui-mode="analytics"] .app-window {
-  border-color: rgba(77,159,255,0.15);
-}
-
-/* EXPAND MODE — workspace maximized */
-body[data-ui-mode="expand"] #desktop {
-  padding: 44px 16px 44px;
-}
-body[data-ui-mode="expand"] .app-window {
-  border-radius: 6px;
-}
-
-/* DENSE MODE — tighten everything */
-body[data-ui-mode="dense"] #desktop {
-  padding: 44px 20px 44px;
-}
-body[data-ui-mode="dense"] .icon {
-  width: 60px;
-  padding: 10px 4px 8px;
-}
-body[data-ui-mode="dense"] .icon i { font-size: 16px; }
-body[data-ui-mode="dense"] .icon span { font-size: 9px; }
-
-/* ── GLOW INTENSITY MODIFIER ── */
-:root[data-glow="low"] .app-window {
-  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-}
-:root[data-glow="high"] .app-window {
-  box-shadow: 0 40px 100px rgba(0,0,0,0.7),
-              0 0 40px rgba(77,159,255,0.12),
-              0 0 0 0.5px rgba(255,255,255,0.05) inset;
-}
-:root[data-glow="high"] #terminal .term-prompt-bar:focus-within {
-  box-shadow: 0 0 0 3px rgba(77,159,255,0.12),
-              0 0 20px rgba(77,159,255,0.1);
-}
-
-/* ── ANALYTICS OVERLAY ── */
-#analytics-overlay {
-  display: none;
-  position: fixed;
-  top: 36px; right: 0;
-  width: 260px;
-  height: calc(100vh - 36px - 40px);
-  background: rgba(4,6,12,0.94);
-  backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255,255,255,0.06);
-  z-index: 4800;
-  flex-direction: column;
-  gap: 0;
-  overflow: hidden;
-  animation: slideInRight 0.35s cubic-bezier(0.4,0,0.2,1);
-}
-@keyframes slideInRight {
-  from { transform: translateX(100%); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-.analytics-header {
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  font-size: 9px; letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.25);
-  display: flex; justify-content: space-between; align-items: center;
-}
-.analytics-close {
-  width: 20px; height: 20px; border-radius: 4px;
-  background: transparent; border: none;
-  color: rgba(255,255,255,0.25); cursor: pointer; font-size: 10px;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s, color 0.15s;
-}
-.analytics-close:hover { background: rgba(239,68,68,0.2); color: var(--red); }
-.analytics-section {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-.analytics-label {
-  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-  color: rgba(255,255,255,0.2); margin-bottom: 10px;
-}
-.analytics-metric {
-  display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;
-}
-.analytics-metric:last-child { margin-bottom: 0; }
-.analytics-metric-row {
-  display: flex; justify-content: space-between; align-items: center;
-}
-.analytics-metric-name { font-size: 10px; color: rgba(255,255,255,0.45); }
-.analytics-metric-val  { font-size: 10px; color: var(--accent); font-weight: 600; }
-.analytics-bar {
-  height: 2px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden;
-}
-.analytics-bar-fill {
-  height: 100%; border-radius: 2px;
-  background: linear-gradient(90deg, var(--accent), rgba(77,159,255,0.4));
-  transition: width 1s cubic-bezier(0.4,0,0.2,1);
-}
-.analytics-stat-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-}
-.analytics-stat {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: var(--r-sm);
-  padding: 8px 10px;
-}
-.analytics-stat-label {
-  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(255,255,255,0.2); margin-bottom: 4px;
-}
-.analytics-stat-value {
-  font-size: 14px; font-weight: 700; color: var(--fg);
-  line-height: 1;
-}
-.analytics-stat-value.green { color: var(--green); }
-.analytics-stat-value.amber { color: var(--amber); }
-.analytics-mini-log {
-  padding: 10px 14px; flex: 1; overflow-y: auto;
-}
-.analytics-log-entry {
-  font-size: 10px; color: rgba(255,255,255,0.25);
-  padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
-  display: flex; gap: 8px;
-}
-.analytics-log-entry .log-time { color: rgba(77,159,255,0.45); flex-shrink: 0; }
-.analytics-log-entry .log-msg  { color: rgba(255,255,255,0.35); }
-
-/* ── UI MODE INDICATOR ── */
-#ui-mode-badge {
-  position: fixed;
-  bottom: 50px; right: 16px;
-  background: rgba(4,8,16,0.96);
-  border: 1px solid rgba(77,159,255,0.2);
-  border-radius: 20px;
-  padding: 4px 12px 4px 10px;
-  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(77,159,255,0.7);
-  z-index: 6100;
-  display: none;
-  align-items: center; gap: 6px;
-  backdrop-filter: blur(12px);
-  animation: badgePop 0.25s cubic-bezier(0.34,1.4,0.64,1);
-  pointer-events: none;
-}
-@keyframes badgePop {
-  from { opacity: 0; transform: scale(0.85) translateY(4px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0); }
-}
-#ui-mode-badge .mode-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
-}
-
-/* ── FOCUS ESCAPE HINT ── */
-#focus-esc-hint {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-  color: rgba(77,159,255,0.25);
-  pointer-events: none; z-index: 4700;
-  display: none;
-  animation: hintPulse 3s ease-in-out infinite;
-}
-@keyframes hintPulse {
-  0%,100% { opacity: 0.25; } 50% { opacity: 0.5; }
-}
-body[data-ui-mode="focus"] #focus-esc-hint {
-  display: block;
-}
-</style>
-
-<!-- Analytics Overlay Panel (injected into DOM, shown in analytics mode) -->
-<div id="analytics-overlay" aria-label="System Analytics">
-  <div class="analytics-header">
-    <span>System Analytics</span>
-    <button class="analytics-close" onclick="AdaptiveUI.exec('normal mode')" title="Close">✕</button>
-  </div>
-
-  <div class="analytics-section">
-    <div class="analytics-label">Performance</div>
-    <div class="analytics-metric">
-      <div class="analytics-metric-row">
-        <span class="analytics-metric-name">CPU Load</span>
-        <span class="analytics-metric-val" id="an-cpu-val">—</span>
-      </div>
-      <div class="analytics-bar"><div class="analytics-bar-fill" id="an-cpu-bar" style="width:0%"></div></div>
-    </div>
-    <div class="analytics-metric">
-      <div class="analytics-metric-row">
-        <span class="analytics-metric-name">Memory</span>
-        <span class="analytics-metric-val" id="an-mem-val">—</span>
-      </div>
-      <div class="analytics-bar"><div class="analytics-bar-fill" id="an-mem-bar" style="width:0%"></div></div>
-    </div>
-    <div class="analytics-metric">
-      <div class="analytics-metric-row">
-        <span class="analytics-metric-name">Render</span>
-        <span class="analytics-metric-val" id="an-render-val">—</span>
-      </div>
-      <div class="analytics-bar"><div class="analytics-bar-fill" id="an-render-bar" style="width:0%"></div></div>
-    </div>
-  </div>
-
-  <div class="analytics-section">
-    <div class="analytics-label">Session</div>
-    <div class="analytics-stat-grid">
-      <div class="analytics-stat">
-        <div class="analytics-stat-label">Commands</div>
-        <div class="analytics-stat-value green" id="an-cmd-count">0</div>
-      </div>
-      <div class="analytics-stat">
-        <div class="analytics-stat-label">UI Mode</div>
-        <div class="analytics-stat-value" id="an-ui-mode">Normal</div>
-      </div>
-      <div class="analytics-stat">
-        <div class="analytics-stat-label">Uptime</div>
-        <div class="analytics-stat-value amber" id="an-uptime">0m</div>
-      </div>
-      <div class="analytics-stat">
-        <div class="analytics-stat-label">Windows</div>
-        <div class="analytics-stat-value" id="an-win-count">0</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="analytics-section" style="border-bottom:none; padding-bottom:6px;">
-    <div class="analytics-label">Command Log</div>
-  </div>
-  <div class="analytics-mini-log" id="an-log"></div>
-</div>
-
-<!-- UI Mode Badge -->
-<div id="ui-mode-badge"><div class="mode-dot"></div><span id="ui-mode-label">Normal</span></div>
-
-<!-- Focus escape hint -->
-<div id="focus-esc-hint">type "exit focus" to restore</div>
-
+<!-- ═══════════════════════════════════════════════════════════════
+     ATULOS eDEX-UI ENGINE — NEW MODULE
+     Controls: dashboard, terminal, EV, parking, sensors, boot
+     Preserves all existing logic — purely additive overlay.
+═══════════════════════════════════════════════════════════════ -->
 <script>
-/* ╔══════════════════════════════════════════════════════════════════╗
-   ║  ADAPTIVE UI ENGINE  v1.0                                        ║
-   ║  AtulOS Upgrade 9                                                ║
-   ║                                                                  ║
-   ║  Pipeline:                                                       ║
-   ║  Terminal Input                                                  ║
-   ║    → Intent Detection Layer  (keyword + pattern matching)        ║
-   ║    → Intent Parser           (NL → structured instruction)       ║
-   ║    → UI Decision Engine      (what changes, how)                 ║
-   ║    → UI Transformer          (apply with transitions)            ║
-   ║    → State Manager           (persist, revert, log)              ║
-   ╚══════════════════════════════════════════════════════════════════╝ */
-
-(function AdaptiveUIEngine() {
+(function AtulOS_eDEX() {
   'use strict';
 
-  /* ══════════════════════════════════════════════════════
-     1. STATE MANAGER
-     Single source of truth for all UI state.
-     Supports history-based revert.
-  ══════════════════════════════════════════════════════ */
-  var State = (function() {
-    var _current = {
-      mode:        'normal',   // normal | focus | minimal | analytics | expand | dense
-      glow:        'normal',   // low | normal | high
-      sidebarOpen: false,
-      statsOpen:   false,
-      commandCount: 0,
-      startTime:   Date.now(),
-      logEntries:  [],
-    };
-    var _history = [];     // stack of snapshots for revert
-    var _listeners = [];
+  // ═══════════════════════════════════════════════════════════════
+  // 1. STATE
+  // ═══════════════════════════════════════════════════════════════
+  var _state = {
+    mode: 'os',           // 'os' | 'classic'
+    termAuth: false,
+    evCharging: false,
+    evPct: 65,
+    evChargingInterval: null,
+    deviceStates: { light: false, fan: false, buzzer: false },
+    cmdHistory: [],
+    cmdHistIdx: -1,
+    parkingSlots: {
+      A1: 'available', A2: 'occupied', B1: 'available', B2: 'available',
+      C1: 'occupied',  C2: 'available', D1: 'available', D2: 'booked',
+    },
+    parkingRate: 20, // ₹ per hour
+    bookings: [],
+  };
 
-    function _snap() {
-      return JSON.parse(JSON.stringify(_current));
+  // ═══════════════════════════════════════════════════════════════
+  // 2. eDEX BOOT SEQUENCE
+  // ═══════════════════════════════════════════════════════════════
+  var BOOT_MSGS = [
+    'Initializing kernel....',
+    'Loading AtulAI engine v3...',
+    'Connecting to Firebase...',
+    'Mounting IoT subsystem...',
+    'Starting EV controller...',
+    'Loading parking module...',
+    'Calibrating sensors...',
+    'System ready.',
+  ];
+
+  function runEdexBoot() {
+    var bar    = document.getElementById('edex-boot-bar');
+    var msgEl  = document.getElementById('edex-boot-msg');
+    var boot   = document.getElementById('edex-boot');
+    var dash   = document.getElementById('os-dashboard');
+
+    if (!boot) return;
+
+    var idx = 0;
+    var total = BOOT_MSGS.length;
+
+    function nextMsg() {
+      if (idx >= total) {
+        // Finish boot
+        if (bar) bar.style.width = '100%';
+        setTimeout(function() {
+          boot.style.opacity = '0';
+          setTimeout(function() {
+            boot.style.display = 'none';
+            dash.style.display = 'block';
+            _initDashboard();
+            console.log('[AtulOS eDEX] Dashboard initialized.');
+          }, 600);
+        }, 400);
+        return;
+      }
+      var msg = BOOT_MSGS[idx];
+      if (msgEl) msgEl.textContent = msg;
+      if (bar)   bar.style.width   = Math.round(((idx + 1) / total) * 100) + '%';
+      idx++;
+      setTimeout(nextMsg, 380 + Math.random() * 150);
     }
 
-    function push(patch) {
-      _history.push(_snap());
-      if (_history.length > 20) _history.shift(); // cap history
-      Object.assign(_current, patch);
-      _listeners.forEach(function(fn) { try { fn(_current); } catch(e) {} });
+    setTimeout(nextMsg, 300);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 3. DASHBOARD INIT
+  // ═══════════════════════════════════════════════════════════════
+  function _initDashboard() {
+    _renderParkingGrid();
+    _startSystemMetrics();
+    _startSensorSimulation();
+    _updateEVDisplay();
+    _initTerminalInput();
+    _initTopbarClock();
+    _syncFirebaseToUI();
+    _printEdexLine('sys', 'AtulOS eDEX Interface initialized. Firebase connected.');
+    _printEdexLine('sys', 'Type commands or use quick buttons. Auth required for device control.');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 4. CLOCK
+  // ═══════════════════════════════════════════════════════════════
+  function _initTopbarClock() {
+    function tick() {
+      var el = document.getElementById('os-topbar-clock');
+      if (el) el.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
+    tick();
+    setInterval(tick, 1000);
+  }
 
-    function revert() {
-      if (_history.length === 0) return null;
-      var prev = _history.pop();
-      Object.assign(_current, prev);
-      _listeners.forEach(function(fn) { try { fn(_current); } catch(e) {} });
-      return prev;
+  // ═══════════════════════════════════════════════════════════════
+  // 5. SYSTEM METRICS (simulated)
+  // ═══════════════════════════════════════════════════════════════
+  function _startSystemMetrics() {
+    function update() {
+      var cpu = Math.floor(Math.random() * 45) + 20;
+      var ram = Math.floor(Math.random() * 30) + 50;
+
+      var cpuNum = document.getElementById('left-cpu-num');
+      var cpuBar = document.getElementById('left-cpu-bar');
+      var ramNum = document.getElementById('left-ram-num');
+      var ramBar = document.getElementById('left-ram-bar');
+
+      if (cpuNum) cpuNum.textContent = cpu + '%';
+      if (cpuBar) cpuBar.style.width = cpu + '%';
+      if (ramNum) ramNum.textContent = ram + '%';
+      if (ramBar) ramBar.style.width = ram + '%';
+
+      // Sync with about panel metrics if they exist
+      var jCpu = document.getElementById('jap-cpu-val');
+      var jRam = document.getElementById('jap-mem-val');
+      if (jCpu) jCpu.textContent = cpu + '%';
+      if (jRam) jRam.textContent = ram + '%';
     }
+    update();
+    setInterval(update, 2200);
+  }
 
-    function get()          { return _snap(); }
-    function on(fn)         { _listeners.push(fn); }
-    function incrementCmds(){ _current.commandCount++; }
-    function log(entry)     {
-      _current.logEntries.unshift({ time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}), msg: entry });
-      if (_current.logEntries.length > 50) _current.logEntries.pop();
+  // ═══════════════════════════════════════════════════════════════
+  // 6. SENSOR SIMULATION (Firebase-aware)
+  // ═══════════════════════════════════════════════════════════════
+  function _startSensorSimulation() {
+    function update() {
+      var temp = (22 + Math.random() * 8).toFixed(1);
+      var hum  = Math.floor(50 + Math.random() * 25);
+      var evs  = (_state.evCharging ? 'CHARGING' : 'IDLE');
+
+      var s1 = document.getElementById('sensor1-val');
+      var s2 = document.getElementById('sensor2-val');
+      var se = document.getElementById('sensor-ev-val');
+
+      if (s1) s1.textContent = temp + '°C';
+      if (s2) s2.textContent = hum + '%';
+      if (se) se.textContent = evs;
     }
+    update();
+    setInterval(update, 3000);
+  }
 
-    return { push, revert, get, on, incrementCmds, log };
-  })();
+  // ═══════════════════════════════════════════════════════════════
+  // 7. FIREBASE → UI SYNC (reads existing Firebase listener output)
+  // ═══════════════════════════════════════════════════════════════
+  function _syncFirebaseToUI() {
+    // Observe the existing statusText element updated by Firebase
+    var statusEl = document.getElementById('statusText');
+    if (!statusEl) return;
 
+    var observer = new MutationObserver(function() {
+      _parseStatusTextToUI(statusEl.textContent);
+    });
+    observer.observe(statusEl, { characterData: true, childList: true, subtree: true });
 
-  /* ══════════════════════════════════════════════════════
-     2. INTENT DETECTION LAYER
-     Converts raw terminal input into a structured intent
-     using pattern matching + keyword scoring.
+    // Initial parse
+    _parseStatusTextToUI(statusEl.textContent);
 
-     Returns: { type, payload } or null
-  ══════════════════════════════════════════════════════ */
-  var IntentDetector = (function() {
+    // Also poll Firebase directly for extra reliability
+    setTimeout(function() {
+      try {
+        firebase.database().ref('devices').on('value', function(snap) {
+          var data = snap.val();
+          if (!data) return;
+          Object.values(data).forEach(function(entry) {
+            if (!entry || !entry.name) return;
+            var name = String(entry.name).toLowerCase();
+            var isOn = (entry.state === 1 || entry.state === 'on');
+            if (name === 'light' || name === 'fan' || name === 'buzzer') {
+              _setDeviceUIState(name, isOn);
+              _state.deviceStates[name] = isOn;
+            }
+          });
+        });
+      } catch(e) {
+        console.warn('[AtulOS eDEX] Firebase direct read skipped:', e.message);
+      }
+    }, 1000);
+  }
 
-    // Pattern table — ordered by specificity (most specific first)
-    // Each entry: { patterns[], type, payload }
-    var PATTERNS = [
+  function _parseStatusTextToUI(text) {
+    if (!text) return;
+    var lightOn  = /Light\s*:\s*ON/i.test(text);
+    var fanOn    = /Fan\s*:\s*ON/i.test(text);
+    var buzzerOn = /Buzzer\s*:\s*ON/i.test(text);
+    _setDeviceUIState('light',  lightOn);
+    _setDeviceUIState('fan',    fanOn);
+    _setDeviceUIState('buzzer', buzzerOn);
+    _state.deviceStates.light  = lightOn;
+    _state.deviceStates.fan    = fanOn;
+    _state.deviceStates.buzzer = buzzerOn;
+  }
 
-      // ── MODE COMMANDS ──────────────────────────────────
-      {
-        patterns: [/\bfocus\s*mode\b/i, /\benter\s*focus\b/i, /\bgo\s*focus\b/i, /\bfocus\s*up\b/i],
-        type: 'SET_MODE', payload: { mode: 'focus' }
-      },
-      {
-        patterns: [/\bminimal\s*mode\b/i, /\bmake\s*(this\s*)?(more\s*)?minimal\b/i,
-                   /\breduce\s*visual\s*noise\b/i, /\bclean\s*view\b/i, /\bstrip\s*(it\s*)?down\b/i,
-                   /\bminimize\s*(the\s*)?ui\b/i, /\bminimalist\b/i],
-        type: 'SET_MODE', payload: { mode: 'minimal' }
-      },
-      {
-        patterns: [/\banalytics\s*mode\b/i, /\bshow\s*stats\b/i, /\bshow\s*(system\s*)?analytics\b/i,
-                   /\bperformance\s*view\b/i, /\bsystem\s*(performance|metrics|stats)\b/i,
-                   /\bfocus\s*on\s*performance\b/i],
-        type: 'SET_MODE', payload: { mode: 'analytics' }
-      },
-      {
-        patterns: [/\bexpand\s*(workspace|view|layout|mode)?\b/i, /\bmaximize\s*workspace\b/i,
-                   /\bfull\s*(workspace|layout)\b/i, /\bwide\s*mode\b/i],
-        type: 'SET_MODE', payload: { mode: 'expand' }
-      },
-      {
-        patterns: [/\bdense\s*mode\b/i, /\bmake\s*(it\s*)?compact\b/i, /\bcompact\s*view\b/i],
-        type: 'SET_MODE', payload: { mode: 'dense' }
-      },
-      {
-        patterns: [/\b(normal|default|reset)\s*mode\b/i, /\b(exit|leave|escape)\s*(focus|minimal|analytics|expand|dense|mode)\b/i,
-                   /\breset\s*(the\s*)?(ui|layout|interface)\b/i, /\brestore\s*(ui|layout|view)?\b/i,
-                   /\bback\s*to\s*normal\b/i],
-        type: 'SET_MODE', payload: { mode: 'normal' }
-      },
+  function _setDeviceUIState(name, isOn) {
+    var card   = document.getElementById('dev-card-' + name);
+    var led    = document.getElementById('led-' + name);
+    var stEl   = document.getElementById('state-' + name);
+    var toggle = document.getElementById('toggle-' + name);
 
-      // ── GLOW / VISUAL INTENSITY ─────────────────────────
-      {
-        patterns: [/\b(increase|boost|more|max)\s*(glow|visual|ambien|effects?)\b/i,
-                   /\bglow\s*(up|high|more)\b/i, /\bmore\s*glow\b/i],
-        type: 'SET_GLOW', payload: { glow: 'high' }
-      },
-      {
-        patterns: [/\b(reduce|lower|less|no|remove)\s*(glow|visual|ambien|effects?)\b/i,
-                   /\bglow\s*(down|low|off|less)\b/i, /\bless\s*glow\b/i],
-        type: 'SET_GLOW', payload: { glow: 'low' }
-      },
-      {
-        patterns: [/\bnormal\s*glow\b/i, /\breset\s*glow\b/i],
-        type: 'SET_GLOW', payload: { glow: 'normal' }
-      },
+    if (card)   { card.classList.toggle('device-on', isOn); }
+    if (led)    { led.classList.toggle('device-on', isOn); }
+    if (stEl)   { stEl.textContent = isOn ? 'ON' : 'OFF'; stEl.classList.toggle('on', isOn); }
+    if (toggle) { toggle.classList.toggle('on', isOn); }
+  }
 
-      // ── COMPONENT CONTROL ──────────────────────────────
-      {
-        patterns: [/\bshow\s*(the\s*)?analytics\s*(panel|sidebar|overlay)?\b/i,
-                   /\bopen\s*(the\s*)?stats?\s*(panel)?\b/i],
-        type: 'TOGGLE_ANALYTICS', payload: { open: true }
-      },
-      {
-        patterns: [/\bhide\s*(the\s*)?analytics\b/i, /\bclose\s*(the\s*)?stats?\s*(panel)?\b/i],
-        type: 'TOGGLE_ANALYTICS', payload: { open: false }
-      },
+  // ═══════════════════════════════════════════════════════════════
+  // 8. DEVICE TOGGLE (calls existing iotSetDevice)
+  // ═══════════════════════════════════════════════════════════════
+  window.osToggleDevice = function(name) {
+    if (!_state.termAuth) {
+      // Require auth — trigger auth popup
+      _printEdexLine('err', 'Authentication required. Unlock terminal first.');
+      // Show the existing auth overlay if DeviceAuth exists
+      if (typeof DeviceAuth !== 'undefined') {
+        DeviceAuth.gate('toggle ' + name);
+      }
+      return;
+    }
+    var current = _state.deviceStates[name];
+    var next    = !current;
+    var val     = next ? 1 : 0;
 
-      // ── UI INFO ────────────────────────────────────────
-      {
-        patterns: [/\b(what|which|current)\s*(is\s*)?(the\s*)?ui\s*(mode|state)\b/i,
-                   /\bui\s*status\b/i, /\bui\s*info\b/i],
-        type: 'UI_STATUS', payload: {}
-      },
+    if (typeof iotSetDevice === 'function') {
+      iotSetDevice(name, val);
+      _state.deviceStates[name] = next;
+      _setDeviceUIState(name, next);
+      _printEdexLine('ok', name.toUpperCase() + ' turned ' + (next ? 'ON' : 'OFF') + ' via Firebase.');
+      console.log('[AtulOS eDEX] Device toggle:', name, val);
+    } else {
+      _printEdexLine('err', 'Firebase IoT not available.');
+    }
+  };
 
-      // ── HELP ──────────────────────────────────────────
-      {
-        patterns: [/\bui\s*help\b/i, /\bui\s*commands?\b/i, /\badaptive\s*(ui\s*)?help\b/i,
-                   /\bui\s*modes?\s*(list|available|help)\b/i],
-        type: 'UI_HELP', payload: {}
-      },
-    ];
+  // ═══════════════════════════════════════════════════════════════
+  // 9. EV CHARGING SYSTEM
+  // ═══════════════════════════════════════════════════════════════
+  window.osEVStart = function() {
+    if (_state.evCharging) {
+      _printEdexLine('ev', 'EV already charging.');
+      return;
+    }
+    _state.evCharging = true;
+    _updateEVDisplay();
+    _printEdexLine('ev', 'EV charging started. Rate: 7.4kW/hr');
 
-    function detect(input) {
-      if (!input || !input.trim()) return null;
-      var s = input.trim();
+    // Write to Firebase EV node
+    try {
+      firebase.database().ref('ev/charging').set(true);
+      firebase.database().ref('ev/status').set('charging');
+      console.log('[AtulOS eDEX] EV start → Firebase updated.');
+    } catch(e) { console.warn('[AtulOS eDEX] Firebase EV write skipped'); }
 
-      for (var i = 0; i < PATTERNS.length; i++) {
-        var entry = PATTERNS[i];
-        for (var j = 0; j < entry.patterns.length; j++) {
-          if (entry.patterns[j].test(s)) {
-            return { type: entry.type, payload: entry.payload };
-          }
+    // Simulate charge increase
+    _state.evChargingInterval = setInterval(function() {
+      if (_state.evPct < 100) {
+        _state.evPct = Math.min(100, _state.evPct + 0.5);
+        _updateEVDisplay();
+        if (_state.evPct >= 100) {
+          osEVStop();
+          _printEdexLine('ok', 'EV fully charged! ⚡');
         }
       }
-      return null;   // not an adaptive UI command
+    }, 2000);
+  };
+
+  window.osEVStop = function() {
+    _state.evCharging = false;
+    if (_state.evChargingInterval) {
+      clearInterval(_state.evChargingInterval);
+      _state.evChargingInterval = null;
     }
+    _updateEVDisplay();
+    _printEdexLine('ev', 'EV charging stopped.');
 
-    return { detect: detect };
-  })();
+    try {
+      firebase.database().ref('ev/charging').set(false);
+      firebase.database().ref('ev/status').set('idle');
+      console.log('[AtulOS eDEX] EV stop → Firebase updated.');
+    } catch(e) { console.warn('[AtulOS eDEX] Firebase EV write skipped'); }
+  };
 
+  function _updateEVDisplay() {
+    var pct      = Math.round(_state.evPct);
+    var charging = _state.evCharging;
 
-  /* ══════════════════════════════════════════════════════
-     3. UI DECISION ENGINE
-     Given a parsed intent, determines the full set of
-     DOM/CSS changes needed and returns a plan.
-  ══════════════════════════════════════════════════════ */
-  var DecisionEngine = (function() {
+    // Right panel big display
+    var pctBig   = document.getElementById('ev-pct-big');
+    var bigFill  = document.getElementById('ev-big-fill');
+    var badge    = document.getElementById('ev-status-badge');
+    var rateVal  = document.getElementById('ev-rate-val');
+    var timeVal  = document.getElementById('ev-time-val');
+    var etaVal   = document.getElementById('ev-eta-val');
 
-    function decide(intent, currentState) {
-      var plan = { actions: [], response: '', announce: '' };
+    // Left panel mini
+    var miniFill = document.getElementById('ev-mini-fill');
+    var miniPct  = document.getElementById('ev-mini-pct');
 
-      switch (intent.type) {
+    if (pctBig)  pctBig.textContent  = pct + '%';
+    if (bigFill) { bigFill.style.width = pct + '%'; bigFill.classList.toggle('charging', charging); }
+    if (miniFill) miniFill.style.width = pct + '%';
+    if (miniPct)  miniPct.textContent  = pct + '%';
 
-        case 'SET_MODE': {
-          var mode = intent.payload.mode;
-          if (mode === currentState.mode && mode !== 'normal') {
-            plan.response = 'Already in ' + mode + ' mode.';
-            return plan;
-          }
-          plan.actions.push({ op: 'SET_BODY_MODE', mode: mode });
-          if (mode === 'analytics') {
-            plan.actions.push({ op: 'SHOW_ANALYTICS', open: true });
-          } else {
-            plan.actions.push({ op: 'SHOW_ANALYTICS', open: false });
-          }
-          plan.stateUpdate = { mode: mode };
-          plan.announce    = mode.charAt(0).toUpperCase() + mode.slice(1) + ' Mode';
-
-          var RESPONSES = {
-            focus:     '⬛ Focus mode active. Distractions dimmed. Type "exit focus" to restore.',
-            minimal:   '◻ Minimal mode. Visual noise reduced.',
-            analytics: '📊 Analytics mode. System stats overlay active.',
-            expand:    '⬜ Workspace expanded.',
-            dense:     '▤ Dense layout active.',
-            normal:    '◈ Interface restored to default.',
-          };
-          plan.response = RESPONSES[mode] || 'UI mode set to ' + mode + '.';
-          break;
-        }
-
-        case 'SET_GLOW': {
-          var glow = intent.payload.glow;
-          plan.actions.push({ op: 'SET_GLOW', glow: glow });
-          plan.stateUpdate = { glow: glow };
-          var glowLabels = { high: 'boosted', low: 'reduced', normal: 'reset' };
-          plan.response  = '✦ Glow intensity ' + (glowLabels[glow] || glow) + '.';
-          plan.announce  = 'Glow ' + (glowLabels[glow] || glow);
-          break;
-        }
-
-        case 'TOGGLE_ANALYTICS': {
-          var open = intent.payload.open;
-          plan.actions.push({ op: 'SHOW_ANALYTICS', open: open });
-          plan.stateUpdate = { statsOpen: open };
-          plan.response = open ? '📊 Analytics panel opened.' : '✖ Analytics panel closed.';
-          break;
-        }
-
-        case 'UI_STATUS': {
-          var s = currentState;
-          plan.response = [
-            '── UI Status ──────────────',
-            'Mode:     ' + s.mode,
-            'Glow:     ' + s.glow,
-            'Commands: ' + s.commandCount,
-            'Uptime:   ' + _formatUptime(Date.now() - s.startTime),
-            '──────────────────────────',
-          ].join('\n');
-          break;
-        }
-
-        case 'UI_HELP': {
-          plan.response = [
-            '── Adaptive UI Commands ───',
-            '"focus mode"       → terminal-first, dim all else',
-            '"minimal mode"     → reduce visual noise',
-            '"analytics mode"   → show system stats panel',
-            '"expand workspace" → maximize workspace density',
-            '"dense mode"       → compact icon/element layout',
-            '"normal mode"      → restore defaults',
-            '"more glow"        → increase ambient effects',
-            '"less glow"        → reduce ambient effects',
-            '"ui status"        → show current UI state',
-            '"revert ui"        → undo last UI change',
-            '──────────────────────────',
-          ].join('\n');
-          break;
-        }
+    if (badge) {
+      badge.textContent = charging ? 'CHARGING' : (pct >= 100 ? 'FULL' : 'IDLE');
+      badge.className   = 'os-ev-status-badge ' + (charging ? 'charging' : (pct >= 100 ? 'full' : 'idle'));
+    }
+    if (rateVal) rateVal.textContent = charging ? '7.4kW' : '0kW';
+    if (timeVal) timeVal.textContent = charging ? _elapsedCharge() : '—';
+    if (etaVal) {
+      if (charging && pct < 100) {
+        var minsLeft = Math.round((100 - pct) / 0.5 * 2 / 60);
+        etaVal.textContent = minsLeft + ' min';
+      } else {
+        etaVal.textContent = pct >= 100 ? 'Done' : '—';
       }
+    }
+    // sensor
+    var sevEl = document.getElementById('sensor-ev-val');
+    if (sevEl) sevEl.textContent = charging ? 'CHARGING' : 'IDLE';
+  }
 
-      return plan;
+  var _chargeStartTime = null;
+  function _elapsedCharge() {
+    if (!_chargeStartTime) { _chargeStartTime = Date.now(); }
+    var secs = Math.floor((Date.now() - _chargeStartTime) / 1000);
+    var m = Math.floor(secs / 60);
+    var s = secs % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 10. SMART PARKING
+  // ═══════════════════════════════════════════════════════════════
+  function _renderParkingGrid() {
+    var grid = document.getElementById('parking-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    var slots = Object.keys(_state.parkingSlots);
+    slots.forEach(function(slotId) {
+      var status = _state.parkingSlots[slotId];
+      var el     = document.createElement('div');
+      el.className   = 'os-slot ' + status;
+      el.title       = slotId + ': ' + status;
+      el.innerHTML   = '<div class="os-slot-label">' + slotId + '</div>';
+      if (status === 'available') {
+        el.onclick = function() { _selectSlot(slotId); };
+      }
+      grid.appendChild(el);
+    });
+
+    _updateParkingStats();
+  }
+
+  function _selectSlot(slotId) {
+    var sel = document.getElementById('booking-slot-select');
+    if (sel) sel.value = slotId;
+    updateBookingCost();
+  }
+
+  function _updateParkingStats() {
+    var avail = 0, taken = 0, booked = 0;
+    Object.values(_state.parkingSlots).forEach(function(s) {
+      if (s === 'available') avail++;
+      else if (s === 'occupied') taken++;
+      else if (s === 'booked') booked++;
+    });
+    var an = document.getElementById('park-avail-num');
+    var tn = document.getElementById('park-taken-num');
+    var bn = document.getElementById('park-booked-num');
+    if (an) an.textContent = avail;
+    if (tn) tn.textContent = taken;
+    if (bn) bn.textContent = booked;
+
+    // Sync to Firebase parking node
+    try {
+      firebase.database().ref('parking/available').set(avail);
+      firebase.database().ref('parking/occupied').set(taken);
+    } catch(e) {}
+  }
+
+  window.updateBookingCost = function() {
+    var dur  = parseInt(document.getElementById('booking-duration-select').value) || 1;
+    var cost = dur * _state.parkingRate;
+    var el   = document.getElementById('booking-cost-val');
+    if (el) el.textContent = '₹' + cost;
+  };
+
+  window.osBookSlot = function() {
+    var slotEl = document.getElementById('booking-slot-select');
+    var durEl  = document.getElementById('booking-duration-select');
+    if (!slotEl || !durEl) return;
+
+    var slotId = slotEl.value;
+    var dur    = parseInt(durEl.value) || 1;
+
+    if (!slotId) { _printEdexLine('err', 'Please select a parking slot.'); return; }
+    if (_state.parkingSlots[slotId] !== 'available') {
+      _printEdexLine('err', 'Slot ' + slotId + ' is not available.'); return;
     }
 
-    function _formatUptime(ms) {
-      var s = Math.floor(ms / 1000);
-      var m = Math.floor(s / 60);
-      var h = Math.floor(m / 60);
-      if (h > 0) return h + 'h ' + (m % 60) + 'm';
-      if (m > 0) return m + 'm ' + (s % 60) + 's';
-      return s + 's';
-    }
+    var cost = dur * _state.parkingRate;
+    _state.parkingSlots[slotId] = 'booked';
+    _state.bookings.push({ slot: slotId, duration: dur, cost: cost, time: new Date().toLocaleTimeString() });
+    _renderParkingGrid();
 
-    return { decide: decide, _formatUptime: _formatUptime };
-  })();
+    // Write to Firebase
+    try {
+      firebase.database().ref('parking/bookings/' + slotId).set({
+        duration: dur,
+        cost: cost,
+        status: 'booked',
+        timestamp: Date.now(),
+      });
+    } catch(e) {}
 
+    _printEdexLine('ok', 'Slot ' + slotId + ' booked for ' + dur + ' hr(s). Cost: ₹' + cost + '. Confirmation sent.');
+    console.log('[AtulOS eDEX] Parking booking:', slotId, dur + 'hr', '₹' + cost);
+  };
 
-  /* ══════════════════════════════════════════════════════
-     4. UI TRANSFORMER
-     Applies the plan's action list to the live DOM.
-     All changes animated via CSS transitions already
-     declared in the style block above.
-  ══════════════════════════════════════════════════════ */
-  var Transformer = (function() {
+  // ═══════════════════════════════════════════════════════════════
+  // 11. TERMINAL ENGINE (eDEX center panel)
+  // ═══════════════════════════════════════════════════════════════
+  function _initTerminalInput() {
+    var inp = document.getElementById('edex-cmd-input');
+    if (!inp) return;
 
-    var MODES = ['focus','minimal','analytics','expand','dense','normal'];
-
-    function apply(actions) {
-      actions.forEach(function(action) {
-        try {
-          _execute(action);
-        } catch(e) {
-          console.warn('[AdaptiveUI] Transform error:', e, action);
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        edexSendCmd();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (_state.cmdHistIdx < _state.cmdHistory.length - 1) {
+          _state.cmdHistIdx++;
+          inp.value = _state.cmdHistory[_state.cmdHistory.length - 1 - _state.cmdHistIdx] || '';
         }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (_state.cmdHistIdx > 0) {
+          _state.cmdHistIdx--;
+          inp.value = _state.cmdHistory[_state.cmdHistory.length - 1 - _state.cmdHistIdx] || '';
+        } else {
+          _state.cmdHistIdx = -1;
+          inp.value = '';
+        }
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        _autoComplete(inp);
+      }
+    });
+
+    // Mic button — wire to existing SpeechEngine
+    var micBtn = document.getElementById('edex-mic-btn');
+    var origMic = document.getElementById('mic-btn');
+    if (micBtn && origMic) {
+      micBtn.addEventListener('click', function() {
+        origMic.click();
       });
     }
-
-    function _execute(action) {
-      switch (action.op) {
-
-        case 'SET_BODY_MODE': {
-          // Remove all existing mode attrs, then set the new one
-          var body = document.body;
-          MODES.forEach(function(m) {
-            if (m !== action.mode) body.removeAttribute('data-ui-mode-' + m);
-          });
-          if (action.mode === 'normal') {
-            body.removeAttribute('data-ui-mode');
-          } else {
-            body.setAttribute('data-ui-mode', action.mode);
-          }
-
-          // If focus mode: auto-ensure terminal is open and front
-          if (action.mode === 'focus') {
-            var term = document.getElementById('terminal');
-            if (term) {
-              if (term.style.display === 'none' || !term.style.display) {
-                if (typeof window.openWindow === 'function') window.openWindow('terminal');
-              }
-              // bring to front
-              term.style.zIndex = '4500';
-              // center it
-              var vw = window.innerWidth, vh = window.innerHeight;
-              var tw = Math.min(680, vw - 40);
-              term.style.width  = tw + 'px';
-              term.style.left   = ((vw - tw) / 2) + 'px';
-              term.style.top    = Math.max(60, (vh - 480) / 2) + 'px';
-            }
-          } else {
-            // Restore terminal z-index
-            var termR = document.getElementById('terminal');
-            if (termR) termR.style.zIndex = '';
-          }
-          break;
-        }
-
-        case 'SET_GLOW': {
-          var root = document.documentElement;
-          root.removeAttribute('data-glow');
-          if (action.glow !== 'normal') {
-            root.setAttribute('data-glow', action.glow);
-          }
-          break;
-        }
-
-        case 'SHOW_ANALYTICS': {
-          var panel = document.getElementById('analytics-overlay');
-          if (!panel) return;
-          if (action.open) {
-            panel.style.display = 'flex';
-            // shift desktop to make room
-            var desk = document.getElementById('desktop');
-            if (desk) desk.style.paddingRight = '276px';
-            _startAnalyticsTick();
-          } else {
-            panel.style.display = 'none';
-            var deskR = document.getElementById('desktop');
-            if (deskR) deskR.style.paddingRight = '';
-            _stopAnalyticsTick();
-          }
-          break;
-        }
-      }
-    }
-
-    return { apply: apply };
-  })();
-
-
-  /* ══════════════════════════════════════════════════════
-     5. ANALYTICS TICK — live metrics simulation
-     (browser doesn't expose real CPU/mem, so we
-      simulate plausible values + use real perf API
-      where available)
-  ══════════════════════════════════════════════════════ */
-  var _analyticsTick = null;
-  var _sessionStart  = Date.now();
-
-  function _startAnalyticsTick() {
-    if (_analyticsTick) return;
-    _updateAnalytics();
-    _analyticsTick = setInterval(_updateAnalytics, 1500);
-  }
-  function _stopAnalyticsTick() {
-    if (_analyticsTick) { clearInterval(_analyticsTick); _analyticsTick = null; }
   }
 
-  function _updateAnalytics() {
-    var state = State.get();
-
-    // Simulated metrics (browser has no real CPU API)
-    var cpu = 20 + Math.round(Math.random() * 35 + (state.mode === 'focus' ? 8 : 0));
-    var mem = 45 + Math.round(Math.random() * 30);
-    var render = 8 + Math.round(Math.random() * 12);
-
-    _setMetric('an-cpu', cpu, cpu + '%');
-    _setMetric('an-mem', mem, mem + '%');
-    _setMetric('an-render', render, render + 'ms');
-
-    // Counts
-    var cmds = document.getElementById('an-cmd-count');
-    if (cmds) cmds.textContent = state.commandCount;
-
-    var modeEl = document.getElementById('an-ui-mode');
-    if (modeEl) modeEl.textContent = state.mode.charAt(0).toUpperCase() + state.mode.slice(1);
-
-    var uptimeEl = document.getElementById('an-uptime');
-    if (uptimeEl) uptimeEl.textContent = DecisionEngine._formatUptime(Date.now() - state.startTime);
-
-    var winEl = document.getElementById('an-win-count');
-    if (winEl) {
-      var visible = document.querySelectorAll('.app-window[style*="flex"]').length;
-      winEl.textContent = visible;
-    }
-
-    // Command log
-    var logEl = document.getElementById('an-log');
-    if (logEl) {
-      var entries = state.logEntries;
-      logEl.innerHTML = entries.slice(0, 12).map(function(e) {
-        return '<div class="analytics-log-entry"><span class="log-time">' + e.time + '</span><span class="log-msg">' + _esc(e.msg) + '</span></div>';
-      }).join('') || '<div style="font-size:10px;color:rgba(255,255,255,0.15);padding:4px 0;">No commands yet</div>';
-    }
+  function _autoComplete(inp) {
+    // Reuse existing TERM_COMMANDS list
+    var cmds = (typeof TERM_COMMANDS !== 'undefined') ? TERM_COMMANDS : [];
+    var q = inp.value.toLowerCase();
+    if (!q) return;
+    var match = cmds.find(function(c) { return c.startsWith(q) && c !== q; });
+    if (match) inp.value = match;
   }
 
-  function _setMetric(id, pct, label) {
-    var val = document.getElementById(id + '-val');
-    var bar = document.getElementById(id + '-bar');
-    if (val) val.textContent = label;
-    if (bar) bar.style.width = Math.min(pct, 100) + '%';
-  }
+  window.edexSendCmd = function() {
+    var inp = document.getElementById('edex-cmd-input');
+    if (!inp || !inp.value.trim()) return;
+    var cmd = inp.value.trim();
+    inp.value = '';
+    _state.cmdHistIdx = -1;
+    edexRunCmd(cmd);
+  };
 
-  function _esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
+  window.edexRunCmd = function(cmd) {
+    if (!cmd) return;
+    _state.cmdHistory.push(cmd);
 
+    // Echo
+    _printEdexLine('cmd', 'atul@AtulOS:~$ ' + cmd);
 
-  /* ══════════════════════════════════════════════════════
-     6. MODE BADGE — transient UI feedback
-  ══════════════════════════════════════════════════════ */
-  var _badgeTimer = null;
-  function _showModeBadge(label) {
-    var badge = document.getElementById('ui-mode-badge');
-    var text  = document.getElementById('ui-mode-label');
-    if (!badge || !label) return;
-    if (text) text.textContent = label;
-    badge.style.display = 'flex';
-    // re-trigger animation
-    badge.style.animation = 'none';
-    badge.offsetHeight; // reflow
-    badge.style.animation = '';
-    if (_badgeTimer) clearTimeout(_badgeTimer);
-    _badgeTimer = setTimeout(function() {
-      badge.style.display = 'none';
-    }, 2800);
-  }
+    // Route AI/EV/parking commands
+    var lower = cmd.toLowerCase().trim();
 
-
-  /* ══════════════════════════════════════════════════════
-     7. PUBLIC API  —  AdaptiveUI.exec(input)
-     Called by the terminal hook below.
-  ══════════════════════════════════════════════════════ */
-  function exec(rawInput) {
-    var intent = IntentDetector.detect(rawInput);
-    if (!intent) return null;    // not our command, pass through
-
-    State.incrementCmds();
-    State.log(rawInput.trim().substring(0, 60));
-
-    var currentState = State.get();
-
-    // Special: revert
-    if (/\brevert\s*ui\b/i.test(rawInput) || /\bundo\s*(ui|last\s*ui)\b/i.test(rawInput)) {
-      var prev = State.revert();
-      if (prev) {
-        // Re-apply previous state
-        Transformer.apply([{ op: 'SET_BODY_MODE', mode: prev.mode }]);
-        Transformer.apply([{ op: 'SET_GLOW',      glow: prev.glow }]);
-        Transformer.apply([{ op: 'SHOW_ANALYTICS', open: prev.statsOpen }]);
-        _showModeBadge('Reverted');
-        return '↩ UI reverted to previous state (' + prev.mode + ' mode).';
-      }
-      return 'Nothing to revert.';
+    // EV commands
+    if (/start.*(charg|ev)/i.test(lower) || lower === 'ev start') {
+      osEVStart(); return;
+    }
+    if (/stop.*(charg|ev)/i.test(lower) || lower === 'ev stop') {
+      osEVStop(); return;
     }
 
-    var plan = DecisionEngine.decide(intent, currentState);
-
-    if (!plan.actions || plan.actions.length === 0) {
-      return plan.response || null;
-    }
-
-    // Apply state update first
-    if (plan.stateUpdate) {
-      State.push(plan.stateUpdate);
-    }
-
-    // Apply DOM transforms
-    Transformer.apply(plan.actions);
-
-    // Show mode badge
-    if (plan.announce) {
-      _showModeBadge(plan.announce);
-    }
-
-    return plan.response || null;
-  }
-
-  // Expose globally so the close button in analytics panel works
-  window.AdaptiveUI = { exec: exec, State: State };
-
-
-  /* ══════════════════════════════════════════════════════
-     8. TERMINAL HOOK
-     Patches _jarvisProcessInternal one final time,
-     giving AdaptiveUI highest priority before any
-     other AtulOS command handler.
-  ══════════════════════════════════════════════════════ */
-  function _hookIntoTerminal() {
-    var _prev = window._jarvisProcessInternal;
-    if (typeof _prev !== 'function') {
-      setTimeout(_hookIntoTerminal, 120);
+    // Parking commands
+    if (/book.*slot.*(\d+)\s*h/i.test(lower)) {
+      var dMatch = lower.match(/(\d+)\s*h/);
+      var dur = dMatch ? parseInt(dMatch[1]) : 1;
+      var durSel = document.getElementById('booking-duration-select');
+      if (durSel) durSel.value = String(dur);
+      updateBookingCost();
+      osBookSlot();
       return;
     }
 
-    // Re-entrance guard: prevents the hook from calling itself
-    // if any layer in the chain accidentally calls window._jarvisProcessInternal
-    var _inProgress = false;
+    // Device commands (natural language)
+    if (/start.*(charg)/i.test(lower)) { osEVStart(); return; }
 
-    window._jarvisProcessInternal = function(rawInput) {
-      if (!rawInput) return _prev(rawInput);
+    // Auth check for device commands
+    var isDeviceCmd = /(light|fan|buzzer).*(on|off)|turn.*(on|off).*(light|fan|buzzer)/i.test(lower);
+    if (isDeviceCmd && !_state.termAuth) {
+      _printEdexLine('err', 'Device control locked. Authenticate terminal first (use UNLOCK button above).');
+      return;
+    }
 
-      // Re-entrance guard: if we're already inside this call, go straight to _prev
-      if (_inProgress) {
-        console.log('[AtulOS U9] Re-entrance detected — bypassing to prev:', rawInput);
-        return _prev(rawInput);
-      }
+    // Run through existing AI engine
+    var result = null;
+    if (typeof jarvisProcess === 'function') {
+      result = jarvisProcess(cmd);
+    } else if (typeof executeCommand === 'function') {
+      result = executeCommand(cmd);
+    }
 
-      // Strip wake words (keep consistent with other layers)
-      var cleaned = rawInput
-        .replace(/^hey atulos?\s*/i, '')
-        .replace(/^hello atulos?\s*/i, '')
-        .replace(/^ok atulos?\s*/i, '')
-        .trim();
+    if (result) {
+      _printEdexLine('ai', result);
+    } else if (lower === 'clear' || lower === 'cls') {
+      var out = document.getElementById('edex-term-output');
+      if (out) out.innerHTML = '';
+    } else if (!result) {
+      _printEdexLine('sys', 'Command processed via AtulAI engine.');
+    }
 
-      console.log('[AtulOS U9] Command received:', cleaned);
+    // Also sync to hidden terminal for full compat
+    var termOut = document.getElementById('terminal-output');
+    if (termOut && typeof termPrintLine === 'function') {
+      termPrintLine('AI', result || cmd, 'jarvis-line', false);
+    }
+  };
 
-      _inProgress = true;
-      try {
-        // ── AdaptiveUI intercept ──
-        var result = exec(cleaned);
-        if (result !== null) {
-          console.log('[AtulOS U9] AdaptiveUI handled:', result);
-          if (typeof window.jarvisSpeak === 'function') {
-            try { window.jarvisSpeak(result); } catch(e) {}
-          }
-          return result;
+  function _printEdexLine(type, text) {
+    var out = document.getElementById('edex-term-output');
+    if (!out) return;
+    var line = document.createElement('div');
+    line.className = 'edex-line edex-line-' + type;
+    var prefix = '';
+    if (type === 'ai')  prefix = 'AtulAI › ';
+    if (type === 'cmd') prefix = '';
+    if (type === 'sys') prefix = '// ';
+    if (type === 'ev')  prefix = '[EV] ';
+    if (type === 'err') prefix = '[ERR] ';
+    if (type === 'ok')  prefix = '[OK] ';
+    line.textContent = prefix + text;
+    out.appendChild(line);
+    out.scrollTop = out.scrollHeight;
+  }
+  window.edexPrintLine = _printEdexLine;
+
+  // ═══════════════════════════════════════════════════════════════
+  // 12. TERMINAL AUTH (eDEX panel)
+  // ═══════════════════════════════════════════════════════════════
+  function _initEdexAuth() {
+    var authDiv  = document.getElementById('edex-term-auth');
+    var outDiv   = document.getElementById('edex-term-output');
+    var inputDiv = document.getElementById('edex-input-area');
+    var quickDiv = document.getElementById('edex-quickcmds');
+    var badge    = document.getElementById('edex-auth-badge');
+    var pwInput  = document.getElementById('term-password-input');
+    var authBtn  = document.getElementById('term-auth-btn');
+
+    // Wire to existing termTryAuth logic if available
+    // We override the auth button to also unlock the eDEX panel
+    if (authBtn) {
+      var _origClick = authBtn.onclick;
+      authBtn.onclick = null;
+      authBtn.addEventListener('click', function() {
+        _edexTryAuth(pwInput, authDiv, outDiv, inputDiv, quickDiv, badge);
+      });
+    }
+    if (pwInput) {
+      pwInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') _edexTryAuth(pwInput, authDiv, outDiv, inputDiv, quickDiv, badge);
+      });
+    }
+  }
+
+  function _edexTryAuth(pwInput, authDiv, outDiv, inputDiv, quickDiv, badge) {
+    var TERMINAL_PASSWORD = 'atul0775';
+    var msg = document.getElementById('term-auth-msg');
+    if (!pwInput) return;
+
+    if (pwInput.value === TERMINAL_PASSWORD) {
+      _state.termAuth = true;
+      if (msg)     { msg.textContent = '✔ Access granted.'; msg.style.color = '#28c840'; }
+      setTimeout(function() {
+        if (authDiv)  authDiv.style.display  = 'none';
+        if (outDiv)   outDiv.style.display   = 'block';
+        if (inputDiv) inputDiv.style.display = 'block';
+        if (quickDiv) quickDiv.style.display = 'flex';
+        if (badge)    { badge.textContent = 'UNLOCKED'; badge.style.color = '#28c840'; badge.style.borderColor = 'rgba(40,200,64,0.3)'; }
+        _printEdexLine('ok', 'Terminal authenticated. Device control enabled.');
+        _printEdexLine('sys', 'Welcome back, Atul. All systems operational.');
+        var cmdInp = document.getElementById('edex-cmd-input');
+        if (cmdInp) cmdInp.focus();
+        // Also unlock original terminal
+        if (typeof termUnlock === 'function') termUnlock();
+        // Mark global isAuthenticated
+        if (typeof window.isAuthenticated !== 'function') {
+          window.isAuthenticated = function() { return _state.termAuth; };
         }
+      }, 500);
+    } else {
+      if (msg) { msg.textContent = '✖ Incorrect password.'; msg.style.color = '#ff5f57'; }
+      pwInput.value = '';
+      pwInput.style.transition = 'border-color 0.1s';
+      pwInput.style.borderColor = '#ff5f57';
+      setTimeout(function() { pwInput.style.borderColor = ''; }, 600);
+    }
+  }
 
-        // ── Pass through to existing chain ──
-        console.log('[AtulOS U9] Passing to command chain:', rawInput);
-        var chainResult = _prev(rawInput);
-        console.log('[AtulOS U9] Execution result:', chainResult);
-        return chainResult;
-      } finally {
-        _inProgress = false;
+  // ═══════════════════════════════════════════════════════════════
+  // 13. VIEW SWITCHING (OS Mode ↔ Classic Mode)
+  // ═══════════════════════════════════════════════════════════════
+  window.switchToOSMode = function() {
+    _state.mode = 'os';
+    document.getElementById('os-dashboard').style.display = 'block';
+    document.getElementById('statusbar').style.display    = 'none';
+    document.getElementById('desktop').style.display      = 'none';
+    document.getElementById('taskbar').style.display      = 'none';
+
+    var btnOS  = document.getElementById('btn-os-mode');
+    var btnCls = document.getElementById('btn-classic-mode');
+    if (btnOS)  btnOS.classList.add('active');
+    if (btnCls) btnCls.classList.remove('active');
+  };
+
+  window.switchToClassicMode = function() {
+    _state.mode = 'classic';
+    document.getElementById('os-dashboard').style.display = 'none';
+    document.getElementById('statusbar').style.display    = 'flex';
+    document.getElementById('desktop').style.display      = 'block';
+    document.getElementById('taskbar').style.display      = 'flex';
+
+    var btnOS  = document.getElementById('btn-os-mode');
+    var btnCls = document.getElementById('btn-classic-mode');
+    if (btnOS)  btnOS.classList.remove('active');
+    if (btnCls) btnCls.classList.add('active');
+
+    // Restore original clock
+    var clk = document.getElementById('clock');
+    if (clk) clk.style.display = '';
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // 14. VOICE TOGGLE SYNC (eDEX topbar button)
+  // ═══════════════════════════════════════════════════════════════
+  function _syncVoiceToggle() {
+    // Mirror the existing voice-toggle-btn logic for the eDEX topbar
+    var topBtn = document.getElementById('voice-toggle-btn');
+    if (!topBtn) return;
+    topBtn.addEventListener('click', function() {
+      if (typeof VoiceState !== 'undefined') {
+        if (VoiceState.enabled) {
+          if (typeof jarvisTTSOff === 'function') jarvisTTSOff();
+          topBtn.textContent = '🔇 VOICE';
+        } else {
+          if (typeof jarvisTTSOn === 'function') jarvisTTSOn();
+          topBtn.textContent = '🔊 VOICE';
+        }
       }
-    };
-
-    console.log('[AtulOS U9] Adaptive UI Engine online. Hook registered.');
+    });
   }
 
-  // Boot
+  // ═══════════════════════════════════════════════════════════════
+  // 15. BOOT ENTRY POINT
+  // ═══════════════════════════════════════════════════════════════
+  function _boot() {
+    // Hide the original boot screen immediately (we use eDEX boot)
+    var origBoot = document.getElementById('bootScreen');
+    if (origBoot) origBoot.style.display = 'none';
+
+    runEdexBoot();
+    _syncVoiceToggle();
+
+    // Init auth listener after DOM is ready
+    setTimeout(_initEdexAuth, 200);
+
+    console.log('[AtulOS eDEX] Boot sequence started.');
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { setTimeout(_hookIntoTerminal, 200); });
+    document.addEventListener('DOMContentLoaded', _boot);
   } else {
-    setTimeout(_hookIntoTerminal, 200);
+    _boot();
   }
+
+  // Expose parking update for Firebase integration
+  window._osUpdateParking = function(slots) {
+    if (slots && typeof slots === 'object') {
+      Object.assign(_state.parkingSlots, slots);
+      _renderParkingGrid();
+    }
+  };
 
 })();
 </script>
-<!-- ===== UPGRADE END: UPGRADE 9 — ADAPTIVE UI ENGINE ===== -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ORIGINAL TASKBAR (needed for classic mode & app windows)
+═══════════════════════════════════════════════════════════════ -->
+<div id="taskbar" role="toolbar" aria-label="Minimized windows taskbar" style="display:none;">
+</div>
+
+<!-- START MENU -->
+<div id="start-menu" role="dialog" aria-label="Start Menu" aria-modal="false">
+  <div id="start-search-wrap">
+    <i id="start-search-icon" class="fa-solid fa-magnifying-glass"></i>
+    <input id="start-search" type="text" placeholder="Search apps&#x2026;" autocomplete="off" aria-label="Search apps" />
+  </div>
+  <span class="start-section-label">All Apps</span>
+  <div id="start-app-grid" role="list"></div>
+  <div id="start-no-results">No apps found</div>
+  <div class="start-divider"></div>
+  <div id="start-footer">
+    <div class="start-footer-user">
+      <div class="start-footer-avatar">A</div>
+      <span>AtulOS User</span>
+    </div>
+    <button class="start-power-btn" title="Reload AtulOS" onclick="location.reload()" aria-label="Reload AtulOS">
+      <i class="fa-solid fa-power-off"></i>
+    </button>
+  </div>
+</div>
 
 </body>
 </html>
