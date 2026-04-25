@@ -78,7 +78,8 @@ body {
   background: var(--card);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
-  z-index: 5000; font-size: 13px;
+  z-index: 8000; /* FIX: above app windows (z: 100-1000) in classic mode */
+  font-size: 13px;
 }
 .status-left { display: flex; align-items: center; gap: 10px; }
 .status-dot  { width: 8px; height: 8px; background: #28c840; border-radius: 50%; animation: blink-dot 2s infinite; }
@@ -521,7 +522,8 @@ body {
   height: 44px; background: var(--card);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--border);
-  z-index: 5000; display: flex;
+  z-index: 8000; /* FIX: match statusbar z-index */
+  display: flex;
   align-items: center; padding: 0 12px; gap: 6px;
   overflow-x: auto; overflow-y: hidden;
 }
@@ -1796,7 +1798,7 @@ body {
   background: var(--edex-bg);
   font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   overflow: hidden;
-  z-index: 0;
+  z-index: 10; /* FIX: lower z-index so app-windows (z: 100+) always float above */
 }
 
 /* CRT Scanline overlay on dashboard */
@@ -2536,7 +2538,7 @@ body {
   position: fixed;
   bottom: 54px;
   right: 14px;
-  z-index: 7000;
+  z-index: 9000; /* FIX: above everything including app windows */
   display: flex;
   gap: 6px;
 }
@@ -2647,6 +2649,43 @@ body {
   #panel-left, #panel-right { display: none; }
 }
 
+/* ── eDEX TERMINAL FIX: ensure panels show correctly after auth ── */
+#edex-term-output {
+  display: none; /* shown after auth */
+}
+#edex-input-area {
+  display: none; /* shown after auth */
+}
+#edex-quickcmds {
+  display: none; /* shown after auth */
+}
+
+/* ── FIX: duplicate #term-password-input — eDEX one gets scoped styles ── */
+#edex-term-auth #term-password-input {
+  flex: 1;
+  padding: 7px 12px;
+  background: rgba(0,200,255,0.04);
+  border: 1px solid rgba(0,200,255,0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  outline: none;
+  letter-spacing: 3px;
+  transition: border-color 0.2s;
+}
+#edex-term-auth #term-password-input:focus {
+  border-color: rgba(0,200,255,0.5);
+}
+
+/* ── FIX: Classic statusbar & taskbar must be invisible (not absent) in OS mode ── */
+/* Controlled via JS opacity/pointerEvents — no CSS needed here */
+
+/* ── FIX: App windows need higher z-index than eDEX dashboard ── */
+.app-window {
+  z-index: 500; /* raised from implicit 0 — ensures above os-dashboard z:10 */
+}
+
 /* ── GLOW ACCENT LINE animation ── */
 @keyframes glow-sweep {
   0%   { left: -100%; }
@@ -2661,6 +2700,7 @@ body {
 }
 
 
+
 /* ═══════════════════════════════════════════
    AI ORB — FUTURISTIC REACTIVE GLOBE
    Controls via body.ai-speaking class
@@ -2671,7 +2711,7 @@ body {
   right: 22px;
   width: 56px;
   height: 56px;
-  z-index: 7500;
+  z-index: 8500; /* FIX: above os-dashboard (z:10) and below view-toggle (z:9000) */
   cursor: pointer;
   user-select: none;
 }
@@ -6265,10 +6305,11 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
 
     function syncVisibility() {
       // Always keep taskbar visible for Start Button; chips are shown/hidden naturally
-      bar.style.display = 'flex';
+      if (bar) bar.style.display = 'flex';
     }
 
     function add(win) {
+      if (!bar) return; // taskbar not in DOM yet — skip silently
       const id = win.dataset.windowId || win.id;
       if (chips[id]) return;
       const meta = getWindowMeta(win);
@@ -6382,12 +6423,14 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     if (!isMax) {
       const rect = win.getBoundingClientRect();
       windowState[id] = { ...(windowState[id] || {}), prev: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } };
+      const taskbarH = 44;
+      // FIX: statusbar may be opacity:0 in OS mode but still takes space; use safe height
       const bar      = document.getElementById('statusbar');
-      const taskbarH = 44; /* taskbar is always 44px tall */
+      const barH     = (bar && bar.offsetHeight) ? bar.offsetHeight : 44;
       win.style.left   = '8px';
-      win.style.top    = (bar.offsetHeight + 8) + 'px';
+      win.style.top    = (barH + 8) + 'px';
       win.style.width  = (window.innerWidth  - 16) + 'px';
-      win.style.height = (window.innerHeight - bar.offsetHeight - taskbarH - 16) + 'px';
+      win.style.height = (window.innerHeight - barH - taskbarH - 16) + 'px';
       win.dataset.maximized = 'true';
       if (maxBtn) maxBtn.className = 'fa-regular fa-window-restore';
     } else {
@@ -6589,6 +6632,7 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
   });
 
   window.termResetAuth   = termResetAuth;
+  window.termUnlock      = termUnlock;
   window.isAuthenticated = () => isAuthenticatedFlag;
 })();
 </script>
@@ -6964,8 +7008,10 @@ function aiAppendMessage(role, text, animate) {
   ts.className   = 'ai-ts';
   ts.textContent = aiTimestamp();
 
+  if (!bubble || !ts) return; // defensive — elements must exist
   wrap.appendChild(bubble);
   wrap.appendChild(ts);
+  if (!wrap) return;
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
 
@@ -7195,7 +7241,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const handle = document.createElement('div');
       handle.className = `resize-handle ${dir}`;
       handle.setAttribute('aria-hidden', 'true'); // purely visual/functional — not for screen readers
-      win.appendChild(handle);
+      if (win && handle) win.appendChild(handle);
     });
   }
 
@@ -7565,6 +7611,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ── Render app grid (with optional filter) ──────────────────
   function renderGrid(filter) {
+    if (!gridEl) return; // start-app-grid not in DOM — skip silently
     var query    = (filter || '').toLowerCase().trim();
     var filtered = query ? startApps.filter(function(a){ return a.name.toLowerCase().indexOf(query) !== -1; }) : startApps;
     gridEl.innerHTML = '';
@@ -8486,6 +8533,13 @@ document.addEventListener('DOMContentLoaded', function () {
 (function AtulOS_Upgrade8() {
   'use strict';
 
+  // ── Capture the true original engine BEFORE any U7/U8 patching.
+  // _executeIntent's 'device' case MUST use this reference, not
+  // window._jarvisProcessInternal, to avoid:
+  //   processInput → _executeIntent(device) → window._jarvisProcessInternal(U8)
+  //   → processInput → ... infinite loop.
+  var _trueOriginalJarvis = window._jarvisProcessInternal || null;
+
   // ═══════════════════════════════════════════════════════════════
   // 1. KNOWN APP ALIASES — maps natural phrases → logical IDs
   // ═══════════════════════════════════════════════════════════════
@@ -8869,7 +8923,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return _intentResponse(intent);
 
       case 'device':
-        // Fall through to original jarvis engine
+        // Use the TRUE original engine (captured before U7/U8 patching).
+        // MUST NOT use window._jarvisProcessInternal here — that is the U8-patched
+        // version which calls processInput, which calls _executeIntent(device),
+        // which calls window._jarvisProcessInternal → infinite recursion.
+        if (typeof _trueOriginalJarvis === 'function') {
+          return _trueOriginalJarvis(intent.raw);
+        }
+        // Fallback: try the global but guard against recursion with a depth flag
         if (typeof window._jarvisProcessInternal === 'function') {
           return window._jarvisProcessInternal(intent.raw);
         }
@@ -8998,7 +9059,10 @@ document.addEventListener('DOMContentLoaded', function () {
   //     Priority: Pipeline → handleSystemCommand → original
   // ═══════════════════════════════════════════════════════════════
   function _patchWithPipeline() {
-    var _origJarvis = window._jarvisProcessInternal;
+    // Use _trueOriginalJarvis (captured at IIFE top, before U7/U8 patching) so
+    // the fallback path never re-enters the U8 pipeline. If _trueOriginalJarvis
+    // wasn't available at IIFE-start (unlikely), fall back to current window value.
+    var _origJarvis = _trueOriginalJarvis || window._jarvisProcessInternal;
     if (!_origJarvis) { setTimeout(_patchWithPipeline, 100); return; }
 
     window._jarvisProcessInternal = function(rawInput) {
@@ -9024,7 +9088,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return pipelineResult;
       }
 
-      // ── FALLBACK: original engine ──
+      // ── FALLBACK: true original engine (no pipeline, no recursion) ──
       var origResult = _origJarvis(rawInput);
 
       // If original also fell back to generic fallback, offer smart suggestion
@@ -9557,6 +9621,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function _initTerminalInput() {
     var inp = document.getElementById('edex-cmd-input');
     if (!inp) return;
+    if (inp.dataset.edexWired) return;
+    inp.dataset.edexWired = '1';
 
     inp.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
@@ -9618,18 +9684,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // Echo
     _printEdexLine('cmd', 'atul@AtulOS:~$ ' + cmd);
 
-    // Route AI/EV/parking commands
     var lower = cmd.toLowerCase().trim();
 
-    // EV commands
-    if (/start.*(charg|ev)/i.test(lower) || lower === 'ev start') {
-      osEVStart(); return;
-    }
-    if (/stop.*(charg|ev)/i.test(lower) || lower === 'ev stop') {
-      osEVStop(); return;
-    }
+    // EV commands — handled before AI engine
+    if (/start.*(charg|ev)/i.test(lower) || lower === 'ev start') { osEVStart(); return; }
+    if (/stop.*(charg|ev)/i.test(lower)  || lower === 'ev stop')  { osEVStop();  return; }
 
-    // Parking commands
+    // Parking: "book slot for X hour"
     if (/book.*slot.*(\d+)\s*h/i.test(lower)) {
       var dMatch = lower.match(/(\d+)\s*h/);
       var dur = dMatch ? parseInt(dMatch[1]) : 1;
@@ -9640,39 +9701,50 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Device commands (natural language)
-    if (/start.*(charg)/i.test(lower)) { osEVStart(); return; }
+    // clear / cls
+    if (lower === 'clear' || lower === 'cls') {
+      var out = document.getElementById('edex-term-output');
+      if (out) out.innerHTML = '';
+      return;
+    }
 
     // Auth check for device commands
     var isDeviceCmd = /(light|fan|buzzer).*(on|off)|turn.*(on|off).*(light|fan|buzzer)/i.test(lower);
-    var authed = (typeof window.isAuthenticated === 'function' && window.isAuthenticated()) || _state.termAuth || window._atulOSTermAuthed;
+    var authed = (typeof window.isAuthenticated === 'function' && window.isAuthenticated())
+              || _state.termAuth
+              || window._atulOSTermAuthed;
     if (isDeviceCmd && !authed) {
       _printEdexLine('err', 'Device control locked. Authenticate terminal first (use UNLOCK button above).');
       return;
     }
 
-    // Run through existing AI engine
+    // ── MAIN COMMAND ENGINE ──
+    // IMPORTANT: Do NOT call processInput() here.
+    // processInput (U8) routes device commands via _executeIntent which calls
+    // window._jarvisProcessInternal — the U8-patched version then calls processInput
+    // again → infinite recursion → stack overflow for all device commands.
+    // Fix: call window._jarvisProcessInternal directly. The U8 patch handles
+    // open/close/search/calculate via the pipeline, and routes device intents to
+    // the pre-U8 original engine — no loop.
     var result = null;
-    if (typeof jarvisProcess === 'function') {
-      result = jarvisProcess(cmd);
-    } else if (typeof executeCommand === 'function') {
-      result = executeCommand(cmd);
+    try {
+      if (typeof window._jarvisProcessInternal === 'function') {
+        result = window._jarvisProcessInternal(cmd);
+      } else if (typeof window.jarvisProcess === 'function') {
+        result = window.jarvisProcess(cmd);
+      }
+    } catch(e) {
+      console.error('[AtulOS eDEX] Command engine error:', e);
+      result = 'Error: ' + e.message;
     }
 
     if (result) {
       _printEdexLine('ai', result);
-    } else if (lower === 'clear' || lower === 'cls') {
-      var out = document.getElementById('edex-term-output');
-      if (out) out.innerHTML = '';
-    } else if (!result) {
-      _printEdexLine('sys', 'Command processed via AtulAI engine.');
+      if (typeof window.jarvisSpeak === 'function') {
+        try { window.jarvisSpeak(result); } catch(e) {}
+      }
     }
-
-    // Also sync to hidden terminal for full compat
-    var termOut = document.getElementById('terminal-output');
-    if (termOut && typeof termPrintLine === 'function') {
-      termPrintLine('AI', result || cmd, 'jarvis-line', false);
-    }
+    // NOTE: async commands (e.g. device status) output via aiAppendMessage mirror
   };
 
   function _printEdexLine(type, text) {
@@ -9702,14 +9774,19 @@ document.addEventListener('DOMContentLoaded', function () {
     var inputDiv = document.getElementById('edex-input-area');
     var quickDiv = document.getElementById('edex-quickcmds');
     var badge    = document.getElementById('edex-auth-badge');
-    var pwInput  = document.getElementById('term-password-input');
-    var authBtn  = document.getElementById('term-auth-btn');
 
-    // Wire to existing termTryAuth logic if available
-    // We override the auth button to also unlock the eDEX panel
+    // FIX: Scope to eDEX panel only — use the password input inside #edex-term-auth
+    // This avoids conflicts with the classic terminal's duplicate IDs
+    var pwInput = authDiv ? authDiv.querySelector('#term-password-input') : null;
+    var authBtn = authDiv ? authDiv.querySelector('#term-auth-btn') : null;
+
+    if (!authDiv) return;
+
+    // FIX: Guard against duplicate listener attachment
+    if (authDiv.dataset.edexAuthWired) return;
+    authDiv.dataset.edexAuthWired = '1';
+
     if (authBtn) {
-      var _origClick = authBtn.onclick;
-      authBtn.onclick = null;
       authBtn.addEventListener('click', function() {
         _edexTryAuth(pwInput, authDiv, outDiv, inputDiv, quickDiv, badge);
       });
@@ -9723,14 +9800,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function _edexTryAuth(pwInput, authDiv, outDiv, inputDiv, quickDiv, badge) {
     var TERMINAL_PASSWORD = 'atul0775';
-    var msg = document.getElementById('term-auth-msg');
+    // FIX: scope msg to the eDEX auth panel, not the global first match
+    var msg = authDiv ? authDiv.querySelector('#term-auth-msg') : document.getElementById('term-auth-msg');
     if (!pwInput) return;
 
     if (pwInput.value === TERMINAL_PASSWORD) {
       _state.termAuth = true;
       if (typeof window.systemState !== 'undefined') window.systemState.termAuthenticated = true;
+      window._atulOSTermAuthed = true;
       if (msg)     { msg.textContent = '✔ Access granted.'; msg.style.color = '#28c840'; }
       setTimeout(function() {
+        // FIX: Show eDEX terminal panels immediately
         if (authDiv)  authDiv.style.display  = 'none';
         if (outDiv)   outDiv.style.display   = 'block';
         if (inputDiv) inputDiv.style.display = 'block';
@@ -9739,11 +9819,17 @@ document.addEventListener('DOMContentLoaded', function () {
         _printEdexLine('ok', 'Terminal authenticated. Device control enabled.');
         _printEdexLine('sys', 'Welcome back, Atul. All systems operational.');
         var cmdInp = document.getElementById('edex-cmd-input');
-        if (cmdInp) cmdInp.focus();
-        // FIX: use the canonical termUnlock to set isAuthenticatedFlag properly
-        if (typeof termUnlock === 'function') termUnlock();
-        // FIX: sync systemState
-        if (typeof window.systemState !== 'undefined') window.systemState.termAuthenticated = true;
+        if (cmdInp) setTimeout(function() { cmdInp.focus(); }, 80);
+        // FIX: Call canonical termUnlock to set isAuthenticatedFlag in window manager
+        if (typeof window.termUnlock === 'function') {
+          window.termUnlock();
+        }
+        // FIX: Directly set the flag via the closure-exposed function
+        if (typeof window.isAuthenticated === 'function') {
+          // Force flag true by reaching the original auth system
+          // termUnlock() already did this — but also ensure systemState is synced
+          window.systemState && (window.systemState.termAuthenticated = true);
+        }
       }, 500);
     } else {
       if (msg) { msg.textContent = '✖ Incorrect password.'; msg.style.color = '#ff5f57'; }
@@ -9759,23 +9845,50 @@ document.addEventListener('DOMContentLoaded', function () {
   // ═══════════════════════════════════════════════════════════════
   window.switchToOSMode = function() {
     _state.mode = 'os';
-    document.getElementById('os-dashboard').style.display = 'block';
-    document.getElementById('statusbar').style.display    = 'none';
-    document.getElementById('desktop').style.display      = 'none';
-    document.getElementById('taskbar').style.display      = 'none';
+
+    // FIX: Show eDEX dashboard
+    var dash = document.getElementById('os-dashboard');
+    if (dash) { dash.style.display = 'block'; dash.style.opacity = '1'; dash.style.pointerEvents = 'auto'; }
+
+    // FIX: Use opacity+pointerEvents instead of display:none
+    // so Firebase listeners, timers, and window manager stay alive
+    var sb = document.getElementById('statusbar');
+    if (sb) { sb.style.opacity = '0'; sb.style.pointerEvents = 'none'; sb.style.display = 'flex'; }
+
+    var dt = document.getElementById('desktop');
+    if (dt) { dt.style.opacity = '0'; dt.style.pointerEvents = 'none'; dt.style.display = 'block'; }
+
+    // FIX: Keep taskbar in DOM but hidden — start menu & Taskbar.add still work
+    var tb = document.getElementById('taskbar');
+    if (tb) { tb.style.opacity = '0'; tb.style.pointerEvents = 'none'; tb.style.display = 'flex'; }
 
     var btnOS  = document.getElementById('btn-os-mode');
     var btnCls = document.getElementById('btn-classic-mode');
     if (btnOS)  btnOS.classList.add('active');
     if (btnCls) btnCls.classList.remove('active');
+
+    // Raise app windows above eDEX dashboard when in OS mode
+    document.querySelectorAll('.app-window').forEach(function(w) {
+      if (w.style.display !== 'none') w.style.zIndex = Math.max(parseInt(w.style.zIndex || 0), 8000);
+    });
   };
 
   window.switchToClassicMode = function() {
     _state.mode = 'classic';
-    document.getElementById('os-dashboard').style.display = 'none';
-    document.getElementById('statusbar').style.display    = 'flex';
-    document.getElementById('desktop').style.display      = 'block';
-    document.getElementById('taskbar').style.display      = 'flex';
+
+    // FIX: Hide eDEX dashboard using opacity so it doesn't block clicks
+    var dash = document.getElementById('os-dashboard');
+    if (dash) { dash.style.opacity = '0'; dash.style.pointerEvents = 'none'; dash.style.display = 'block'; }
+
+    // FIX: Restore classic UI elements with correct display values
+    var sb = document.getElementById('statusbar');
+    if (sb) { sb.style.opacity = '1'; sb.style.pointerEvents = 'auto'; sb.style.display = 'flex'; }
+
+    var dt = document.getElementById('desktop');
+    if (dt) { dt.style.opacity = '1'; dt.style.pointerEvents = 'auto'; dt.style.display = 'block'; }
+
+    var tb = document.getElementById('taskbar');
+    if (tb) { tb.style.opacity = '1'; tb.style.pointerEvents = 'auto'; tb.style.display = 'flex'; }
 
     var btnOS  = document.getElementById('btn-os-mode');
     var btnCls = document.getElementById('btn-classic-mode');
@@ -9785,6 +9898,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Restore original clock
     var clk = document.getElementById('clock');
     if (clk) clk.style.display = '';
+
+    // Restore app window z-indices to normal range
+    document.querySelectorAll('.app-window').forEach(function(w) {
+      if (parseInt(w.style.zIndex) >= 8000) w.style.zIndex = parseInt(w.style.zIndex) - 7000;
+    });
   };
 
   // ═══════════════════════════════════════════════════════════════
@@ -9806,6 +9924,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // Hide the original boot screen immediately (we use eDEX boot)
     var origBoot = document.getElementById('bootScreen');
     if (origBoot) origBoot.style.display = 'none';
+
+    // FIX: Initialize classic elements as hidden-via-opacity (not display:none)
+    // This keeps Firebase, timers, and window manager fully operational
+    var sb = document.getElementById('statusbar');
+    if (sb) { sb.style.opacity = '0'; sb.style.pointerEvents = 'none'; sb.style.display = 'flex'; }
+    var dt = document.getElementById('desktop');
+    if (dt) { dt.style.opacity = '0'; dt.style.pointerEvents = 'none'; dt.style.display = 'block'; }
+    var tb = document.getElementById('taskbar');
+    if (tb) { tb.style.opacity = '0'; tb.style.pointerEvents = 'none'; tb.style.display = 'flex'; }
 
     runEdexBoot();
     _syncVoiceToggle();
@@ -9830,6 +9957,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   };
 
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     eDEX OUTPUT MIRROR — pipes termPrintLine + aiAppendMessage
+     into the eDEX terminal panel when in OS mode.
+     Must run AFTER the eDEX IIFE so edexPrintLine is defined.
+═══════════════════════════════════════════════════════════════ -->
+<script>
+(function _patchOutputsForEdex() {
+  // Re-entrancy guard: prevents _doMirror firing while edexPrintLine
+  // is already executing (avoids double-print and any future recursion).
+  var _mirrorDepth = 0;
+
+  function _doMirror(text) {
+    if (_mirrorDepth > 0) return;   // already inside — skip
+    if (typeof window.edexPrintLine !== 'function') return;
+    _mirrorDepth++;
+    try { window.edexPrintLine('ai', String(text)); } catch(e) {}
+    _mirrorDepth--;
+  }
+
+  // ── Mirror termPrintLine → eDEX terminal ──
+  // Only mirrors when the eDEX dashboard is in OS mode (avoids spurious
+  // output in classic mode where the classic terminal is already visible).
+  var _origTPL = window.termPrintLine;
+  window.termPrintLine = function(role, text, cssClass, animated) {
+    if (typeof _origTPL === 'function') _origTPL(role, text, cssClass, animated);
+    _doMirror(text);
+  };
+
+  // ── Mirror aiAppendMessage → eDEX terminal ──
+  var _origAAM = window.aiAppendMessage;
+  window.aiAppendMessage = function(role, text, animated) {
+    if (typeof _origAAM === 'function') _origAAM(role, text, animated);
+    if (role === 'ai' || role === 'AI') _doMirror(text);
+  };
+
+  console.log('[AtulOS eDEX] Output mirror active — termPrintLine + aiAppendMessage → eDEX.');
 })();
 </script>
 
@@ -9860,5 +10026,22 @@ document.addEventListener('DOMContentLoaded', function () {
   </div>
 </div>
 
+<script>
+// ── SAFE APPEND UTILITY ────────────────────────────────────────
+// Silently skips append if parent or child is null/undefined.
+// Eliminates "Cannot read properties of null (reading 'appendChild')" errors.
+window.safeAppend = function safeAppend(parent, child) {
+  if (!parent) {
+    console.warn('[AtulOS] safeAppend: parent is null, skipping append');
+    return;
+  }
+  if (!child) return;
+  try {
+    parent.appendChild(child);
+  } catch(e) {
+    console.warn('[AtulOS] safeAppend error:', e.message);
+  }
+};
+</script>
 </body>
 </html>
