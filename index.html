@@ -522,7 +522,7 @@ body {
   height: 44px; background: var(--card);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--border);
-  z-index: 8000; /* FIX: match statusbar z-index */
+  z-index: 5000;
   display: flex;
   align-items: center; padding: 0 12px; gap: 6px;
   overflow-x: auto; overflow-y: hidden;
@@ -1814,7 +1814,7 @@ body {
     var(--scan-line) 4px
   );
   pointer-events: none;
-  z-index: 9999;
+  z-index: 11;  /* just above os-dashboard(10), below app windows (100+) */
 }
 
 /* ── TOP STRIP (system bar) ── */
@@ -1828,7 +1828,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  z-index: 100;
+  z-index: 20;   /* above panels(default) and scanline(11), below app windows(100+) */
   box-shadow: 0 0 30px rgba(0,200,255,0.08);
 }
 .os-topbar-brand {
@@ -1882,6 +1882,8 @@ body {
   display: grid;
   grid-template-columns: 260px 1fr 280px;
   gap: 0;
+  overflow: hidden;   /* hard clip — nothing escapes the panel container */
+  align-items: stretch;
 }
 
 /* ── SHARED PANEL STYLES ── */
@@ -1891,6 +1893,9 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  min-width: 0;       /* CRITICAL: prevents grid children from blowing out their column */
+  min-height: 0;      /* CRITICAL: allows flex children to shrink below content size */
+  height: 100%;       /* fill grid row height so flex children are properly constrained */
 }
 .os-panel:last-child { border-right: none; }
 
@@ -1911,7 +1916,7 @@ body {
 }
 
 .os-panel-header {
-  padding: 8px 14px;
+  padding: 6px 14px;
   background: rgba(0,200,255,0.04);
   border-bottom: 1px solid var(--edex-border);
   font-size: 9px;
@@ -1950,29 +1955,38 @@ body {
 /* ── LEFT PANEL ── */
 #panel-left {
   background: linear-gradient(180deg, rgba(0,10,20,0.98) 0%, rgba(0,6,14,0.99) 100%);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .os-panel-body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
   position: relative;
   z-index: 1;
+  min-height: 0;      /* CRITICAL: flex children must be able to shrink below content size */
 }
-.os-panel-body::-webkit-scrollbar { width: 3px; }
-.os-panel-body::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius: 2px; }
+.os-panel-body::-webkit-scrollbar { width: 4px; }
+.os-panel-body::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+.os-panel-body::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.35); border-radius: 2px; }
+.os-panel-body::-webkit-scrollbar-thumb:hover { background: rgba(0,200,255,0.6); }
 
 /* System stats card */
 .os-stat-card {
   background: rgba(0,200,255,0.04);
   border: 1px solid var(--edex-border);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 7px 12px;
   position: relative;
   overflow: hidden;
+  min-width: 0;
 }
 .os-stat-card::after {
   content: '';
@@ -2026,7 +2040,7 @@ body {
   background: rgba(0,200,255,0.03);
   border: 1px solid rgba(0,200,255,0.12);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2088,6 +2102,7 @@ body {
   padding: 4px 0;
   border-bottom: 1px solid rgba(0,200,255,0.08);
   margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
 /* Network row */
@@ -2111,6 +2126,7 @@ body {
   border: 1px solid rgba(0,200,255,0.12);
   border-radius: 8px;
   padding: 10px 12px;
+  flex-shrink: 0;
 }
 .os-ev-mini-label { font-size: 8px; letter-spacing: 2px; color: rgba(0,200,255,0.5); text-transform: uppercase; margin-bottom: 8px; }
 .os-ev-battery-wrap { display: flex; align-items: center; gap: 8px; }
@@ -2146,6 +2162,9 @@ body {
   border-right: 1px solid var(--edex-border);
   display: flex;
   flex-direction: column;
+  overflow: hidden;   /* prevent terminal output from escaping panel bounds */
+  min-width: 0;
+  min-height: 0;
 }
 
 /* Terminal area in center panel */
@@ -2164,6 +2183,7 @@ body {
   line-height: 1.7;
   position: relative;
   z-index: 1;
+  min-height: 0;      /* allow terminal output to shrink so input area stays visible */
 }
 #edex-term-output::-webkit-scrollbar { width: 4px; }
 #edex-term-output::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius: 2px; }
@@ -2284,6 +2304,11 @@ body {
 #panel-right {
   background: linear-gradient(180deg, rgba(0,8,18,0.98) 0%, rgba(2,4,10,0.99) 100%);
   border-left: 1px solid var(--edex-border);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden; /* panel clips to its bounds; panel-body handles internal scroll */
+  display: flex;
+  flex-direction: column;
 }
 
 /* EV charging card */
@@ -2291,9 +2316,12 @@ body {
   background: rgba(0,200,255,0.04);
   border: 1px solid var(--edex-border);
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
+  flex-shrink: 0;
 }
 .os-ev-card::before {
   content: '';
@@ -2307,7 +2335,7 @@ body {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: rgba(0,200,255,0.5);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2342,10 +2370,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .os-ev-pct-num {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--edex-cyan);
   text-shadow: 0 0 16px rgba(0,200,255,0.6);
@@ -2401,8 +2429,8 @@ body {
   justify-content: space-between;
   font-size: 9px;
   color: rgba(255,255,255,0.3);
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 5px;
+  padding-top: 5px;
   border-top: 1px solid rgba(0,200,255,0.08);
 }
 .os-ev-info-val { color: rgba(0,200,255,0.7); font-weight: 700; }
@@ -2412,9 +2440,11 @@ body {
   background: rgba(0,200,255,0.03);
   border: 1px solid var(--edex-border);
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
 }
 .os-parking-card::before {
   content: '';
@@ -2464,7 +2494,7 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .os-park-stat {
   text-align: center;
@@ -2640,8 +2670,8 @@ body {
   font-size: 10px;
 }
 .os-sensor-row:last-child { border-bottom: none; }
-.os-sensor-name { color: rgba(255,255,255,0.4); letter-spacing: 0.5px; }
-.os-sensor-val  { color: var(--edex-cyan); font-weight: 700; }
+.os-sensor-name { color: rgba(255,255,255,0.4); letter-spacing: 0.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.os-sensor-val  { color: var(--edex-cyan); font-weight: 700; flex-shrink: 0; }
 
 /* ── RESPONSIVE HIDE for very small screens ── */
 @media (max-width: 900px) {
@@ -2682,9 +2712,8 @@ body {
 /* Controlled via JS opacity/pointerEvents — no CSS needed here */
 
 /* ── FIX: App windows need higher z-index than eDEX dashboard ── */
-.app-window {
-  z-index: 500; /* raised from implicit 0 — ensures above os-dashboard z:10 */
-}
+/* App windows use dynamic z-index managed by window manager (starts at 100, increments) */
+/* os-dashboard is z:10 so dynamic z-index always beats it naturally */
 
 /* ── GLOW ACCENT LINE animation ── */
 @keyframes glow-sweep {
@@ -2850,10 +2879,6 @@ body.ai-speaking #ai-orb .ai-orb-label {
 /* Speaking indicator - use correct left-aligned animation */
 #speaking-indicator[style*="flex"] { animation: fadeSlideUpLeft 0.2s ease forwards; }
 
-/* Voice toggle button consistent colors */
-#voice-toggle-btn.voice-on  { color: #28c840 !important; }
-#voice-toggle-btn.voice-off { color: #ff5f57 !important; }
-
 </style>
 </head>
 <body>
@@ -3004,7 +3029,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="os-topbar-brand">ATULOS</div>
     <div class="os-topbar-center">UNIFIED INTELLIGENCE INTERFACE v2.2</div>
     <div class="os-topbar-right">
-      <button id="voice-toggle-btn" class="voice-on os-topbar-icon" style="background:transparent;border:none;cursor:pointer;font-size:12px;letter-spacing:1px;" title="Toggle voice">🔊 VOICE</button>
+      <button id="edex-voice-btn" class="voice-on os-topbar-icon" style="background:transparent;border:none;cursor:pointer;font-size:12px;letter-spacing:1px;" title="Toggle voice" onclick="if(VoiceState.enabled)jarvisTTSOff();else jarvisTTSOn();updateVoiceToggleUI();">🔊 VOICE</button>
       <i class="fa-solid fa-wifi os-topbar-icon" title="WiFi"></i>
       <i class="fa-solid fa-battery-three-quarters os-topbar-icon" title="Battery"></i>
       <a href="https://github.com/atul-singh-07" target="_blank" rel="noopener noreferrer" title="GitHub" style="color:inherit;text-decoration:none;"><i class="fab fa-github os-topbar-icon"></i></a>
@@ -3313,7 +3338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <span>AtulOS &nbsp;·&nbsp; Atul Singh</span>
   </div>
   <div class="status-right">
-    <button id="voice-toggle-btn-classic" class="voice-on" title="Toggle voice output" onclick="if(typeof updateVoiceToggleUI==='function')updateVoiceToggleUI()">🔊 Voice ON</button>
+    <button id="voice-toggle-btn" class="voice-on" title="Toggle voice output">🔊 Voice ON</button>
     <button id="voice-settings-open-btn" title="Voice Settings" style="background:transparent;border:none;cursor:pointer;color:var(--fg);font-size:13px;opacity:0.7;padding:2px 4px;" onclick="openVoiceSettings()">⚙️</button>
     <i class="fa-solid fa-wifi" title="WiFi Connected"></i>
     <i class="fa-solid fa-battery-three-quarters" title="Battery 75%"></i>
@@ -3968,6 +3993,35 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
+<!-- ── TASKBAR ── -->
+<div id="taskbar" role="toolbar" aria-label="Minimized windows taskbar">
+  <!-- START BUTTON injected by initStartMenu() JS below -->
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     START MENU PANEL
+════════════════════════════════════════════════════════════════ -->
+<div id="start-menu" role="dialog" aria-label="Start Menu" aria-modal="false">
+  <div id="start-search-wrap">
+    <i id="start-search-icon" class="fa-solid fa-magnifying-glass"></i>
+    <input id="start-search" type="text" placeholder="Search apps&#x2026;" autocomplete="off" aria-label="Search apps" />
+  </div>
+  <span class="start-section-label">All Apps</span>
+  <div id="start-app-grid" role="list"></div>
+  <div id="start-no-results">No apps found</div>
+  <div class="start-divider"></div>
+  <div id="start-footer">
+    <div class="start-footer-user">
+      <div class="start-footer-avatar">A</div>
+      <span>AtulOS User</span>
+    </div>
+    <button class="start-power-btn" title="Reload AtulOS" onclick="location.reload()" aria-label="Reload AtulOS">
+      <i class="fa-solid fa-power-off"></i>
+    </button>
+  </div>
+</div>
+
+
 <!-- ══════════════════════════════════════════════════════════════
      FIREBASE SDK
 ════════════════════════════════════════════════════════════════ -->
@@ -4279,35 +4333,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateVoiceToggleUI() {
-  // FIX: update systemState first
-  if (typeof systemState !== 'undefined') systemState.voiceEnabled = VoiceState.enabled;
+  // ── Classic statusbar button — identical to stable file ──
+  const btn = document.getElementById('voice-toggle-btn');
+  if (!btn) return;
+  if (VoiceState.enabled) {
+    btn.textContent = '🔊 Voice ON';
+    btn.className   = 'voice-on';
+    btn.title       = 'Click to turn voice OFF';
+  } else {
+    btn.textContent = '🔇 Voice OFF';
+    btn.className   = 'voice-off';
+    btn.title       = 'Click to turn voice ON';
+  }
 
-  // FIX: handle eDEX topbar button (preserves os-topbar-icon class)
-  const topBtn = document.getElementById('voice-toggle-btn');
-  if (topBtn) {
-    if (VoiceState.enabled) {
-      topBtn.textContent = '🔊 VOICE';
-      topBtn.classList.remove('voice-off');
-      topBtn.classList.add('voice-on');
-      topBtn.title = 'Click to disable voice';
-    } else {
-      topBtn.textContent = '🔇 VOICE';
-      topBtn.classList.remove('voice-on');
-      topBtn.classList.add('voice-off');
-      topBtn.title = 'Click to enable voice';
-    }
-  }
-  // FIX: also update classic statusbar button
-  const classicBtn = document.getElementById('voice-toggle-btn-classic');
-  if (classicBtn) {
-    if (VoiceState.enabled) {
-      classicBtn.textContent = '🔊 Voice ON';
-      classicBtn.className   = 'voice-on';
-    } else {
-      classicBtn.textContent = '🔇 Voice OFF';
-      classicBtn.className   = 'voice-off';
-    }
-  }
+  // ── About panel voice metric ──
   const voiceVal = document.getElementById('jap-voice-val');
   const voiceBar = document.getElementById('jap-voice-bar');
   if (voiceVal) {
@@ -4319,6 +4358,12 @@ function updateVoiceToggleUI() {
     voiceBar.style.background = VoiceState.enabled
       ? 'linear-gradient(90deg,#28c840,#00d4ff)'
       : 'linear-gradient(90deg,#ff5f57,#ff8a80)';
+  }
+
+  // ── eDEX topbar button (separate element, separate ID) ──
+  const edexBtn = document.getElementById('edex-voice-btn');
+  if (edexBtn) {
+    edexBtn.textContent = VoiceState.enabled ? '🔊 VOICE' : '🔇 VOICE';
   }
 }
 
@@ -9998,33 +10043,6 @@ document.addEventListener('DOMContentLoaded', function () {
   console.log('[AtulOS eDEX] Output mirror active — termPrintLine + aiAppendMessage → eDEX.');
 })();
 </script>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     ORIGINAL TASKBAR (needed for classic mode & app windows)
-═══════════════════════════════════════════════════════════════ -->
-<div id="taskbar" role="toolbar" aria-label="Minimized windows taskbar" style="display:none;">
-</div>
-
-<!-- START MENU -->
-<div id="start-menu" role="dialog" aria-label="Start Menu" aria-modal="false">
-  <div id="start-search-wrap">
-    <i id="start-search-icon" class="fa-solid fa-magnifying-glass"></i>
-    <input id="start-search" type="text" placeholder="Search apps&#x2026;" autocomplete="off" aria-label="Search apps" />
-  </div>
-  <span class="start-section-label">All Apps</span>
-  <div id="start-app-grid" role="list"></div>
-  <div id="start-no-results">No apps found</div>
-  <div class="start-divider"></div>
-  <div id="start-footer">
-    <div class="start-footer-user">
-      <div class="start-footer-avatar">A</div>
-      <span>AtulOS User</span>
-    </div>
-    <button class="start-power-btn" title="Reload AtulOS" onclick="location.reload()" aria-label="Reload AtulOS">
-      <i class="fa-solid fa-power-off"></i>
-    </button>
-  </div>
-</div>
 
 <script>
 // ── SAFE APPEND UTILITY ────────────────────────────────────────
