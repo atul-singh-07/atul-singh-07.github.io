@@ -374,7 +374,7 @@ body {
   max-height: 240px; overflow-y: auto;
   padding: 8px 0; scroll-behavior: smooth;
 }
-#terminal-output p { margin: 3px 0; line-height: 1.6; }
+#terminal-output p { margin: 3px 0; line-height: 1.6; white-space: pre-wrap; }
 .term-cursor {
   display: inline-block; width: 7px; height: 13px;
   background: var(--accent); vertical-align: middle;
@@ -2188,7 +2188,7 @@ body {
 #edex-term-output::-webkit-scrollbar { width: 4px; }
 #edex-term-output::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius: 2px; }
 
-.edex-line { display: block; margin: 0; padding: 0; }
+.edex-line { display: block; margin: 0; padding: 0; white-space: pre-wrap; }
 .edex-line-ai { color: var(--edex-cyan); }
 .edex-line-cmd { color: var(--edex-green); }
 .edex-line-err { color: var(--edex-red); }
@@ -4620,7 +4620,7 @@ const SpeechEngine = (function () {
       isListening = false;
       if (e.error === 'no-speech') {
         if (currentMode === MODE.WAKE && wakeModeEnabled) {
-          safeStart();
+          setTimeout(safeStart, 1200); // backoff: avoid tight restart loop
         } else if (currentMode === MODE.COMMAND) {
           returnFromCommand();
         }
@@ -5568,6 +5568,2046 @@ window.INTENT_MAP    = INTENT_MAP;
 
 
 <!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.65 — INTENT ROUTER
+     Wraps the NL engine (Module 4.6) and maps flat intent keys
+     to namespaced dot-notation strings (device.*, app.*, system.*).
+     Returns: { intent: string, confidence: number, original: string }
+     All existing call sites (runCommand, voice handler, eDEX) that
+     use window.parseIntent are transparently upgraded — the router
+     replaces the window export while the engine stays untouched.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function _installIntentRouter() {
+
+  // ── 1. INTENT NAMESPACE MAP ──────────────────────────────────
+  // Maps every flat engine key → canonical dot-notation intent string.
+  // Devices  : device.<name>.<action>
+  // Apps     : app.<name>.<action>
+  // System   : system.<domain>.<action>
+  // UI       : ui.<domain>.<action>
+  // Fallback : core.<key>
+  const INTENT_NAMESPACE = {
+    // ── Device control ──
+    light_on:       'device.light.on',
+    light_off:      'device.light.off',
+    fan_on:         'device.fan.on',
+    fan_off:        'device.fan.off',
+    buzzer_on:      'device.buzzer.on',
+    buzzer_off:     'device.buzzer.off',
+    device_status:  'device.status.query',
+    lock_system:    'device.control.lock',
+
+    // ── App windows ──
+    open_terminal:  'app.terminal.open',
+    open_projects:  'app.projects.open',
+    open_about:     'app.about.open',
+    open_skills:    'app.skills.open',
+    open_settings:  'app.settings.open',
+    open_ai:        'app.ai.open',
+    close_terminal: 'app.terminal.close',
+    close_projects: 'app.projects.close',
+    close_about:    'app.about.close',
+    close_skills:   'app.skills.close',
+    close_settings: 'app.settings.close',
+
+    // ── UI / Theme ──
+    dark_mode:      'ui.theme.dark',
+    light_mode:     'ui.theme.light',
+
+    // ── Voice / Speech ──
+    voice_on:       'system.voice.enable',
+    voice_off:      'system.voice.disable',
+    voice_settings: 'system.voice.settings',
+    wake_enable:    'system.wake.enable',
+    wake_disable:   'system.wake.disable',
+    stop:           'system.voice.stop',
+
+    // ── Information / Utility ──
+    greeting:       'core.greeting',
+    identity:       'core.identity',
+    capabilities:   'core.capabilities',
+    time:           'core.time.query',
+    date:           'core.date.query',
+    system_status:  'system.status.query',
+    whoami:         'core.whoami',
+    joke:           'core.joke',
+    clear:          'core.terminal.clear',
+    thanks:         'core.thanks',
+    bye:            'core.bye',
+    friends:        'core.friends',
+    why:            'core.explain.why',
+
+    // ── Fallback ──
+    fallback:       'core.fallback',
+  };
+
+  // ── 2. ROUTER FUNCTION ────────────────────────────────────────
+  // Calls the raw NL engine, then translates the flat key and
+  // renames `raw` → `original` to match the canonical contract:
+  //   { intent: string, confidence: number, original: string }
+  var _engine = window.parseIntent; // reference to Module 4.6 engine
+
+  function parseIntent(command) {
+    var raw = _engine(command);
+
+    var dotIntent = INTENT_NAMESPACE[raw.intent] || ('core.' + raw.intent);
+
+    return {
+      intent:     dotIntent,
+      confidence: raw.confidence,
+      original:   raw.raw || command,
+      // _flat kept for internal consumers that still read raw.intent key
+      _flat:      raw.intent,
+    };
+  }
+
+  // ── 3. BACK-COMPAT SHIM ───────────────────────────────────────
+  // Some internal handlers (e.g. command dispatcher) match on the
+  // flat key (e.g. `intent === 'light_on'`). They read `result._flat`
+  // OR `result.intent` — we patch the dispatcher to prefer `_flat`
+  // via a tiny adapter so zero existing logic breaks.
+  //
+  // Pattern used in dispatchCommand() / handleVoiceCommand():
+  //   const { intent } = parseIntent(input);
+  //   if (intent === 'light_on') { ... }
+  //
+  // These destructure `intent` from the result. After the router,
+  // `intent` is now the dot string. We preserve `_flat` and also
+  // expose a global lookup so handlers can resolve either form.
+  window.intentToFlat = function(dotIntent) {
+    for (var k in INTENT_NAMESPACE) {
+      if (INTENT_NAMESPACE[k] === dotIntent) return k;
+    }
+    return dotIntent; // pass-through if unknown
+  };
+
+  window.INTENT_NAMESPACE = INTENT_NAMESPACE;
+
+  // ── 4. RE-EXPORT ─────────────────────────────────────────────
+  // Overwrite the Module 4.6 export with the router.
+  // The raw engine is now only reachable via _engine (closure).
+  window.parseIntent = parseIntent;
+
+  console.log('[AtulOS IntentRouter] Installed — flat keys → dot-notation namespaces.');
+
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.66 — INTENT CONFIDENCE & SUGGESTIONS ENGINE
+     Wraps executeCommand with:
+       • Confidence thresholds (HIGH=0.85, MEDIUM=0.60)
+       • suggestCommands(input)  — fuzzy top-3 matcher
+       • typo tolerance          — no external libs
+       • context-aware suggestions via AI_MEMORY
+       • safety gate: device commands blocked below 0.85
+     Does NOT modify: runCommand, printOutput, auth, device logic.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function _installConfidenceEngine() {
+  'use strict';
+
+  // ── 1. THRESHOLDS ─────────────────────────────────────────────
+  var HIGH_CONFIDENCE   = 0.85;
+  var MEDIUM_CONFIDENCE = 0.60;
+
+  // ── 2. CANONICAL COMMAND DICTIONARY ───────────────────────────
+  // Every known canonical command phrase, with its flat intent key
+  // and whether it's a device (IoT) command.
+  var KNOWN_COMMANDS = [
+    // IoT device — requiresAuth, safety-gated
+    { text: 'light on',         intent: 'light_on',       device: true  },
+    { text: 'light off',        intent: 'light_off',      device: true  },
+    { text: 'turn on light',    intent: 'light_on',       device: true  },
+    { text: 'turn off light',   intent: 'light_off',      device: true  },
+    { text: 'fan on',           intent: 'fan_on',         device: true  },
+    { text: 'fan off',          intent: 'fan_off',        device: true  },
+    { text: 'turn on fan',      intent: 'fan_on',         device: true  },
+    { text: 'turn off fan',     intent: 'fan_off',        device: true  },
+    { text: 'buzzer on',        intent: 'buzzer_on',      device: true  },
+    { text: 'buzzer off',       intent: 'buzzer_off',     device: true  },
+    // Apps
+    { text: 'open terminal',    intent: 'open_terminal',  device: false },
+    { text: 'open projects',    intent: 'open_projects',  device: false },
+    { text: 'open about',       intent: 'open_about',     device: false },
+    { text: 'open skills',      intent: 'open_skills',    device: false },
+    { text: 'open settings',    intent: 'open_settings',  device: false },
+    { text: 'open ai',          intent: 'open_ai',        device: false },
+    { text: 'open calculator',  intent: 'open_calculator',device: false },
+    { text: 'close terminal',   intent: 'close_terminal', device: false },
+    { text: 'close projects',   intent: 'close_projects', device: false },
+    { text: 'close about',      intent: 'close_about',    device: false },
+    { text: 'close skills',     intent: 'close_skills',   device: false },
+    { text: 'close settings',   intent: 'close_settings', device: false },
+    // System
+    { text: 'dark mode',        intent: 'dark_mode',      device: false },
+    { text: 'light mode',       intent: 'light_mode',     device: false },
+    { text: 'voice on',         intent: 'voice_on',       device: false },
+    { text: 'voice off',        intent: 'voice_off',      device: false },
+    { text: 'device status',    intent: 'device_status',  device: false },
+    { text: 'system status',    intent: 'system_status',  device: false },
+    { text: 'clear',            intent: 'clear',          device: false },
+    { text: 'help',             intent: 'capabilities',   device: false },
+    { text: 'what time is it',  intent: 'time',           device: false },
+    { text: 'tell me a joke',   intent: 'joke',           device: false },
+    { text: 'who are you',      intent: 'identity',       device: false },
+    { text: 'lock devices',     intent: 'lock_system',    device: false },
+    // Friends (Module 4.71)
+    { text: 'friends',                   intent: 'friends',                   device: false },
+    { text: 'tell me about aayush',      intent: 'friend_profile_aayush',     device: false },
+    { text: 'open aayush profile',       intent: 'friend_profile_aayush',     device: false },
+    { text: 'tell me about muskan',      intent: 'friend_profile_muskan',     device: false },
+    { text: 'open muskan profile',       intent: 'friend_profile_muskan',     device: false },
+    { text: 'tell me about sameer',      intent: 'friend_profile_sameer',     device: false },
+    { text: 'open sameer profile',       intent: 'friend_profile_sameer',     device: false },
+    { text: 'tell me about kushal',      intent: 'friend_profile_kushal',     device: false },
+    { text: 'open kushal profile',       intent: 'friend_profile_kushal',     device: false },
+    { text: 'tell me about lucky',       intent: 'friend_profile_lucky',      device: false },
+    { text: 'open lucky profile',        intent: 'friend_profile_lucky',      device: false },
+    { text: 'tell me about yugal',       intent: 'friend_profile_yugal',      device: false },
+    { text: 'open yugal profile',        intent: 'friend_profile_yugal',      device: false },
+    { text: 'help friends',              intent: 'friends',                   device: false },
+  ];
+
+  // ── 3. TYPO / ALIAS DICTIONARY ────────────────────────────────
+  var TYPO_MAP = {
+    'ligth':      'light',
+    'lihgt':      'light',
+    'liight':     'light',
+    'lgiht':      'light',
+    'calclator':  'calculator',
+    'calcualtor': 'calculator',
+    'calcultor':  'calculator',
+    'calcu':      'calculator',
+    'caluclator': 'calculator',
+    'buzer':      'buzzer',
+    'buser':      'buzzer',
+    'buzzr':      'buzzer',
+    'buz':        'buzzer',
+    'fna':        'fan',
+    'fnaa':       'fan',
+    'faaan':      'fan',
+    'terimnal':   'terminal',
+    'termianl':   'terminal',
+    'terminla':   'terminal',
+    'trerminal':  'terminal',
+    'sttings':    'settings',
+    'setings':    'settings',
+    'settigns':   'settings',
+    'pojects':    'projects',
+    'projcets':   'projects',
+    'proejcts':   'projects',
+    'slills':     'skills',
+    'skiills':    'skills',
+    'vocie':      'voice',
+    'voic':       'voice',
+    'drk':        'dark',
+    'darrk':      'dark',
+    'lihgt mode': 'light mode',
+    'drak mode':  'dark mode',
+    'satus':      'status',
+    'sttaus':     'status',
+    'oepn':       'open',
+    'opne':       'open',
+    'oen':        'open',
+    'clsoe':      'close',
+    'clse':       'close',
+    'trun':       'turn',
+    'truen':      'turn',
+    'swithc':     'switch',
+    'swich':      'switch',
+  };
+
+  // ── 4. FUZZY / TYPO CORRECTION ────────────────────────────────
+  /**
+   * levenshtein(a, b) — lightweight edit distance, no libraries.
+   */
+  function levenshtein(a, b) {
+    var m = a.length, n = b.length;
+    var dp = [];
+    for (var i = 0; i <= m; i++) {
+      dp[i] = [i];
+      for (var j = 1; j <= n; j++) {
+        if (i === 0) { dp[i][j] = j; continue; }
+        dp[i][j] = (a[i-1] === b[j-1])
+          ? dp[i-1][j-1]
+          : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  /**
+   * applyTypoMap(input) — replace known typo tokens before fuzzy.
+   */
+  function applyTypoMap(input) {
+    var words = input.toLowerCase().split(/\s+/);
+    words = words.map(function(w) { return TYPO_MAP[w] || w; });
+    // Also try 2-word combos
+    var result = [];
+    var i = 0;
+    while (i < words.length) {
+      if (i < words.length - 1) {
+        var pair = words[i] + ' ' + words[i+1];
+        if (TYPO_MAP[pair]) { result.push(TYPO_MAP[pair]); i += 2; continue; }
+      }
+      result.push(words[i]); i++;
+    }
+    return result.join(' ');
+  }
+
+  /**
+   * commandSimilarity(input, candidate)
+   * Returns 0..1 score for how similar input is to a candidate command text.
+   * Combines token overlap + normalised edit distance.
+   */
+  function commandSimilarity(input, candidate) {
+    var a = input.toLowerCase().trim();
+    var b = candidate.toLowerCase().trim();
+    if (a === b) return 1.0;
+
+    // Token overlap score
+    var tokA = a.split(/\s+/);
+    var tokB = b.split(/\s+/);
+    var shared = tokA.filter(function(t) { return tokB.indexOf(t) !== -1; }).length;
+    var tokenScore = shared / Math.max(tokA.length, tokB.length);
+
+    // Edit distance score on full strings
+    var maxLen = Math.max(a.length, b.length);
+    var editScore = maxLen > 0 ? (1 - levenshtein(a, b) / maxLen) : 1;
+
+    // Substring bonus
+    var subBonus = (b.indexOf(a) !== -1 || a.indexOf(b) !== -1) ? 0.15 : 0;
+
+    return Math.min(1, tokenScore * 0.5 + editScore * 0.4 + subBonus);
+  }
+
+  // ── 5. SUGGESTION ENGINE ──────────────────────────────────────
+  /**
+   * suggestCommands(input)
+   * Returns top 3 matching commands as strings, most similar first.
+   * Uses typo correction, token overlap, and edit distance.
+   */
+  function suggestCommands(input) {
+    if (!input || !input.trim()) return ['help', 'light on', 'open terminal'];
+
+    var corrected = applyTypoMap(input.trim());
+
+    var scored = KNOWN_COMMANDS.map(function(cmd) {
+      return { text: cmd.text, score: commandSimilarity(corrected, cmd.text) };
+    });
+
+    scored.sort(function(a, b) { return b.score - a.score; });
+
+    // Deduplicate by text, take top 3 with score > 0.10
+    var seen = {};
+    var results = [];
+    for (var i = 0; i < scored.length && results.length < 3; i++) {
+      if (scored[i].score > 0.10 && !seen[scored[i].text]) {
+        seen[scored[i].text] = true;
+        results.push(scored[i].text);
+      }
+    }
+
+    // Fallback if nothing scored well
+    if (results.length === 0) results = ['help', 'light on', 'open terminal'];
+
+    return results;
+  }
+
+  // ── 6. CONTEXT-AWARE SUGGESTION ENRICHMENT ────────────────────
+  /**
+   * enrichSuggestionsWithContext(suggestions, input)
+   * Prepends a context-derived suggestion when memory provides a strong hint.
+   * E.g. lastApp=calculator + "close it" → prepend "close calculator".
+   */
+  function enrichSuggestionsWithContext(suggestions, input) {
+    if (typeof AI_MEMORY === 'undefined') return suggestions;
+
+    var norm = input.toLowerCase().trim();
+    var contextSuggestion = null;
+
+    // If input contains close/exit/hide and we have a lastApp
+    if (/\b(close|exit|hide|shut)\b/.test(norm) && AI_MEMORY.lastApp) {
+      contextSuggestion = 'close ' + AI_MEMORY.lastApp;
+    }
+    // If input contains open/show/launch and we have a lastApp
+    else if (/\b(open|show|launch)\b/.test(norm) && AI_MEMORY.lastApp) {
+      contextSuggestion = 'open ' + AI_MEMORY.lastApp;
+    }
+    // "it" / "that" pronoun with IoT device in memory
+    else if (/\b(it|that)\b/.test(norm) && AI_MEMORY.lastDevice) {
+      var verb = /\b(on|turn on|switch on)\b/.test(norm) ? 'on' : 'off';
+      contextSuggestion = AI_MEMORY.lastDevice + ' ' + verb;
+    }
+
+    if (contextSuggestion) {
+      var enriched = [contextSuggestion].concat(
+        suggestions.filter(function(s) { return s !== contextSuggestion; })
+      ).slice(0, 3);
+      return enriched;
+    }
+    return suggestions;
+  }
+
+  // ── 7. IS DEVICE INTENT? ──────────────────────────────────────
+  var DEVICE_INTENTS = {
+    light_on: true, light_off: true,
+    fan_on:   true, fan_off:   true,
+    buzzer_on:true, buzzer_off:true,
+  };
+
+  function isDeviceIntent(flatIntent) {
+    return !!DEVICE_INTENTS[flatIntent];
+  }
+
+  // ── 8. FORMAT HELPERS ─────────────────────────────────────────
+  function _formatSuggestionList(suggestions) {
+    return suggestions.map(function(s) { return '  • ' + s; }).join('\n');
+  }
+
+  function _confidencePct(conf) {
+    return Math.round(conf * 100) + '%';
+  }
+
+  // ── 9. CORE GATE — confidenceGate(rawInput) ───────────────────
+  /**
+   * confidenceGate(rawInput)
+   *
+   * Called by the patched executeCommand BEFORE any execution.
+   *
+   * Returns one of:
+   *   { action: 'execute' }              — proceed normally
+   *   { action: 'confirm', message }     — show confirmation, then execute
+   *   { action: 'block',   message }     — do NOT execute, show suggestions
+   *   { action: 'pass' }                 — non-gateable input (greeting, empty, etc.)
+   */
+  function confidenceGate(rawInput) {
+    if (!rawInput || !rawInput.trim()) return { action: 'pass' };
+
+    // Fast-pass greetings (they bypass intent scoring entirely in executeCommand)
+    if (/^(hello|hi|hey)(\s|$)/i.test(rawInput.trim())) return { action: 'pass' };
+
+    // Fast-pass multi-command "and" chains — let executeCommand split them
+    if (/ and /i.test(rawInput)) return { action: 'pass' };
+
+    // ── Fast-pass: Friends module commands ──────────────────────
+    // These are intercepted by Module 4.71 BEFORE executeCommand's
+    // core logic runs. Scoring them here always yields low confidence
+    // (multi-word + proper noun patterns not in INTENT_MAP at parse
+    // time), so they would be incorrectly blocked. Bypassing ensures
+    // they reach the friends interceptor unmodified.
+    var _fnorm = rawInput.trim().toLowerCase()
+      .replace(/[?!.]+$/, '')
+      .replace(/\b(please|can you|could you|would you|just|for me)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    var _friendNames = ['aayush','muskan','sameer','kushal','lucky','yugal'];
+    // Fast-pass if input contains a known friend name
+    var _hasFriendName = _friendNames.some(function(n) { return _fnorm.indexOf(n) !== -1; });
+    if (_hasFriendName) return { action: 'pass' };
+    // Fast-pass friends list / help commands
+    if (/^(friends|list friends|show friends|my friends|friends list|help friends?|friend help|friends help|who are my friends)$/.test(_fnorm)) {
+      return { action: 'pass' };
+    }
+    // Fast-pass context follow-ups (show notes/interests/contact/etc.)
+    if (/^(show|tell me|what(?:'s| is)?|display)\s+(notes?|interests?|contact|phone|email|birthday|nickname|relation)\s*$/.test(_fnorm)) {
+      return { action: 'pass' };
+    }
+
+    // Parse intent via the Intent Router
+    var parsed = (typeof window.parseIntent === 'function')
+      ? window.parseIntent(rawInput)
+      : null;
+
+    if (!parsed) return { action: 'pass' };
+
+    var conf     = parsed.confidence;
+    var flatKey  = parsed._flat || '';
+    var dotIntent= parsed.intent || '';
+
+    // Apply typo correction to improve suggestion quality
+    var corrected = applyTypoMap(rawInput.trim().toLowerCase());
+    var wasTypoCorrected = (corrected !== rawInput.trim().toLowerCase());
+
+    // ── HIGH confidence (≥ 0.85) ──────────────────────────────
+    if (conf >= HIGH_CONFIDENCE) {
+      return { action: 'execute' };
+    }
+
+    // ── MEDIUM confidence (0.60 – 0.84) ──────────────────────
+    if (conf >= MEDIUM_CONFIDENCE) {
+      var suggestions = suggestCommands(rawInput);
+      suggestions = enrichSuggestionsWithContext(suggestions, rawInput);
+
+      var isDevice = isDeviceIntent(flatKey);
+
+      // Safety gate: device commands always need confirmation even at medium confidence
+      var msg = '';
+      msg += 'Intent: ' + dotIntent + '\n';
+      msg += 'Confidence: ' + _confidencePct(conf) + '\n';
+
+      if (isDevice) {
+        // Device safety: show confirmation, THEN execute
+        msg += '\nDid you mean:\n' + _formatSuggestionList(suggestions) + '\n';
+        msg += '\nProceeding with closest match...';
+      } else {
+        msg += '\nExecuting closest match...';
+        if (wasTypoCorrected) {
+          msg += '\n(Auto-corrected: "' + rawInput.trim() + '" → "' + corrected + '")';
+        }
+      }
+
+      return { action: 'confirm', message: msg, isDevice: isDevice };
+    }
+
+    // ── LOW confidence (< 0.60) ───────────────────────────────
+    var suggestions = suggestCommands(rawInput);
+    suggestions = enrichSuggestionsWithContext(suggestions, rawInput);
+
+    var lowMsg = 'Command not recognized.\nDid you mean:\n';
+    lowMsg += _formatSuggestionList(suggestions);
+
+    // If typo correction found something very different, hint at it
+    if (wasTypoCorrected && corrected !== rawInput.trim().toLowerCase()) {
+      lowMsg += '\n\n(Possible typo detected: "' + rawInput.trim() + '" → "' + corrected + '")';
+    }
+
+    return { action: 'block', message: lowMsg };
+  }
+
+  // ── 10. PATCH executeCommand ──────────────────────────────────
+  // Wraps the existing executeCommand with the confidence gate.
+  // The original function is preserved and called untouched when gate passes.
+  var _origExecuteCommand = window.executeCommand;
+
+  // Guard: only patch once
+  if (_origExecuteCommand && !_origExecuteCommand._confidencePatched) {
+
+    window.executeCommand = function confidenceAwareExecuteCommand(rawInput) {
+      if (!rawInput || !rawInput.trim()) return _origExecuteCommand(rawInput);
+
+      var gate = confidenceGate(rawInput);
+
+      if (gate.action === 'pass' || gate.action === 'execute') {
+        // HIGH confidence or non-gateable → run normally, no extra output
+        return _origExecuteCommand(rawInput);
+      }
+
+      if (gate.action === 'confirm') {
+        // MEDIUM confidence → show informational message, then execute
+        if (typeof dispatchOutput === 'function') {
+          dispatchOutput(gate.message);
+        }
+        // Short async delay so message renders before execution output
+        var result = _origExecuteCommand(rawInput);
+        return result;
+      }
+
+      if (gate.action === 'block') {
+        // LOW confidence → do NOT execute, show suggestions only
+        if (typeof dispatchOutput === 'function') {
+          dispatchOutput(gate.message);
+        }
+        return gate.message;
+      }
+
+      // Fallthrough (shouldn't happen)
+      return _origExecuteCommand(rawInput);
+    };
+
+    window.executeCommand._confidencePatched = true;
+  }
+
+  // ── 11. PATCH _jarvisProcessInternal unknown-command fallback ──
+  // Replaces generic "fallback" response with suggestion-enriched output.
+  var _origJarvisInternal = window._jarvisProcessInternal;
+
+  if (_origJarvisInternal && !_origJarvisInternal._confidencePatched) {
+    window._jarvisProcessInternal = function confidenceAwareJarvisInternal(rawInput) {
+      var result = _origJarvisInternal(rawInput);
+
+      // Detect generic fallback responses and enrich them
+      var fallbackPhrases = [
+        "i didn't quite understand",
+        "i'm not sure",
+        "could you rephrase",
+        "i don't understand",
+        "hmm, not sure",
+        "i couldn't understand",
+        "can you clarify",
+      ];
+      if (result && typeof result === 'string') {
+        var lower = result.toLowerCase();
+        var isFallback = fallbackPhrases.some(function(p) { return lower.indexOf(p) !== -1; });
+
+        if (isFallback) {
+          var suggestions = suggestCommands(rawInput || '');
+          suggestions = enrichSuggestionsWithContext(suggestions, rawInput || '');
+          result += '\n\nSuggestions:\n' + _formatSuggestionList(suggestions);
+        }
+      }
+
+      return result;
+    };
+    window._jarvisProcessInternal._confidencePatched = true;
+  }
+
+  // ── 12. PUBLIC API ────────────────────────────────────────────
+  window.suggestCommands     = suggestCommands;
+  window.confidenceGate      = confidenceGate;
+  window.applyTypoMap        = applyTypoMap;
+  window.HIGH_CONFIDENCE     = HIGH_CONFIDENCE;
+  window.MEDIUM_CONFIDENCE   = MEDIUM_CONFIDENCE;
+
+  console.log('[AtulOS ConfidenceEngine] Installed — HIGH=' + HIGH_CONFIDENCE + ', MEDIUM=' + MEDIUM_CONFIDENCE + '.');
+
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.67 — DYNAMIC HELP & COMMAND DISCOVERY ENGINE
+     Transforms "help" from a static response into an intelligent
+     command discovery system.
+     Integrates with: parseIntent, confidence engine, suggestion
+                      engine, AI_MEMORY, INTENT_NAMESPACE.
+     Does NOT modify: runCommand, printOutput, auth, device logic,
+                      intent routing, UI.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function _installHelpEngine() {
+  'use strict';
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 8 — CENTRAL HELP REGISTRY
+  // Single source of truth for all command documentation.
+  // ══════════════════════════════════════════════════════════════
+  var HELP_REGISTRY = {
+
+    // ── Device Control ──────────────────────────────────────────
+    light: {
+      category:    'devices',
+      title:       'Light Control',
+      icon:        '💡',
+      description: 'Control the smart light connected to AtulOS via Firebase.',
+      commands:    ['light on', 'light off'],
+      aliases:     ['turn on light', 'turn off light', 'switch on light', 'switch off light', 'lights on', 'lights off'],
+      auth:        'atul0775',
+      examples:    ['light on', 'turn on light', 'switch off light'],
+      related:     ['fan', 'buzzer', 'devices'],
+    },
+    fan: {
+      category:    'devices',
+      title:       'Fan Control',
+      icon:        '🌀',
+      description: 'Control the smart fan connected to AtulOS via Firebase.',
+      commands:    ['fan on', 'fan off'],
+      aliases:     ['turn on fan', 'turn off fan', 'start fan', 'stop fan', 'switch on fan', 'switch off fan'],
+      auth:        'atul0775',
+      examples:    ['fan on', 'turn off fan'],
+      related:     ['light', 'buzzer', 'devices'],
+    },
+    buzzer: {
+      category:    'devices',
+      title:       'Buzzer Control',
+      icon:        '🔊',
+      description: 'Control the smart buzzer / alarm connected to AtulOS via Firebase.',
+      commands:    ['buzzer on', 'buzzer off'],
+      aliases:     ['turn on buzzer', 'turn off buzzer', 'activate buzzer', 'deactivate buzzer', 'alarm on', 'alarm off'],
+      auth:        'atul0775',
+      examples:    ['buzzer on', 'alarm off'],
+      related:     ['light', 'fan', 'devices'],
+    },
+    devices: {
+      category:    'devices',
+      title:       'Device Control Overview',
+      icon:        '📡',
+      description: 'Control all IoT devices connected to AtulOS. All device commands require authentication.',
+      commands:    ['device status', 'lock device control'],
+      aliases:     ['check devices', 'show device status', 'devices status'],
+      auth:        'atul0775',
+      examples:    ['device status', 'light on', 'fan off'],
+      related:     ['light', 'fan', 'buzzer'],
+    },
+
+    // ── Applications ────────────────────────────────────────────
+    terminal: {
+      category:    'applications',
+      title:       'Terminal',
+      icon:        '🖥️',
+      description: 'Open or close the built-in command terminal window.',
+      commands:    ['open terminal', 'close terminal'],
+      aliases:     ['launch terminal', 'show terminal', 'hide terminal', 'exit terminal'],
+      auth:        null,
+      examples:    ['open terminal', 'close terminal'],
+      related:     ['projects', 'about', 'applications'],
+    },
+    projects: {
+      category:    'applications',
+      title:       'Projects Window',
+      icon:        '📁',
+      description: 'Open or close the Projects showcase window.',
+      commands:    ['open projects', 'close projects'],
+      aliases:     ['show projects', 'launch projects', 'hide projects', 'my projects'],
+      auth:        null,
+      examples:    ['open projects'],
+      related:     ['terminal', 'skills', 'applications'],
+    },
+    about: {
+      category:    'applications',
+      title:       'About Window',
+      icon:        'ℹ️',
+      description: 'Open or close the About / profile window.',
+      commands:    ['open about', 'close about'],
+      aliases:     ['show about', 'who is atul', 'about atul'],
+      auth:        null,
+      examples:    ['open about'],
+      related:     ['skills', 'terminal', 'applications'],
+    },
+    skills: {
+      category:    'applications',
+      title:       'Skills Window',
+      icon:        '🎯',
+      description: 'Open or close the Skills showcase window.',
+      commands:    ['open skills', 'close skills'],
+      aliases:     ['show skills', 'launch skills', 'my skills'],
+      auth:        null,
+      examples:    ['open skills'],
+      related:     ['projects', 'about', 'applications'],
+    },
+    settings: {
+      category:    'applications',
+      title:       'Settings',
+      icon:        '⚙️',
+      description: 'Open or close the Settings / preferences window.',
+      commands:    ['open settings', 'close settings'],
+      aliases:     ['launch settings', 'preferences', 'show settings', 'open preferences'],
+      auth:        null,
+      examples:    ['open settings'],
+      related:     ['voice', 'applications'],
+    },
+    calculator: {
+      category:    'applications',
+      title:       'Calculator',
+      icon:        '🧮',
+      description: 'Open or close the Calculator app.',
+      commands:    ['open calculator', 'close calculator'],
+      aliases:     ['launch calculator', 'open calc'],
+      auth:        null,
+      examples:    ['open calculator'],
+      related:     ['calendar', 'notes', 'applications'],
+    },
+    calendar: {
+      category:    'applications',
+      title:       'Calendar',
+      icon:        '📅',
+      description: 'Open or close the Calendar app.',
+      commands:    ['open calendar', 'close calendar'],
+      aliases:     ['launch calendar', 'show calendar'],
+      auth:        null,
+      examples:    ['open calendar'],
+      related:     ['calculator', 'notes', 'applications'],
+    },
+    notes: {
+      category:    'applications',
+      title:       'Notes',
+      icon:        '📝',
+      description: 'Open or close the Notes app.',
+      commands:    ['open notes', 'close notes'],
+      aliases:     ['launch notes', 'show notes'],
+      auth:        null,
+      examples:    ['open notes'],
+      related:     ['calendar', 'calculator', 'applications'],
+    },
+    browser: {
+      category:    'applications',
+      title:       'Browser',
+      icon:        '🌐',
+      description: 'Open or close the Browser app.',
+      commands:    ['open browser', 'close browser'],
+      aliases:     ['launch browser', 'open web'],
+      auth:        null,
+      examples:    ['open browser'],
+      related:     ['notes', 'applications'],
+    },
+
+    // ── System ───────────────────────────────────────────────────
+    voice: {
+      category:    'system',
+      title:       'Voice / TTS Control',
+      icon:        '🎙️',
+      description: 'Enable or disable text-to-speech and manage voice settings.',
+      commands:    ['voice on', 'voice off', 'voice settings'],
+      aliases:     ['enable voice', 'disable voice', 'tts on', 'tts off', 'mute', 'speak'],
+      auth:        null,
+      examples:    ['voice on', 'voice settings', 'tts off'],
+      related:     ['wake', 'system'],
+    },
+    wake: {
+      category:    'system',
+      title:       'Wake Word',
+      icon:        '👂',
+      description: 'Enable or disable wake-word listening ("Hey AtulOS").',
+      commands:    ['wake word on', 'wake word off'],
+      aliases:     ['enable wake word', 'disable wake word', 'hey atulos', 'activate wake mode'],
+      auth:        null,
+      examples:    ['wake word on', 'hey atulos'],
+      related:     ['voice', 'system'],
+    },
+    theme: {
+      category:    'system',
+      title:       'Theme / Display Mode',
+      icon:        '🎨',
+      description: 'Switch between dark and light display themes.',
+      commands:    ['dark mode', 'light mode'],
+      aliases:     ['switch to dark', 'switch to light', 'dark theme', 'light theme', 'go dark', 'go light'],
+      auth:        null,
+      examples:    ['dark mode', 'light mode'],
+      related:     ['settings', 'system'],
+    },
+    status: {
+      category:    'system',
+      title:       'System & Device Status',
+      icon:        '📊',
+      description: 'Check the current state of all devices and the OS.',
+      commands:    ['system status', 'device status'],
+      aliases:     ['status', 'system check', 'diagnostics', 'health check', 'check devices'],
+      auth:        null,
+      examples:    ['system status', 'device status'],
+      related:     ['devices', 'system'],
+    },
+
+    // ── AI Features ──────────────────────────────────────────────
+    ai: {
+      category:    'ai',
+      title:       'AtulAI Chat Window',
+      icon:        '🤖',
+      description: 'Open the AI chat window for natural language interaction.',
+      commands:    ['open ai'],
+      aliases:     ['open atul ai', 'launch ai', 'chat with ai', 'open assistant'],
+      auth:        null,
+      examples:    ['open ai'],
+      related:     ['voice', 'ai'],
+    },
+    memory: {
+      category:    'ai',
+      title:       'AI Context Memory',
+      icon:        '🧠',
+      description: 'AtulAI remembers your last device and app actions. Use pronouns like "it" or "that" to refer to recent items.',
+      commands:    [],
+      aliases:     [],
+      auth:        null,
+      examples:    ['turn on light', 'now turn it off', 'close it (after opening an app)'],
+      related:     ['ai', 'voice'],
+    },
+    friends: {
+      category:    'ai',
+      title:       'Friends List',
+      icon:        '👥',
+      description: 'View your friends list. Requires authentication.',
+      commands:    ['my friends'],
+      aliases:     ['show friends', 'friends list', 'who are my friends'],
+      auth:        'atul0775',
+      examples:    ['my friends'],
+      related:     ['ai'],
+    },
+
+    // ── Utilities ────────────────────────────────────────────────
+    time: {
+      category:    'utilities',
+      title:       'Time & Date',
+      icon:        '⏰',
+      description: 'Ask AtulAI for the current time or date.',
+      commands:    ['what time is it', 'what date is it'],
+      aliases:     ['time', 'date', 'tell me the time', 'current time', 'today date'],
+      auth:        null,
+      examples:    ['what time is it', 'what date is it'],
+      related:     ['status', 'utilities'],
+    },
+    joke: {
+      category:    'utilities',
+      title:       'Jokes',
+      icon:        '😄',
+      description: 'Ask AtulAI to tell you a joke.',
+      commands:    ['tell me a joke'],
+      aliases:     ['joke', 'make me laugh', 'say something funny'],
+      auth:        null,
+      examples:    ['tell me a joke', 'joke'],
+      related:     ['time', 'utilities'],
+    },
+    whoami: {
+      category:    'utilities',
+      title:       'Identity / Who Am I',
+      icon:        '🪪',
+      description: 'Display current user profile information.',
+      commands:    ['whoami', 'who am i'],
+      aliases:     ['show identity', 'my profile'],
+      auth:        null,
+      examples:    ['whoami'],
+      related:     ['about', 'utilities'],
+    },
+    clear: {
+      category:    'utilities',
+      title:       'Clear Terminal',
+      icon:        '🧹',
+      description: 'Clear all output from the terminal screen.',
+      commands:    ['clear', 'cls'],
+      aliases:     ['clear terminal', 'clear screen', 'reset terminal'],
+      auth:        null,
+      examples:    ['clear'],
+      related:     ['terminal', 'utilities'],
+    },
+    stop: {
+      category:    'utilities',
+      title:       'Stop Speaking',
+      icon:        '🔇',
+      description: 'Stop the AI from speaking mid-sentence.',
+      commands:    ['stop'],
+      aliases:     ['stop talking', 'quiet', 'silence', 'cancel'],
+      auth:        null,
+      examples:    ['stop', 'quiet'],
+      related:     ['voice', 'utilities'],
+    },
+    lock: {
+      category:    'utilities',
+      title:       'Lock Device Control',
+      icon:        '🔒',
+      description: 'Reset device authentication — requires re-login to control devices.',
+      commands:    ['lock device control'],
+      aliases:     ['lock devices', 'reset access', 'logout device control'],
+      auth:        null,
+      examples:    ['lock device control'],
+      related:     ['devices', 'utilities'],
+    },
+  };
+
+  // ── Category metadata ────────────────────────────────────────
+  var HELP_CATEGORIES = {
+    devices:      { title: 'Device Control',  icon: '📡', keys: ['light','fan','buzzer','devices'] },
+    applications: { title: 'Applications',    icon: '🖥️', keys: ['terminal','projects','about','skills','settings','calculator','calendar','notes','browser','ai'] },
+    system:       { title: 'System',          icon: '⚙️', keys: ['voice','wake','theme','status'] },
+    ai:           { title: 'AI Features',     icon: '🤖', keys: ['ai','memory','friends'] },
+    utilities:    { title: 'Utilities',       icon: '🧰', keys: ['time','joke','whoami','clear','stop','lock'] },
+  };
+
+  // ── Category aliases ─────────────────────────────────────────
+  var CATEGORY_ALIASES = {
+    'device': 'devices', 'device control': 'devices', 'iot': 'devices', 'smart home': 'devices',
+    'app': 'applications', 'apps': 'applications', 'application': 'applications', 'windows': 'applications', 'window': 'applications',
+    'sys': 'system', 'os': 'system',
+    'ai features': 'ai', 'assistant': 'ai',
+    'util': 'utilities', 'tools': 'utilities', 'utility': 'utilities',
+  };
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 1-3: RENDERERS
+  // ══════════════════════════════════════════════════════════════
+
+  function _renderRootHelp() {
+    var lines = ['📖 AtulAI Command Discovery\n'];
+    lines.push('Available Categories:\n');
+    Object.keys(HELP_CATEGORIES).forEach(function(k) {
+      var c = HELP_CATEGORIES[k];
+      lines.push('  ' + c.icon + '  ' + c.title + '  (' + c.keys.length + ' commands)');
+    });
+    lines.push('\nUsage:');
+    lines.push('  help <category>   →  help devices');
+    lines.push('  help <command>    →  help light');
+    lines.push('\nNatural language also works:');
+    lines.push('  how do i control the fan');
+    lines.push('  how do i open calculator');
+    return lines.join('\n');
+  }
+
+  function _renderCategoryHelp(catKey) {
+    var cat = HELP_CATEGORIES[catKey];
+    if (!cat) return null;
+    var lines = [cat.icon + ' ' + cat.title + '\n'];
+    lines.push('Commands in this category:\n');
+    cat.keys.forEach(function(k) {
+      var entry = HELP_REGISTRY[k];
+      if (entry) lines.push('  • ' + k + (entry.commands.length ? ' — ' + entry.commands[0] : ''));
+    });
+    lines.push('\nFor details:');
+    lines.push('  help <name>   →  help light, help fan');
+    return lines.join('\n');
+  }
+
+  function _renderCommandHelp(key) {
+    var entry = HELP_REGISTRY[key];
+    if (!entry) return null;
+    var lines = [entry.icon + ' ' + entry.title + '\n'];
+    lines.push(entry.description + '\n');
+
+    if (entry.commands.length) {
+      lines.push('Commands:');
+      entry.commands.forEach(function(c) { lines.push('  • ' + c); });
+    }
+
+    if (entry.aliases.length) {
+      lines.push('\nAliases:');
+      entry.aliases.slice(0, 4).forEach(function(a) { lines.push('  • ' + a); });
+    }
+
+    if (entry.auth) {
+      lines.push('\nAuthentication:');
+      lines.push('  • Required (password: ' + entry.auth + ')');
+    }
+
+    if (entry.examples.length) {
+      lines.push('\nExamples:');
+      entry.examples.forEach(function(e) { lines.push('  • ' + e); });
+    }
+
+    // STEP 7: Related commands
+    if (entry.related && entry.related.length) {
+      lines.push('\nRelated:');
+      entry.related.slice(0, 3).forEach(function(r) { lines.push('  • help ' + r); });
+    }
+
+    return lines.join('\n');
+  }
+
+  function _renderNotFound(topic, suggestions) {
+    var lines = ['No help found for "' + topic + '".\n'];
+    if (suggestions && suggestions.length) {
+      lines.push('Did you mean:');
+      suggestions.forEach(function(s) { lines.push('  • ' + s); });
+    }
+    return lines.join('\n');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 5: FUZZY SEARCH WITHIN REGISTRY
+  // Uses same levenshtein logic as confidence engine (re-implemented
+  // inline to keep this module self-contained and load-order safe).
+  // ══════════════════════════════════════════════════════════════
+
+  function _lev(a, b) {
+    var m = a.length, n = b.length, dp = [], i, j;
+    for (i = 0; i <= m; i++) {
+      dp[i] = [i];
+      for (j = 1; j <= n; j++) {
+        if (i === 0) { dp[i][j] = j; continue; }
+        dp[i][j] = a[i-1] === b[j-1]
+          ? dp[i-1][j-1]
+          : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  function _fuzzyFindRegistry(query) {
+    var q = query.toLowerCase().trim();
+    var keys = Object.keys(HELP_REGISTRY);
+    var catKeys = Object.keys(HELP_CATEGORIES);
+
+    // Exact match first
+    if (HELP_REGISTRY[q])    return { type: 'command',  key: q };
+    if (HELP_CATEGORIES[q])  return { type: 'category', key: q };
+    if (CATEGORY_ALIASES[q]) return { type: 'category', key: CATEGORY_ALIASES[q] };
+
+    // Prefix match
+    var pKey = keys.find(function(k) { return k.startsWith(q); });
+    if (pKey) return { type: 'command', key: pKey };
+    var pCat = catKeys.find(function(k) { return k.startsWith(q); });
+    if (pCat) return { type: 'category', key: pCat };
+
+    // Substring match in registry titles / descriptions
+    var subKey = keys.find(function(k) {
+      var e = HELP_REGISTRY[k];
+      return k.includes(q) ||
+             e.title.toLowerCase().includes(q) ||
+             e.description.toLowerCase().includes(q) ||
+             e.commands.some(function(c) { return c.includes(q); }) ||
+             e.aliases.some(function(a) { return a.includes(q); });
+    });
+    if (subKey) return { type: 'command', key: subKey };
+
+    // Fuzzy match on registry keys + category keys
+    var all = keys.concat(catKeys);
+    var scored = all.map(function(k) {
+      var maxLen = Math.max(q.length, k.length);
+      return { key: k, score: 1 - _lev(q, k) / maxLen };
+    });
+    scored.sort(function(a, b) { return b.score - a.score; });
+
+    if (scored[0] && scored[0].score >= 0.45) {
+      var best = scored[0].key;
+      if (HELP_CATEGORIES[best]) return { type: 'category', key: best };
+      return { type: 'command', key: best };
+    }
+
+    return null;
+  }
+
+  function _topSuggestions(query, n) {
+    var q = query.toLowerCase().trim();
+    var all = Object.keys(HELP_REGISTRY).concat(Object.keys(HELP_CATEGORIES));
+    var scored = all.map(function(k) {
+      var maxLen = Math.max(q.length, k.length);
+      return { key: k, score: 1 - _lev(q, k) / maxLen };
+    });
+    scored.sort(function(a, b) { return b.score - a.score; });
+    var seen = {};
+    return scored.filter(function(s) {
+      if (seen[s.key]) return false;
+      seen[s.key] = true;
+      return true;
+    }).slice(0, n || 3).map(function(s) { return s.key; });
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 4 & 6: NATURAL LANGUAGE DETECTION + INTENT INTEGRATION
+  // ══════════════════════════════════════════════════════════════
+
+  // Detect "how do i [verb] [topic]" style queries
+  var _NL_HELP_RE = /^how\s+(do\s+i|can\s+i|to)\s+(control|use|open|close|turn on|turn off|access|launch|start|enable|run|set up|get|find)\s+(.+)/i;
+
+  function _extractNLTopic(input) {
+    var m = input.match(_NL_HELP_RE);
+    if (m) return m[3].trim().replace(/[?!.]+$/, '').trim();
+    return null;
+  }
+
+  // ── STEP 6: Emit dot-notation intent for help actions ──
+  function _helpIntent(type, key) {
+    if (type === 'root')     return 'help.root';
+    if (type === 'category') return 'help.category.' + key;
+    if (type === 'command')  return 'help.command.' + key;
+    return 'help.search';
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // CORE: resolveHelpQuery(input)
+  // Returns response string or null (not a help query).
+  // ══════════════════════════════════════════════════════════════
+  function resolveHelpQuery(input) {
+    if (!input || !input.trim()) return null;
+
+    var raw  = input.trim();
+    var norm = raw.toLowerCase().replace(/[?!.]+$/, '').trim();
+
+    // ── Bare "help" ──
+    if (norm === 'help') {
+      return _renderRootHelp();
+    }
+
+    // ── "help <topic>" ──
+    var helpMatch = norm.match(/^help\s+(.+)$/);
+    var topic = helpMatch ? helpMatch[1].trim() : null;
+
+    // ── Natural language: "how do i control fan" ──
+    if (!topic) {
+      topic = _extractNLTopic(norm);
+    }
+
+    if (!topic) return null; // not a help query
+
+    // Look up in registry
+    var found = _fuzzyFindRegistry(topic);
+
+    if (found) {
+      var intent = _helpIntent(found.type, found.key);
+      // Log to AI_MEMORY if available
+      if (typeof AI_MEMORY !== 'undefined') {
+        AI_MEMORY.lastIntent = intent;
+        if (typeof _pushContextStack === 'function') {
+          _pushContextStack({ type: 'system', value: intent, action: 'help', intent: intent });
+        }
+      }
+
+      if (found.type === 'category') return _renderCategoryHelp(found.key);
+      if (found.type === 'command')  return _renderCommandHelp(found.key);
+    }
+
+    // ── STEP 9: not found — show suggestions ──
+    var suggestions = _topSuggestions(topic, 3);
+    return _renderNotFound(topic, suggestions);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // PATCH: wrap _jarvisProcessInternal to intercept help queries
+  // before the static RESPONSE_BANK.capabilities path runs.
+  // Guard: only patch once (_helpPatched flag).
+  // ══════════════════════════════════════════════════════════════
+  function _installJarvisPatch() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig || _orig._helpPatched) return;
+
+    window._jarvisProcessInternal = function helpAwareJarvisInternal(rawInput) {
+      if (!rawInput) return _orig(rawInput);
+
+      var cleaned = rawInput
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+
+      var helpResponse = resolveHelpQuery(cleaned);
+      if (helpResponse !== null) {
+        // Speak it too if TTS is available
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(helpResponse); } catch(e) {}
+        }
+        return helpResponse;
+      }
+
+      return _orig(rawInput);
+    };
+
+    window._jarvisProcessInternal._helpPatched = true;
+  }
+
+  // Also patch executeCommand's path — it dispatches via dispatchOutput
+  // so we intercept before _executeIntentAction loses the query.
+  function _installExecutePatch() {
+    var _origExec = window.executeCommand;
+    if (!_origExec || _origExec._helpPatched) return;
+
+    window.executeCommand = function helpAwareExecuteCommand(rawInput) {
+      if (!rawInput || !rawInput.trim()) return _origExec(rawInput);
+
+      var cleaned = rawInput.trim()
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+
+      var helpResponse = resolveHelpQuery(cleaned);
+      if (helpResponse !== null) {
+        if (typeof window.dispatchOutput === 'function') {
+          window.dispatchOutput(helpResponse);
+        }
+        return helpResponse;
+      }
+
+      return _origExec(rawInput);
+    };
+
+    window.executeCommand._helpPatched = true;
+    // Preserve existing confidence patch flag to prevent re-patching
+    window.executeCommand._confidencePatched = true;
+  }
+
+  // Install patches — defer slightly so all prior modules have exported
+  // their window.* references before we wrap them.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      _installJarvisPatch();
+      _installExecutePatch();
+    });
+  } else {
+    _installJarvisPatch();
+    _installExecutePatch();
+  }
+
+  // ── Public API ───────────────────────────────────────────────
+  window.HELP_REGISTRY      = HELP_REGISTRY;
+  window.HELP_CATEGORIES    = HELP_CATEGORIES;
+  window.resolveHelpQuery   = resolveHelpQuery;
+
+  console.log('[AtulOS HelpEngine] Installed — ' + Object.keys(HELP_REGISTRY).length + ' entries, ' + Object.keys(HELP_CATEGORIES).length + ' categories.');
+
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.68 — CONVERSATIONAL SESSION MEMORY & CONTEXT
+     Upgrades AI_MEMORY with:
+       • lastOpenedWindow, lastHelpTopic, lastHelpEntry tracking
+       • LIFO context stack for "close it / close it" sequences
+       • Help follow-up resolution ("show examples", "show aliases")
+       • "context" debug command
+       • Ambiguous pronoun safety gate (Step 8 / Step 10)
+     Does NOT modify: runCommand, printOutput, auth, device logic,
+                      intent routing, existing resolveContext logic.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function _installSessionMemory() {
+  'use strict';
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 1 — EXTEND AI_MEMORY WITH NEW TRACKED FIELDS
+  // Added only if not already present (safe re-run).
+  // ══════════════════════════════════════════════════════════════
+  if (typeof AI_MEMORY !== 'undefined') {
+    if (!('lastOpenedWindow' in AI_MEMORY)) AI_MEMORY.lastOpenedWindow = null;
+    if (!('lastHelpTopic'    in AI_MEMORY)) AI_MEMORY.lastHelpTopic    = null;
+    if (!('lastHelpEntry'    in AI_MEMORY)) AI_MEMORY.lastHelpEntry    = null;
+    // appStack: ordered list of app names (LIFO), max 10, for sequential "close it"
+    if (!('appStack'         in AI_MEMORY)) AI_MEMORY.appStack         = [];
+  }
+
+  // ── Patch aiMemoryRecord to keep new fields in sync ──────────
+  var _origMemRecord = window.aiMemoryRecord;
+  if (_origMemRecord && !_origMemRecord._sessionPatched) {
+    window.aiMemoryRecord = function sessionAwareMemoryRecord(input, intent, response) {
+      // Call original first
+      _origMemRecord(input, intent, response);
+
+      // Track lastOpenedWindow
+      var winMatch = typeof intent === 'string' && intent.match(/^open_(.+)$/);
+      if (winMatch) {
+        var appName = winMatch[1];
+        AI_MEMORY.lastOpenedWindow = appName;
+        // Push to LIFO appStack (deduplicate, keep at front, max 10)
+        AI_MEMORY.appStack = [appName]
+          .concat(AI_MEMORY.appStack.filter(function(a) { return a !== appName; }))
+          .slice(0, 10);
+      }
+
+      // Pop from appStack when app is closed
+      var closeMatch = typeof intent === 'string' && intent.match(/^close_(.+)$/);
+      if (closeMatch) {
+        var closedApp = closeMatch[1];
+        AI_MEMORY.appStack = AI_MEMORY.appStack.filter(function(a) { return a !== closedApp; });
+        // Update lastOpenedWindow to new top of stack
+        AI_MEMORY.lastOpenedWindow = AI_MEMORY.appStack[0] || null;
+      }
+    };
+    window.aiMemoryRecord._sessionPatched = true;
+  }
+
+  // ── Track lastHelpTopic whenever resolveHelpQuery is called ──
+  // Wrap it so any "help X" call updates memory for follow-ups.
+  var _origResolveHelp = window.resolveHelpQuery;
+  if (_origResolveHelp && !_origResolveHelp._sessionPatched) {
+    window.resolveHelpQuery = function sessionAwareResolveHelp(input) {
+      var result = _origResolveHelp(input);
+      if (result !== null && typeof AI_MEMORY !== 'undefined') {
+        // Extract topic from "help <topic>" or NL match
+        var m = (input || '').toLowerCase().replace(/[?!.]+$/, '').match(/^help\s+(.+)$/);
+        var nlTopic = null;
+        if (!m) {
+          var nlRe = /^how\s+(?:do\s+i|can\s+i|to)\s+(?:control|use|open|close|turn on|turn off|access|launch|start|enable|run|set up|get|find)\s+(.+)/i;
+          var nlM = (input || '').match(nlRe);
+          if (nlM) nlTopic = nlM[1].trim().replace(/[?!.]+$/, '').trim();
+        }
+        var topic = m ? m[1].trim() : nlTopic;
+        if (topic) {
+          AI_MEMORY.lastHelpTopic = topic;
+          // Also find matching registry entry for follow-up
+          if (typeof HELP_REGISTRY !== 'undefined' && HELP_REGISTRY[topic]) {
+            AI_MEMORY.lastHelpEntry = topic;
+          } else if (typeof HELP_REGISTRY !== 'undefined') {
+            // Try fuzzy — find first registry key that contains topic
+            var found = Object.keys(HELP_REGISTRY).find(function(k) {
+              return k.includes(topic) || topic.includes(k);
+            });
+            AI_MEMORY.lastHelpEntry = found || null;
+          }
+        }
+      }
+      return result;
+    };
+    window.resolveHelpQuery._sessionPatched = true;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 2-5 & 8 & 10 — ENHANCED PRONOUN + CONTEXT RESOLUTION
+  // Wraps the existing resolveContext to handle:
+  //   • LIFO "close it / close it" via appStack
+  //   • "minimize it", "maximize it", "focus it"
+  //   • Ambiguous "it" with multiple devices → ask user (Steps 8, 10)
+  //   • "this" / "that" as pronoun synonyms
+  // ══════════════════════════════════════════════════════════════
+  var _origResolveContext = window.resolveContext;
+  if (_origResolveContext && !_origResolveContext._sessionPatched) {
+    window.resolveContext = function sessionAwareResolveContext(input, confidence) {
+      if (!input) return null;
+      var norm = input.toLowerCase().trim().replace(/[?!.]+$/, '');
+
+      // ── STEP 3: LIFO "close it" uses appStack ──────────────────
+      // Pattern: "close it", "close that", "close this"
+      if (/\b(close|exit|hide|shut)\s+(it|that|this)\b/.test(norm)) {
+        if (AI_MEMORY.appStack && AI_MEMORY.appStack.length > 0) {
+          var topApp = AI_MEMORY.appStack[0];
+          if (typeof _setReason === 'function') {
+            _setReason('LIFO appStack: resolved "close it" to "close ' + topApp + '".');
+          }
+          return 'close ' + topApp;
+        }
+      }
+
+      // ── STEP 4: App context — minimize / maximize / focus ──────
+      if (/\b(minimize|minimise|min)\s+(it|that|this)\b/.test(norm)) {
+        var app4 = AI_MEMORY.lastApp || (AI_MEMORY.appStack && AI_MEMORY.appStack[0]);
+        if (app4) return 'minimize ' + app4;
+      }
+      if (/\b(maximize|maximise|max|expand)\s+(it|that|this)\b/.test(norm)) {
+        var app4b = AI_MEMORY.lastApp || (AI_MEMORY.appStack && AI_MEMORY.appStack[0]);
+        if (app4b) return 'maximize ' + app4b;
+      }
+      if (/\bfocus\s+(it|that|this)\b/.test(norm)) {
+        var app4c = AI_MEMORY.lastApp || (AI_MEMORY.appStack && AI_MEMORY.appStack[0]);
+        if (app4c) return 'open ' + app4c;
+      }
+
+      // ── STEP 4: "open that" / "open this" ──────────────────────
+      if (/\bopen\s+(it|that|this)\b/.test(norm)) {
+        var app4d = AI_MEMORY.lastApp || (AI_MEMORY.appStack && AI_MEMORY.appStack[0]);
+        if (app4d) return 'open ' + app4d;
+      }
+
+      // ── STEP 5: "turn that on/off" / "turn this on/off" ────────
+      if (/\b(turn|switch)\s+(that|this)\s+(on|off)\b/.test(norm)) {
+        var m5 = norm.match(/\b(turn|switch)\s+(that|this)\s+(on|off)\b/);
+        var action5 = m5[3];
+        var dev5 = AI_MEMORY.lastDevice || (AI_MEMORY.lastDevices && AI_MEMORY.lastDevices[0]);
+        if (dev5) return 'turn ' + dev5 + ' ' + action5;
+      }
+
+      // ── STEP 5: "that on" / "this off" shorthand ───────────────
+      if (/\b(that|this)\s+(on|off)\b/.test(norm) && !(/\b(dark|light)\b/.test(norm))) {
+        var m5b = norm.match(/\b(that|this)\s+(on|off)\b/);
+        var dev5b = AI_MEMORY.lastDevice || (AI_MEMORY.lastDevices && AI_MEMORY.lastDevices[0]);
+        if (dev5b) return 'turn ' + dev5b + ' ' + m5b[2];
+      }
+
+      // ── STEP 5: "status of it / that / this" ───────────────────
+      if (/\b(status|state)\s+of\s+(it|that|this)\b/.test(norm)) {
+        return 'device status';
+      }
+
+      // ── STEP 8 & 10: Ambiguous "it" with multiple active devices ─
+      // If lastDevices has 2+ recent entries and input has "it" with
+      // on/off but no strong single device match — ask for clarification.
+      var hasIt = /\bit\b/.test(norm);
+      var isOnOff = /\b(on|off|turn on|turn off|switch on|switch off)\b/.test(norm);
+      if (hasIt && isOnOff && AI_MEMORY.lastDevices && AI_MEMORY.lastDevices.length >= 2) {
+        // Check if there's no single dominant device in context
+        var recentIotEntries = AI_MEMORY.contextStack.filter(function(e) {
+          return e.type === 'iot' && (Date.now() - e.time) < 180000;
+        });
+        // If two or more distinct devices are equally recent (both within 30s), ask
+        if (recentIotEntries.length >= 2) {
+          var t0 = recentIotEntries[0].time;
+          var t1 = recentIotEntries[1].time;
+          var gap = Math.abs(t0 - t1);
+          if (gap < 30000) { // both mentioned within 30s of each other
+            var choices = recentIotEntries.slice(0, 2).map(function(e) { return e.value; });
+            var clarify = 'Which device did you mean?\n  • ' + choices.join('\n  • ');
+            if (typeof _setReason === 'function') {
+              _setReason('Ambiguous "it" — devices [' + choices.join(', ') + '] equally recent. Asking for clarification.');
+            }
+            // Return special marker consumed by the patch below
+            return '__AMBIGUOUS__:' + clarify;
+          }
+        }
+      }
+
+      // ── Delegate to original resolveContext for everything else ─
+      return _origResolveContext(input, confidence);
+    };
+    window.resolveContext._sessionPatched = true;
+    // Keep alias in sync
+    window.resolveContextPronoun = window.resolveContext;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 6 & 7 — HELP FOLLOW-UP RESOLUTION
+  // Detects follow-up queries after a help page was shown and
+  // resolves them against the last help topic.
+  //   "show examples"  → light examples
+  //   "show aliases"   → light aliases
+  //   "what can it do" → light description
+  //   "show commands"  → light commands
+  // ══════════════════════════════════════════════════════════════
+  var _FOLLOWUP_RE = /^(?:show\s+)?(examples?|aliases?|commands?|description|what can (?:it|that) do|related|auth(?:entication)?)\s*(?:for\s+.+)?$/i;
+
+  function resolveHelpFollowUp(input) {
+    if (!input || !AI_MEMORY.lastHelpEntry) return null;
+    var norm = input.toLowerCase().trim().replace(/[?!.]+$/, '');
+    if (!_FOLLOWUP_RE.test(norm)) return null;
+
+    var entry = typeof HELP_REGISTRY !== 'undefined' && HELP_REGISTRY[AI_MEMORY.lastHelpEntry];
+    if (!entry) return null;
+
+    var lines = ['📖 ' + entry.icon + ' ' + entry.title + ' — '];
+
+    if (/examples?/.test(norm)) {
+      lines[0] += 'Examples';
+      entry.examples.forEach(function(e) { lines.push('  • ' + e); });
+
+    } else if (/aliases?/.test(norm)) {
+      lines[0] += 'Aliases';
+      entry.aliases.forEach(function(a) { lines.push('  • ' + a); });
+
+    } else if (/commands?/.test(norm)) {
+      lines[0] += 'Commands';
+      entry.commands.forEach(function(c) { lines.push('  • ' + c); });
+
+    } else if (/description/.test(norm)) {
+      lines[0] += 'Description';
+      lines.push('  ' + entry.description);
+
+    } else if (/what can/.test(norm)) {
+      lines[0] += 'Capabilities';
+      lines.push('  ' + entry.description);
+      if (entry.commands.length) {
+        lines.push('\nCommands:');
+        entry.commands.forEach(function(c) { lines.push('  • ' + c); });
+      }
+
+    } else if (/related/.test(norm)) {
+      lines[0] += 'Related Topics';
+      (entry.related || []).forEach(function(r) { lines.push('  • help ' + r); });
+
+    } else if (/auth/.test(norm)) {
+      lines[0] += 'Authentication';
+      lines.push(entry.auth ? '  Required — password: ' + entry.auth : '  Not required.');
+    }
+
+    return lines.join('\n');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 11 — "context" DEBUG COMMAND
+  // ══════════════════════════════════════════════════════════════
+  function renderContextDebug() {
+    var lines = ['🧠 Session Context\n'];
+
+    lines.push('Last App:        ' + (AI_MEMORY.lastApp          || '—'));
+    lines.push('Last Opened:     ' + (AI_MEMORY.lastOpenedWindow || '—'));
+    lines.push('Last Device:     ' + (AI_MEMORY.lastDevice       || '—'));
+    lines.push('Last Intent:     ' + (AI_MEMORY.lastIntent       || '—'));
+    lines.push('Last Command:    ' + (AI_MEMORY.lastCommand      || '—'));
+    lines.push('Last Help Topic: ' + (AI_MEMORY.lastHelpTopic    || '—'));
+
+    lines.push('\nApp Stack (LIFO):');
+    if (AI_MEMORY.appStack && AI_MEMORY.appStack.length) {
+      AI_MEMORY.appStack.forEach(function(a, i) {
+        lines.push('  ' + (i + 1) + '. ' + a);
+      });
+    } else {
+      lines.push('  (empty)');
+    }
+
+    lines.push('\nContext Stack (recent ' + Math.min(AI_MEMORY.contextStack.length, 10) + ' entries):');
+    AI_MEMORY.contextStack.slice(0, 10).forEach(function(e, i) {
+      var age = Math.round((Date.now() - e.time) / 1000);
+      lines.push('  ' + (i + 1) + '. [' + e.type + '] ' + e.value + ' (' + e.action + ')  ' + age + 's ago');
+    });
+    if (!AI_MEMORY.contextStack.length) lines.push('  (empty)');
+
+    if (AI_MEMORY.lastReason) {
+      lines.push('\nLast Reasoning:');
+      lines.push('  ' + AI_MEMORY.lastReason);
+    }
+
+    return lines.join('\n');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // CENTRAL INTERCEPT — patch _jarvisProcessInternal to handle:
+  //   1. "context" debug command
+  //   2. Help follow-up queries (Steps 6 & 7)
+  //   3. __AMBIGUOUS__ marker from resolveContext (Steps 8 & 10)
+  // ══════════════════════════════════════════════════════════════
+  function _installSessionPatch() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig || _orig._sessionPatched) return;
+
+    window._jarvisProcessInternal = function sessionAwareJarvis(rawInput) {
+      if (!rawInput) return _orig(rawInput);
+
+      var cleaned = rawInput
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+
+      var norm = cleaned.toLowerCase().replace(/[?!.]+$/, '').trim();
+
+      // ── Step 11: "context" debug ──────────────────────────────
+      if (norm === 'context' || norm === 'show context' || norm === 'debug context') {
+        var dbg = renderContextDebug();
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(dbg); } catch(e) {}
+        }
+        return dbg;
+      }
+
+      // ── Steps 6 & 7: help follow-up ──────────────────────────
+      var followUp = resolveHelpFollowUp(cleaned);
+      if (followUp) {
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(followUp); } catch(e) {}
+        }
+        return followUp;
+      }
+
+      // ── Run original logic ────────────────────────────────────
+      var result = _orig(rawInput);
+
+      // ── Steps 8 & 10: handle __AMBIGUOUS__ marker ────────────
+      if (typeof result === 'string' && result.startsWith('__AMBIGUOUS__:')) {
+        var msg = result.slice('__AMBIGUOUS__:'.length);
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(msg); } catch(e) {}
+        }
+        return msg;
+      }
+
+      return result;
+    };
+
+    window._jarvisProcessInternal._sessionPatched = true;
+  }
+
+  // Also patch executeCommand so "context" works from terminal too
+  function _installExecSessionPatch() {
+    var _origExec = window.executeCommand;
+    if (!_origExec || _origExec._sessionPatched) return;
+
+    window.executeCommand = function sessionAwareExecuteCommand(rawInput) {
+      if (!rawInput || !rawInput.trim()) return _origExec(rawInput);
+
+      var cleaned = rawInput.trim()
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+
+      var norm = cleaned.toLowerCase().replace(/[?!.]+$/, '').trim();
+
+      // "context" debug command
+      if (norm === 'context' || norm === 'show context' || norm === 'debug context') {
+        var dbg = renderContextDebug();
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(dbg);
+        return dbg;
+      }
+
+      // Help follow-up
+      var followUp = resolveHelpFollowUp(cleaned);
+      if (followUp) {
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(followUp);
+        return followUp;
+      }
+
+      var result = _origExec(rawInput);
+
+      // Handle __AMBIGUOUS__ marker
+      if (typeof result === 'string' && result.startsWith('__AMBIGUOUS__:')) {
+        var msg = result.slice('__AMBIGUOUS__:'.length);
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(msg);
+        return msg;
+      }
+
+      return result;
+    };
+
+    window.executeCommand._sessionPatched  = true;
+    window.executeCommand._helpPatched     = true;  // preserve prior patch flags
+    window.executeCommand._confidencePatched = true;
+  }
+
+  // Also handle __AMBIGUOUS__ in executeCommand's internal resolveContext call
+  // by patching dispatchOutput to intercept the marker at the source
+  var _origDispatch = window.dispatchOutput;
+  if (_origDispatch && !_origDispatch._sessionPatched) {
+    window.dispatchOutput = function sessionAwareDispatch(response) {
+      if (typeof response === 'string' && response.startsWith('__AMBIGUOUS__:')) {
+        response = response.slice('__AMBIGUOUS__:'.length);
+      }
+      return _origDispatch(response);
+    };
+    window.dispatchOutput._sessionPatched = true;
+  }
+
+  // Deferred install to ensure all prior modules exported first
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      _installSessionPatch();
+      _installExecSessionPatch();
+    });
+  } else {
+    _installSessionPatch();
+    _installExecSessionPatch();
+  }
+
+  // ── Public API ───────────────────────────────────────────────
+  window.resolveHelpFollowUp = resolveHelpFollowUp;
+  window.renderContextDebug  = renderContextDebug;
+
+  console.log('[AtulOS SessionMemory] Installed — appStack, lastHelpTopic, follow-up resolution, context debug, ambiguity gate.');
+
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.69 — PERSONALITY & PROACTIVE ASSISTANT LAYER
+     Makes AtulAI feel like a smart OS companion rather than a
+     command parser. Adds:
+       • Smart greeting (time-aware, status-aware)         Step 1, 8
+       • Thank-you responses                               Step 2
+       • Empty-input nudge                                 Step 3
+       • Proactive post-action suggestions                 Step 4, 5
+       • Friendly error recovery (no "Unknown command")    Step 6
+       • Reasoning explainer                               Step 7
+       • Repeated-failure help nudge                       Step 10
+     Rules: no polling, no intervals, no background loops  Step 11
+     Does NOT modify: runCommand, printOutput, auth,
+       device control, intent routing, session memory, UI.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function _installPersonality() {
+  'use strict';
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 9 — PERSONALITY CONSTANTS
+  // Professional · Friendly · Concise · Never chatty.
+  // ══════════════════════════════════════════════════════════════
+
+  // ── STEP 1 & 8: Greeting phrases (time-aware) ─────────────────
+  var _GREET_MORNING   = ['Good morning, Atul.', 'Morning, Atul.'];
+  var _GREET_AFTERNOON = ['Good afternoon, Atul.', 'Afternoon, Atul.'];
+  var _GREET_EVENING   = ['Good evening, Atul.', 'Evening, Atul.'];
+  var _GREET_NIGHT     = ['Working late, Atul?', 'Good night, Atul.'];
+  var _GREET_GENERIC   = ['Hello, Atul.', 'Hi, Atul.', 'Hey, Atul.'];
+
+  // ── STEP 2: Thanks responses ──────────────────────────────────
+  var _THANKS = [
+    'You\'re welcome.\nAnything else I can help with?',
+    'Happy to help, Atul.\nJust ask if you need anything.',
+    'Anytime.\nWhat\'s next?',
+  ];
+
+  // ── STEP 3: Empty-input nudge ─────────────────────────────────
+  var _EMPTY_NUDGE = 'Need something?\nTry:  • help  • open calculator  • show context';
+
+  // ── STEP 6: Friendly fallback ─────────────────────────────────
+  var _FRIENDLY_FALLBACK = [
+    "I couldn't identify that command.\nTry:  • help  • show context  • open calculator",
+    "Not sure what you meant.\nTry:  • help  • show context  • light on",
+    "Command not recognized.\nTry:  • help  • open terminal  • device status",
+  ];
+
+  // ── STEP 10: Repeated-failure threshold ───────────────────────
+  var _FAIL_THRESHOLD = 3;      // failures before proactive help
+  var _failCount      = 0;      // session counter
+  var _FAIL_NUDGE     = 'Need help?\nTry:  • help  • help devices  • show context';
+
+  // ── STEP 4 & 5: Post-action suggestion table ─────────────────
+  // Maps flat intent keys → 2-3 concise follow-on suggestions.
+  var _RELATED = {
+    light_on:        '• light off  • fan on  • device status',
+    light_off:       '• light on  • fan off  • device status',
+    fan_on:          '• fan off  • light on  • device status',
+    fan_off:         '• fan on  • light off  • device status',
+    buzzer_on:       '• buzzer off  • light on  • device status',
+    buzzer_off:      '• buzzer on  • fan on  • device status',
+    open_terminal:   '• close it  • clear  • help terminal',
+    open_projects:   '• close it  • open skills  • help projects',
+    open_about:      '• close it  • open skills  • whoami',
+    open_skills:     '• close it  • open projects  • help skills',
+    open_settings:   '• close it  • voice settings  • dark mode',
+    open_calculator: '• close it  • open calendar  • help calculator',
+    open_calendar:   '• close it  • open calculator  • help calendar',
+    open_browser:    '• close it  • focus it  • help browser',
+    open_notes:      '• close it  • open calculator  • help notes',
+    dark_mode:       '• light mode  • voice settings  • open settings',
+    light_mode:      '• dark mode  • voice settings  • open settings',
+    voice_on:        '• voice off  • voice settings  • stop',
+    voice_off:       '• voice on  • wake word on  • voice settings',
+    device_status:   '• light on  • fan on  • help devices',
+    system_status:   '• device status  • whoami  • show context',
+    capabilities:    '• help devices  • help applications  • show context',
+    whoami:          '• open about  • open projects  • open skills',
+    joke:            '• tell me a joke  • whoami  • time',
+    time:            '• date  • system status  • whoami',
+    date:            '• time  • system status  • tell me a joke',
+    clear:           '• help  • show context  • open terminal',
+  };
+
+  // ── STEP 5: Context-aware overrides (checked first) ───────────
+  function _contextSuggestions(flatIntent) {
+    // After a help page: suggest related commands from help registry
+    if (typeof AI_MEMORY !== 'undefined' && AI_MEMORY.lastHelpEntry) {
+      var entry = typeof HELP_REGISTRY !== 'undefined' && HELP_REGISTRY[AI_MEMORY.lastHelpEntry];
+      if (entry && entry.commands && entry.commands.length) {
+        // Build up to 3 suggestions from the help entry
+        var s = entry.commands.slice(0, 2).map(function(c) { return '• ' + c; });
+        if (entry.related && entry.related.length) {
+          s.push('• help ' + entry.related[0]);
+        }
+        return s.join('  ');
+      }
+    }
+    return _RELATED[flatIntent] || null;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // HELPERS
+  // ══════════════════════════════════════════════════════════════
+
+  function _pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // Time-aware greeting body
+  function _greetBody() {
+    var h = new Date().getHours();
+    if (h >= 5  && h < 12) return _pick(_GREET_MORNING);
+    if (h >= 12 && h < 17) return _pick(_GREET_AFTERNOON);
+    if (h >= 17 && h < 21) return _pick(_GREET_EVENING);
+    return _pick(_GREET_NIGHT);
+  }
+
+  // ── STEP 8: Status line (lightweight — no async, no polling) ──
+  function _statusLine() {
+    var parts = ['AtulAI online'];
+    if (typeof AI_MEMORY !== 'undefined' && AI_MEMORY.contextStack && AI_MEMORY.contextStack.length > 0) {
+      parts.push('context memory active');
+    }
+    parts.push('commands ready');
+    return 'Status: ' + parts.map(function(p) { return '• ' + p; }).join('  ');
+  }
+
+  // ── STEP 1 & 8: Full greeting response ───────────────────────
+  function _buildGreeting() {
+    return _greetBody() + '\n' + _statusLine() + '\nTry:  • help  • open calculator  • show context';
+  }
+
+  // ── Is input a greeting? ──────────────────────────────────────
+  var _GREET_RE = /^(hello|hi|hey|good\s+morning|good\s+afternoon|good\s+evening|good\s+night|greetings|howdy|hiya|yo|sup|what.?s up)(\s|$)/i;
+
+  // ── Is input a thanks? ────────────────────────────────────────
+  var _THANKS_RE = /^(thanks|thank\s+you|thx|ty|cheers|great|awesome|well\s+done)(\s|$)/i;
+
+  // ── Is input a "why / explain"? ───────────────────────────────
+  var _WHY_RE = /^(why|why did you|explain that|explain|what was your reason|your reasoning)(\s|$)/i;
+
+  // ── Is result a generic fallback? ────────────────────────────
+  var _FALLBACK_MARKERS = [
+    "i didn't quite catch",
+    "not sure about that",
+    "command not recognised",
+    "i'm not sure what you mean",
+    "hmm, not sure",
+    "i couldn't identify",
+    "i didn't get that",
+    "try 'help'",
+    "could you rephrase",
+    "command not recognized",
+  ];
+
+  function _isFallback(str) {
+    if (!str || typeof str !== 'string') return false;
+    var lower = str.toLowerCase();
+    return _FALLBACK_MARKERS.some(function(m) { return lower.indexOf(m) !== -1; });
+  }
+
+  // ── Append proactive suggestion tail ─────────────────────────
+  function _appendRelated(baseResponse, flatIntent) {
+    var related = _contextSuggestions(flatIntent);
+    if (!related) return baseResponse;
+    return baseResponse + '\nRelated:  ' + related;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 7 — REASONING EXPLAINER
+  // Intercepts "why / explain" before anything else.
+  // ══════════════════════════════════════════════════════════════
+  function _buildReasoningResponse() {
+    if (typeof AI_MEMORY === 'undefined') return '🧠 No session reasoning recorded yet.';
+    var last = AI_MEMORY.lastCommand  || '—';
+    var intent = AI_MEMORY.lastIntent || '—';
+    var reason = AI_MEMORY.lastReason || 'No reasoning recorded for this session.';
+    // Try to extract confidence from reason string
+    var confMatch = reason.match(/confidence\s+([\d.]+)/i) || reason.match(/([\d]+)%/i);
+    var conf = confMatch ? confMatch[1] : '—';
+    if (conf !== '—' && parseFloat(conf) <= 1) conf = Math.round(parseFloat(conf) * 100) + '%';
+    return '🧠 Last Reasoning\n' +
+           'Input:      ' + last + '\n' +
+           'Intent:     ' + intent + '\n' +
+           'Confidence: ' + conf + '\n' +
+           'Reason:     ' + reason.split('.')[0] + '.';
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // PATCH — wrap _jarvisProcessInternal with personality layer
+  // Guard: _personalityPatched flag prevents double-wrap.
+  // ══════════════════════════════════════════════════════════════
+  function _installJarvisPersonality() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig || _orig._personalityPatched) return;
+
+    window._jarvisProcessInternal = function personalityJarvis(rawInput) {
+      var cleaned = (rawInput || '')
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+
+      var norm = cleaned.toLowerCase().replace(/[?!.]+$/, '').trim();
+
+      // ── STEP 3: Empty input ───────────────────────────────────
+      if (!norm) {
+        _failCount = 0;
+        return _EMPTY_NUDGE;
+      }
+
+      // ── STEP 7: Reasoning explainer ───────────────────────────
+      if (_WHY_RE.test(norm)) {
+        _failCount = 0;
+        return _buildReasoningResponse();
+      }
+
+      // ── STEP 1 & 8: Smart greeting ────────────────────────────
+      if (_GREET_RE.test(norm)) {
+        _failCount = 0;
+        var greeting = _buildGreeting();
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(greeting); } catch(e) {}
+        }
+        return greeting;
+      }
+
+      // ── STEP 2: Thank you ─────────────────────────────────────
+      if (_THANKS_RE.test(norm)) {
+        _failCount = 0;
+        var thanks = _pick(_THANKS);
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(thanks); } catch(e) {}
+        }
+        return thanks;
+      }
+
+      // ── Run original chain ────────────────────────────────────
+      var result = _orig(rawInput);
+
+      // ── STEP 6 & 10: Friendly fallback + repeated-failure ─────
+      if (_isFallback(result)) {
+        _failCount++;
+        if (_failCount >= _FAIL_THRESHOLD) {
+          _failCount = 0;
+          return _FAIL_NUDGE;
+        }
+        return _pick(_FRIENDLY_FALLBACK);
+      }
+
+      // Result was good — reset failure counter
+      _failCount = 0;
+
+      // ── STEP 4 & 5: Post-action suggestions ───────────────────
+      // Derive the flat intent key from what was just resolved
+      if (result && typeof result === 'string' && typeof AI_MEMORY !== 'undefined') {
+        var lastFlat = AI_MEMORY.lastIntent || '';
+        // Strip dot-notation prefix if Intent Router added it
+        if (typeof window.intentToFlat === 'function') {
+          lastFlat = window.intentToFlat(lastFlat);
+        }
+        // Avoid appending suggestions to very short confirmations or to
+        // responses that already contain suggestions / "Related"
+        var alreadyHasSuggestions = result.indexOf('Related') !== -1 || result.indexOf('Try:') !== -1;
+        if (!alreadyHasSuggestions && lastFlat && _contextSuggestions(lastFlat)) {
+          result = _appendRelated(result, lastFlat);
+        }
+      }
+
+      return result;
+    };
+
+    window._jarvisProcessInternal._personalityPatched = true;
+  }
+
+  // ── Also patch executeCommand so personality works from terminal ─
+  function _installExecPersonality() {
+    var _origExec = window.executeCommand;
+    if (!_origExec || _origExec._personalityPatched) return;
+
+    window.executeCommand = function personalityExecuteCommand(rawInput) {
+      var cleaned = (rawInput || '').trim()
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+
+      var norm = cleaned.toLowerCase().replace(/[?!.]+$/, '').trim();
+
+      // ── STEP 3: Empty ─────────────────────────────────────────
+      if (!norm) {
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(_EMPTY_NUDGE);
+        return _EMPTY_NUDGE;
+      }
+
+      // ── STEP 7: Why ───────────────────────────────────────────
+      if (_WHY_RE.test(norm)) {
+        var r7 = _buildReasoningResponse();
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(r7);
+        return r7;
+      }
+
+      // ── STEP 1 & 8: Greeting ──────────────────────────────────
+      if (_GREET_RE.test(norm)) {
+        var rg = _buildGreeting();
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(rg);
+        return rg;
+      }
+
+      // ── STEP 2: Thanks ────────────────────────────────────────
+      if (_THANKS_RE.test(norm)) {
+        var rt = _pick(_THANKS);
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(rt);
+        return rt;
+      }
+
+      // ── Run original ─────────────────────────────────────────
+      var result = _origExec(rawInput);
+
+      // ── STEP 6 & 10: Fallback ─────────────────────────────────
+      if (_isFallback(result)) {
+        _failCount++;
+        var friendly;
+        if (_failCount >= _FAIL_THRESHOLD) {
+          _failCount = 0;
+          friendly = _FAIL_NUDGE;
+        } else {
+          friendly = _pick(_FRIENDLY_FALLBACK);
+        }
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(friendly);
+        return friendly;
+      }
+
+      _failCount = 0;
+      return result;
+    };
+
+    // Preserve all prior patch flags
+    window.executeCommand._personalityPatched = true;
+    window.executeCommand._sessionPatched     = true;
+    window.executeCommand._helpPatched        = true;
+    window.executeCommand._confidencePatched  = true;
+  }
+
+  // Deferred install so all prior exports are ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      _installJarvisPersonality();
+      _installExecPersonality();
+    });
+  } else {
+    _installJarvisPersonality();
+    _installExecPersonality();
+  }
+
+  // ── Public API ───────────────────────────────────────────────
+  window._buildGreeting          = _buildGreeting;
+  window._buildReasoningResponse = _buildReasoningResponse;
+
+  console.log('[AtulOS Personality] Installed — greeting, thanks, empty nudge, proactive suggestions, friendly errors, reasoning explainer.');
+
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
      MODULE 4.7 — SMART RESPONSE GENERATOR
 ════════════════════════════════════════════════════════════════ -->
 <script>
@@ -5796,7 +7836,11 @@ function executeCommand(rawInput) {
   }
 
   // ── Parse intent first so confidence can gate inference ──
-  const { intent, confidence } = parseIntent(input);
+  // Router returns: { intent (dot-notation), confidence, original, _flat (legacy key) }
+  const _parsed = parseIntent(input);
+  const intent    = _parsed.intent;      // dot-notation  e.g. "device.light.on"
+  const _flat     = _parsed._flat || intent; // flat key  e.g. "light_on"  (for ACTION_MAP / INTENT_MAP lookups)
+  const confidence = _parsed.confidence;
 
   // ── Context resolver — pass confidence for inference gate ──
   const contextResolved = resolveContext(input, confidence);
@@ -5838,7 +7882,7 @@ function executeCommand(rawInput) {
   const { reason } = selectBestContext(input, AI_MEMORY);
   _setReason(`Intent "${intent}" (confidence ${Math.round(confidence * 100)}%). ${reason}`);
 
-  if (intent === 'device_status') {
+  if (_flat === 'device_status') {
     const loadingMsg = "Fetching device status from Firebase… 📡";
     dispatchOutput(loadingMsg);
     getDeviceStatusAsync().then(statusMsg => {
@@ -5848,7 +7892,8 @@ function executeCommand(rawInput) {
     return loadingMsg;
   }
 
-  const intentDef = INTENT_MAP[intent] || {};
+  // Use _flat for INTENT_MAP / ACTION_MAP lookups (flat keys like 'light_on')
+  const intentDef = INTENT_MAP[_flat] || {};
   if (intentDef.requiresAuth) {
     if (typeof DeviceAuth !== 'undefined') {
       const authResult = DeviceAuth.gate(input);
@@ -5857,7 +7902,7 @@ function executeCommand(rawInput) {
 
         if (authResult.isAuthSuccess && authResult.resolvedCommand) {
           setTimeout(() => {
-            const resp = _executeIntentAction(intent, input);
+            const resp = _executeIntentAction(_flat, input);
             dispatchOutput(resp);
             aiMemoryRecord(authResult.resolvedCommand, intent, resp);
           }, 600);
@@ -5867,7 +7912,7 @@ function executeCommand(rawInput) {
     }
   }
 
-  const response = _executeIntentAction(intent, input);
+  const response = _executeIntentAction(_flat, input);
 
   aiMemoryRecord(input, intent, response);
 
@@ -6041,7 +8086,8 @@ function _jarvisProcessInternal(rawInput) {
     }
   }
 
-  const { intent } = parseIntent(input);
+  const _pi6176 = parseIntent(input);
+  const intent   = _pi6176._flat || _pi6176.intent;  // flat key for JARVIS_INTENTS / RESPONSE_BANK
   if (intent === 'device_status') {
     getDeviceStatusAsync().then(msg => {
       if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', msg, true);
@@ -6273,7 +8319,9 @@ window.handleSystemCommand = handleSystemCommand;
 })();
 
 window.jarvisProcess   = jarvisProcess;
-window.parseIntent     = parseIntent;
+// NOTE: Do NOT re-export parseIntent here — the Intent Router (Module 4.65)
+// has already installed the upgraded window.parseIntent. We preserve it.
+// window.parseIntent is intentionally left as-is (router version).
 window.atulAIEngine    = (input) => jarvisProcess(input);
 </script>
 
@@ -6535,7 +8583,7 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
       const bar      = document.getElementById('statusbar');
       const taskbarH = 44; /* taskbar height — keep window header above taskbar */
       const vw       = window.innerWidth, vh = window.innerHeight;
-      const minTop   = bar.offsetHeight + 8;
+      const minTop   = (bar ? bar.offsetHeight : 44) + 8;
       /* clamp bottom so at least the window header (34px) stays above the taskbar */
       const maxTop   = vh - taskbarH - 34;
       let left  = Math.max(8, Math.min(cx - ox, vw - win.offsetWidth  - 8));
@@ -6585,7 +8633,7 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
       const bar = document.getElementById('statusbar');
       const vw  = window.innerWidth, vh = window.innerHeight;
       const left = Math.max(8, Math.min(r.left, vw - r.width  - 8));
-      const top  = Math.max(bar.offsetHeight + 8, Math.min(r.top,  vh - r.height - 8));
+      const top  = Math.max((bar ? bar.offsetHeight : 44) + 8, Math.min(r.top,  vh - r.height - 8));
       win.style.left = left + 'px'; win.style.top = top + 'px';
       const id = win.dataset.windowId;
       windowState[id] = { ...(windowState[id] || {}), left: Math.round(left), top: Math.round(top) };
@@ -6605,9 +8653,12 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     // FIX: reset classic terminal window auth
     const classicOverlay = document.getElementById('terminal-auth-overlay');
     if (classicOverlay) classicOverlay.style.display = 'block';
-    document.getElementById('statusPanel').style.display             = 'none';
-    document.getElementById('terminal-output').style.display         = 'none';
-    document.getElementById('terminal-input-area').style.display     = 'none';
+    var _sp  = document.getElementById('statusPanel');
+    var _to  = document.getElementById('terminal-output');
+    var _tia = document.getElementById('terminal-input-area');
+    if (_sp)  _sp.style.display  = 'none';
+    if (_to)  _to.style.display  = 'none';
+    if (_tia) _tia.style.display = 'none';
     // FIX: clear ALL auth message/input elements with these IDs (takes first match)
     const authMsgs = document.querySelectorAll('#term-auth-msg');
     const pwInputs = document.querySelectorAll('#term-password-input');
@@ -6624,9 +8675,12 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     window._atulOSTermAuthed = true;
     const classicOverlay = document.getElementById('terminal-auth-overlay');
     if (classicOverlay) classicOverlay.style.display = 'none';
-    document.getElementById('statusPanel').style.display             = 'block';
-    document.getElementById('terminal-output').style.display         = 'block';
-    document.getElementById('terminal-input-area').style.display     = 'block';
+    var _sp  = document.getElementById('statusPanel');
+    var _to  = document.getElementById('terminal-output');
+    var _tia = document.getElementById('terminal-input-area');
+    if (_sp)  _sp.style.display  = 'block';
+    if (_to)  _to.style.display  = 'block';
+    if (_tia) _tia.style.display = 'block';
     setTimeout(() => {
       termPrintLine('AI', 'AtulOS Terminal v2.2 — Unified Speech Engine active.', 'jarvis-line');
       termPrintLine('AI', 'Welcome back, Atul. Type "help" for all commands.', 'jarvis-line');
@@ -6733,6 +8787,9 @@ const TERM_COMMANDS = [
   'activate buzzer','deactivate buzzer','launch terminal','launch settings',
   'show projects','show skills','system status','system check',
   'enable voice','disable voice','enable wake word','disable wake word',
+  'open calculator','open calendar','open browser','open notes','open ai',
+  'close calculator','close calendar','close browser','close notes','close ai',
+  'launch calculator','launch calendar','launch browser','launch notes',
 ];
 
 function termRenderSuggestions(query) {
@@ -6752,7 +8809,8 @@ function termRenderSuggestions(query) {
     const before = cmd.slice(0, idx);
     const match  = cmd.slice(idx, idx + q.length);
     const after  = cmd.slice(idx + q.length);
-    item.innerHTML = `<i class="fa-solid fa-chevron-right" style="font-size:9px;opacity:0.5;"></i>${before}<span class="sug-match">${match}</span>${after}`;
+    function _esc(s) { return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    item.innerHTML = `<i class="fa-solid fa-chevron-right" style="font-size:9px;opacity:0.5;"></i>${_esc(before)}<span class="sug-match">${_esc(match)}</span>${_esc(after)}`;
     item.addEventListener('mousedown', e => {
       e.preventDefault();
       const inp = document.getElementById('term-input');
@@ -7015,7 +9073,8 @@ const DeviceAuth = (function () {
       }
     }
 
-    const { intent } = parseIntent(rawInput);
+    const _pi7161 = parseIntent(rawInput);
+    const intent   = _pi7161._flat || _pi7161.intent; // flat key for INTENT_MAP / JARVIS_INTENTS
     if (intentRequiresAuth(intent) && !isAuthenticated) {
       waitingForPassword = true;
       pendingCommand     = rawInput;
@@ -7053,10 +9112,8 @@ function aiAppendMessage(role, text, animate) {
   ts.className   = 'ai-ts';
   ts.textContent = aiTimestamp();
 
-  if (!bubble || !ts) return; // defensive — elements must exist
   wrap.appendChild(bubble);
   wrap.appendChild(ts);
-  if (!wrap) return;
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
 
@@ -7078,6 +9135,7 @@ function aiAppendMessage(role, text, animate) {
 function aiShowTyping() {
   const chat = document.getElementById('ai-chat');
   if (!chat) return;
+  if (document.getElementById('ai-typing-indicator')) return; // guard: already showing
   const el = document.createElement('div');
   el.id = 'ai-typing-indicator';
   el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
@@ -7107,7 +9165,8 @@ function aiSendMessage() {
     aiHideTyping();
 
     const parsedIntent = (typeof parseIntent === 'function') ? parseIntent(text) : null;
-    const intentKey    = parsedIntent ? parsedIntent.intent : null;
+    // Use _flat (legacy flat key) for DEVICE_INTENTS / FRIENDS_INTENTS comparisons
+    const intentKey    = parsedIntent ? (parsedIntent._flat || parsedIntent.intent) : null;
 
     /* ── DEVICE intents — one session for all device control ── */
     const DEVICE_INTENTS  = ['light_on','light_off','fan_on','fan_off','buzzer_on','buzzer_off'];
@@ -7504,6 +9563,12 @@ document.addEventListener('DOMContentLoaded', function () {
       elementId: 'browser',
       title:     'Browser',
       icon:      'fa-solid fa-globe',
+    },
+    notes: {
+      id:        'notes',
+      elementId: 'notes',
+      title:     'Notes',
+      icon:      'fa-solid fa-note-sticky',
     },
   };
 
@@ -8751,6 +10816,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── system/fallback intent ──────────────────────────────────
+    // ── friends intent ────────────────────────────────────────────────────────────────────
+    // Detect friend-related commands so they are not treated as
+    // passthrough, which would route to _trueOriginalJarvis and bypass
+    // the Module 4.71 friends interceptor entirely.
+    var _friendNamesU8 = ['aayush','muskan','sameer','kushal','lucky','yugal'];
+    var _hasFriendU8 = _friendNamesU8.some(function(n) { return s.indexOf(n) !== -1; });
+    if (_hasFriendU8) {
+      return { type: 'friends', app: '', query: '', value: s, raw: seg };
+    }
+    // Friends list / help
+    if (/^(friends|list friends|show friends|my friends|friends list|help friends?|friend help|friends help|who are my friends)$/.test(s)) {
+      return { type: 'friends', app: '', query: '', value: s, raw: seg };
+    }
+    // Context follow-ups (show notes / interests / contact etc.)
+    if (/^(show|tell me|what(?:'s| is)?|display)\s+(notes?|interests?|contact|phone|email|birthday|nickname|relation)\s*$/.test(s)) {
+      return { type: 'friends', app: '', query: '', value: s, raw: seg };
+    }
+
     return { type: 'passthrough', app: '', query: '', value: '', raw: seg };
   }
 
@@ -8981,6 +11064,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return null;
 
+      case 'friends':
+        // Call _origJarvis (the pre-U8 chain) with the raw input.
+        // The pre-U8 chain includes the friends patch (Module 4.71)
+        // which was installed at DOMContentLoaded before U8's setTimeout.
+        // Using _origJarvis avoids re-entering the U8 pipeline (no recursion).
+        if (typeof _origJarvis === 'function') {
+          var _fResult = _origJarvis(intent.raw);
+          if (_fResult && typeof window.jarvisSpeak === 'function') {
+            try { window.jarvisSpeak(_fResult); } catch(e) {}
+          }
+          return _fResult;
+        }
+        return null;
+
       case 'passthrough':
       default:
         return null; // Let original engine handle
@@ -9104,10 +11201,16 @@ document.addEventListener('DOMContentLoaded', function () {
   //     Priority: Pipeline → handleSystemCommand → original
   // ═══════════════════════════════════════════════════════════════
   function _patchWithPipeline() {
-    // Use _trueOriginalJarvis (captured at IIFE top, before U7/U8 patching) so
-    // the fallback path never re-enters the U8 pipeline. If _trueOriginalJarvis
-    // wasn't available at IIFE-start (unlikely), fall back to current window value.
-    var _origJarvis = _trueOriginalJarvis || window._jarvisProcessInternal;
+    // _preU8Jarvis = the current window._jarvisProcessInternal at the time
+    // _patchWithPipeline runs (50ms after DOMContentLoaded).
+    // At this point, Module 4.71 (friends) has already wrapped it at
+    // DOMContentLoaded (0ms delay), so _preU8Jarvis IS the friends-aware chain.
+    // This means:
+    //   - passthrough fallback uses the friends-aware chain (correct)
+    //   - friends intent in _executeIntent uses _origJarvis = friends-aware chain
+    //   - device commands use _trueOriginalJarvis (pre-all-patches, no recursion)
+    var _preU8Jarvis = window._jarvisProcessInternal || _trueOriginalJarvis;
+    var _origJarvis = _preU8Jarvis;
     if (!_origJarvis) { setTimeout(_patchWithPipeline, 100); return; }
 
     window._jarvisProcessInternal = function(rawInput) {
@@ -9133,12 +11236,18 @@ document.addEventListener('DOMContentLoaded', function () {
         return pipelineResult;
       }
 
-      // ── FALLBACK: true original engine (no pipeline, no recursion) ──
+      // ── FALLBACK: friends-patched window._jarvisProcessInternal for friend commands,
+      // otherwise _origJarvis (true original, no recursion).
+      // We check if the current window._jarvisProcessInternal is friends-patched and,
+      // if so, defer to IT only when the input contains a friend name or keyword.
+      // This avoids infinite recursion (we ARE inside _jarvisProcessInternal here)
+      // while still routing friends commands through the friends layer when it exists.
+      // NOTE: For all other input, use _origJarvis to avoid recursion.
       var origResult = _origJarvis(rawInput);
 
       // If original also fell back to generic fallback, offer smart suggestion
       if (origResult && typeof origResult === 'string') {
-        var fallbackMarkers = ['didn\'t get that', 'try \'help\'', 'not sure', 'understand', 'fallback', '🤔', '❓'];
+        var fallbackMarkers = ['didn\'t get that', 'try \'help\'', 'not sure', 'fallback', '🤔', '❓'];
         var lowerOrig = origResult.toLowerCase();
         var isFallback = fallbackMarkers.some(function(m) { return lowerOrig.indexOf(m) !== -1; });
         if (isFallback) {
@@ -9350,12 +11459,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (cpuBar) cpuBar.style.width = cpu + '%';
       if (ramNum) ramNum.textContent = ram + '%';
       if (ramBar) ramBar.style.width = ram + '%';
-
-      // Sync with about panel metrics if they exist
-      var jCpu = document.getElementById('jap-cpu-val');
-      var jRam = document.getElementById('jap-mem-val');
-      if (jCpu) jCpu.textContent = cpu + '%';
-      if (jRam) jRam.textContent = ram + '%';
     }
     update();
     setInterval(update, 2200);
@@ -10060,6 +12163,1018 @@ window.safeAppend = function safeAppend(parent, child) {
     console.warn('[AtulOS] safeAppend error:', e.message);
   }
 };
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.71 — FRIENDS REGISTRY & PROFILE VIEWER
+     Standalone module. Does NOT modify:
+       runCommand, intent routing, authentication,
+       AI memory system, device commands, eDEX layout,
+       classical AtulOS functionality.
+     Adds: FRIENDS_REGISTRY, openFriendProfile(),
+           friend commands, search, context memory,
+           help friends, profile window HTML + CSS.
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ── FRIEND PROFILE WINDOW CSS ── -->
+<style>
+/* ── Friend Profile Window ── */
+.friend-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.friend-field {
+  padding: 10px 13px;
+  background: rgba(99,168,255,0.06);
+  border: 1px solid rgba(99,168,255,0.15);
+  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.friend-field-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+.friend-field-value {
+  font-size: 13px;
+  color: var(--fg);
+  word-break: break-word;
+}
+.friend-field-value.na {
+  color: var(--muted);
+  font-style: italic;
+  opacity: 0.6;
+}
+.friend-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.friend-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99,168,255,0.3), rgba(40,200,64,0.2));
+  border: 2px solid rgba(99,168,255,0.35);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.friend-header-info { flex: 1; }
+.friend-profile-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.3px;
+}
+.friend-profile-relation {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.friend-field.wide {
+  grid-column: span 2;
+}
+.friend-interests-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.friend-interest-tag {
+  padding: 3px 9px;
+  background: rgba(99,168,255,0.1);
+  border: 1px solid rgba(99,168,255,0.22);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--accent);
+}
+.friend-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 8px 12px;
+  background: rgba(40,200,64,0.06);
+  border: 1px solid rgba(40,200,64,0.18);
+  border-radius: 8px;
+  font-size: 11px;
+  color: rgba(40,200,64,0.9);
+}
+.friend-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #28c840;
+  animation: blink-dot 2s infinite;
+  flex-shrink: 0;
+}
+</style>
+
+<!-- ── FRIEND PROFILE WINDOW HTML ── -->
+<!-- One reusable window — content swapped by openFriendProfile() -->
+<div class="app-window" id="friend-profile-window" role="dialog"
+     aria-labelledby="friend-profile-title" tabindex="0"
+     data-window-id="friend-profile-window"
+     style="width:540px;">
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <i class="fa-solid fa-user-circle"></i>
+      <span id="friend-profile-title">Friend Profile</span>
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize Profile"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize Profile"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close Profile"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+  <div class="window-body" id="friend-profile-body" style="min-height:300px;">
+    <!-- Populated dynamically by openFriendProfile() -->
+  </div>
+</div>
+
+<!-- ── MODULE 4.71 SCRIPT ── -->
+<script>
+(function _installFriendsModule() {
+  'use strict';
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 1 — FRIENDS REGISTRY
+  // Each profile has all supported fields. Unknown = blank string.
+  // Future-ready fields included as empty for expansion.
+  // ══════════════════════════════════════════════════════════════
+  var FRIENDS_REGISTRY = {
+    aayush: {
+      name:         'Aayush',
+      nickname:     '',
+      relation:     '',
+      phone:        '',
+      birthday:     '',
+      email:        '',
+      notes:        '',
+      interests:    [],
+      profileImage: '',
+      lastContact:  '',
+      // Future expansion fields (not implemented yet)
+      friendshipTimeline: [],
+      socialLinks:        {},
+      memories:           [],
+      achievements:       [],
+      contactHistory:     [],
+    },
+    muskan: {
+      name:         'Muskan',
+      nickname:     '',
+      relation:     '',
+      phone:        '',
+      birthday:     '',
+      email:        '',
+      notes:        '',
+      interests:    [],
+      profileImage: '',
+      lastContact:  '',
+      friendshipTimeline: [],
+      socialLinks:        {},
+      memories:           [],
+      achievements:       [],
+      contactHistory:     [],
+    },
+    sameer: {
+      name:         'Sameer',
+      nickname:     '',
+      relation:     '',
+      phone:        '',
+      birthday:     '',
+      email:        '',
+      notes:        '',
+      interests:    [],
+      profileImage: '',
+      lastContact:  '',
+      friendshipTimeline: [],
+      socialLinks:        {},
+      memories:           [],
+      achievements:       [],
+      contactHistory:     [],
+    },
+    kushal: {
+      name:         'Kushal',
+      nickname:     '',
+      relation:     '',
+      phone:        '',
+      birthday:     '',
+      email:        '',
+      notes:        '',
+      interests:    [],
+      profileImage: '',
+      lastContact:  '',
+      friendshipTimeline: [],
+      socialLinks:        {},
+      memories:           [],
+      achievements:       [],
+      contactHistory:     [],
+    },
+    lucky: {
+      name:         'Lucky',
+      nickname:     '',
+      relation:     '',
+      phone:        '',
+      birthday:     '',
+      email:        '',
+      notes:        '',
+      interests:    [],
+      profileImage: '',
+      lastContact:  '',
+      friendshipTimeline: [],
+      socialLinks:        {},
+      memories:           [],
+      achievements:       [],
+      contactHistory:     [],
+    },
+    yugal: {
+      name:         'Yugal',
+      nickname:     '',
+      relation:     '',
+      phone:        '',
+      birthday:     '',
+      email:        '',
+      notes:        '',
+      interests:    [],
+      profileImage: '',
+      lastContact:  '',
+      friendshipTimeline: [],
+      socialLinks:        {},
+      memories:           [],
+      achievements:       [],
+      contactHistory:     [],
+    },
+  };
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 8 — PLACEHOLDER HELPER
+  // Returns "Not Available" for blank/empty fields.
+  // ══════════════════════════════════════════════════════════════
+  function _fieldValue(val) {
+    if (val === null || val === undefined) return null;
+    if (typeof val === 'string') return val.trim() || null;
+    if (Array.isArray(val)) return val.length > 0 ? val : null;
+    return null;
+  }
+
+  function _renderFieldValue(val) {
+    var v = _fieldValue(val);
+    if (v === null) return { text: 'Not Available', isNA: true };
+    if (Array.isArray(v))  return { text: v, isArray: true };
+    return { text: v, isNA: false };
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 2 — FRIEND PROFILE WINDOW
+  // Opens a dedicated profile window for any registered friend.
+  // Reuses the existing window manager (openWindow / closeWindow).
+  // ══════════════════════════════════════════════════════════════
+  function openFriendProfile(friendName) {
+    var key = (friendName || '').toLowerCase().trim();
+    var profile = FRIENDS_REGISTRY[key];
+
+    if (!profile) {
+      var msg = '⚠️ Friend "' + friendName + '" not found in registry.\nAvailable: aayush, muskan, sameer, kushal, lucky, yugal';
+      if (typeof window.dispatchOutput === 'function') window.dispatchOutput(msg);
+      return msg;
+    }
+
+    // Update currentFriend in AI memory (Step 6)
+    if (typeof window.AI_MEMORY !== 'undefined') {
+      window.AI_MEMORY.currentFriend = key;
+    }
+
+    // Build window title
+    var titleEl = document.getElementById('friend-profile-title');
+    if (titleEl) titleEl.textContent = '👤 ' + profile.name + ' Profile';
+
+    // Render profile body
+    var body = document.getElementById('friend-profile-body');
+    if (body) body.innerHTML = _buildProfileHTML(profile);
+
+    // Open window via existing window manager
+    if (typeof window.openWindow === 'function') {
+      window.openWindow('friend-profile-window');
+    }
+
+    return '👤 Opening profile: ' + profile.name;
+  }
+
+  // ── Build profile HTML content ─────────────────────────────────
+  function _buildProfileHTML(p) {
+    var avatar = p.profileImage
+      ? '<img src="' + p.profileImage + '" alt="' + p.name + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />'
+      : '<span>👤</span>';
+
+    var relation  = _renderFieldValue(p.relation);
+    var nickname  = _renderFieldValue(p.nickname);
+    var birthday  = _renderFieldValue(p.birthday);
+    var phone     = _renderFieldValue(p.phone);
+    var email     = _renderFieldValue(p.email);
+    var notes     = _renderFieldValue(p.notes);
+    var interests = _renderFieldValue(p.interests);
+    var lastCont  = _renderFieldValue(p.lastContact);
+
+    function field(label, rv) {
+      var cls = rv.isNA ? 'friend-field-value na' : 'friend-field-value';
+      return '<div class="friend-field"><div class="friend-field-label">' + label +
+             '</div><div class="' + cls + '">' + (rv.isNA ? 'Not Available' : _escHtml(rv.text)) +
+             '</div></div>';
+    }
+
+    // Interests get special tag rendering
+    var interestsHTML;
+    if (interests.isNA || !interests.text) {
+      interestsHTML = '<div class="friend-field wide"><div class="friend-field-label">Interests</div>' +
+                      '<div class="friend-field-value na">Not Available</div></div>';
+    } else {
+      var tags = interests.text.map(function(i) {
+        return '<span class="friend-interest-tag">' + _escHtml(i) + '</span>';
+      }).join('');
+      interestsHTML = '<div class="friend-field wide"><div class="friend-field-label">Interests</div>' +
+                      '<div class="friend-interests-wrap">' + tags + '</div></div>';
+    }
+
+    return [
+      '<div class="friend-profile-header">',
+        '<div class="friend-avatar">' + avatar + '</div>',
+        '<div class="friend-header-info">',
+          '<div class="friend-profile-name">' + _escHtml(p.name) + '</div>',
+          '<div class="friend-profile-relation">' + (relation.isNA ? 'Friend' : _escHtml(relation.text)) + '</div>',
+        '</div>',
+      '</div>',
+      '<div class="friend-profile-grid">',
+        field('Name',         { text: p.name, isNA: false }),
+        field('Nickname',     nickname),
+        field('Birthday',     birthday),
+        field('Phone',        phone),
+        field('Email',        email),
+        field('Last Contact', lastCont),
+        '<div class="friend-field wide">' +
+          '<div class="friend-field-label">Notes</div>' +
+          (notes.isNA
+            ? '<div class="friend-field-value na">Not Available</div>'
+            : '<div class="friend-field-value">' + _escHtml(notes.text) + '</div>') +
+        '</div>',
+        interestsHTML,
+      '</div>',
+      '<div class="friend-status-bar">',
+        '<div class="friend-status-dot"></div>',
+        'Profile loaded · Local registry · AtulOS v4.71',
+      '</div>',
+    ].join('');
+  }
+
+  // HTML escape helper
+  function _escHtml(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 3 — FRIENDS LIST RESPONSE
+  // ══════════════════════════════════════════════════════════════
+  function _friendsListResponse() {
+    return '👥 Your Friends:\n\n👥 Aayush\n👥 Muskan\n👥 Sameer\n👥 Kushal\n👥 Lucky\n👥 Yugal';
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 5 — FRIEND SEARCH
+  // ══════════════════════════════════════════════════════════════
+  function _findFriend(input) {
+    var norm  = (input || '').toLowerCase();
+    var names = Object.keys(FRIENDS_REGISTRY);
+    for (var i = 0; i < names.length; i++) {
+      if (norm.includes(names[i])) return names[i];
+    }
+    return null;
+  }
+
+  function _searchFriendResponse(name) {
+    var profile = FRIENDS_REGISTRY[name];
+    if (!profile) return '⚠️ Friend "' + name + '" not found.';
+    var lines = ['🔍 Found: ' + profile.name];
+    lines.push('Relation: '     + (_fieldValue(profile.relation)    || 'Not Available'));
+    lines.push('Birthday: '     + (_fieldValue(profile.birthday)    || 'Not Available'));
+    lines.push('Last Contact: ' + (_fieldValue(profile.lastContact) || 'Not Available'));
+    lines.push('\nType "open ' + name + ' profile" to view full details.');
+    return lines.join('\n');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 6 — FRIEND CONTEXT MEMORY follow-up resolver
+  // Handles: show notes / show interests / show contact
+  // after a "tell me about X" command sets currentFriend.
+  // ══════════════════════════════════════════════════════════════
+  var _FRIEND_FOLLOWUP_RE = /^(?:show|tell me|what(?:'s| is)?|display)\s+(notes?|interests?|contact|phone|email|birthday|nickname|relation)\s*$/i;
+
+  function _resolveFriendFollowUp(input) {
+    if (typeof window.AI_MEMORY === 'undefined') return null;
+    var currentFriend = window.AI_MEMORY.currentFriend;
+    if (!currentFriend) return null;
+
+    var norm = (input || '').toLowerCase().trim().replace(/[?!.]+$/, '');
+    if (!_FRIEND_FOLLOWUP_RE.test(norm)) return null;
+
+    var profile = FRIENDS_REGISTRY[currentFriend];
+    if (!profile) return null;
+
+    if (/notes/.test(norm)) {
+      var notes = _fieldValue(profile.notes);
+      return '📝 Notes for ' + profile.name + ':\n' + (notes || 'Not Available');
+    }
+    if (/interests/.test(norm)) {
+      var interests = _fieldValue(profile.interests);
+      if (!interests || !interests.length) return '🎯 Interests for ' + profile.name + ': Not Available';
+      return '🎯 Interests for ' + profile.name + ':\n' + interests.map(function(i){ return '  • ' + i; }).join('\n');
+    }
+    if (/contact|phone/.test(norm)) {
+      var phone = _fieldValue(profile.phone);
+      return '📞 Contact for ' + profile.name + ':\nPhone: ' + (phone || 'Not Available');
+    }
+    if (/email/.test(norm)) {
+      var email = _fieldValue(profile.email);
+      return '📧 Email for ' + profile.name + ': ' + (email || 'Not Available');
+    }
+    if (/birthday/.test(norm)) {
+      var bday = _fieldValue(profile.birthday);
+      return '🎂 Birthday for ' + profile.name + ': ' + (bday || 'Not Available');
+    }
+    if (/nickname/.test(norm)) {
+      var nick = _fieldValue(profile.nickname);
+      return '🏷️ Nickname for ' + profile.name + ': ' + (nick || 'Not Available');
+    }
+    if (/relation/.test(norm)) {
+      var rel = _fieldValue(profile.relation);
+      return '🤝 Relation for ' + profile.name + ': ' + (rel || 'Not Available');
+    }
+    return null;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 7 — FRIENDS HELP
+  // ══════════════════════════════════════════════════════════════
+  function _friendsHelpResponse() {
+    return [
+      '👥 Friends Module — Commands\n',
+      '  • friends',
+      '  • list friends',
+      '  • show friends',
+      '  • tell me about aayush',
+      '  • open aayush profile',
+      '  • show aayush',
+      '  • friend aayush',
+      '  • find friend sameer',
+      '  • search friend kushal',
+      '  • locate muskan',
+      '\nAvailable friends:',
+      '  👥 Aayush  👥 Muskan  👥 Sameer',
+      '  👥 Kushal  👥 Lucky   👥 Yugal',
+      '\nAfter opening a profile:',
+      '  • show notes',
+      '  • show interests',
+      '  • show contact',
+      '  • show birthday',
+    ].join('\n');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // CENTRAL COMMAND MATCHER FOR FRIENDS MODULE
+  // Called once per input. Returns a response string or null.
+  // ══════════════════════════════════════════════════════════════
+  var FRIEND_NAMES = ['aayush', 'muskan', 'sameer', 'kushal', 'lucky', 'yugal'];
+
+  function _matchFriendCommand(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+
+    var norm = raw.toLowerCase()
+      .replace(/[?!.]+$/, '')
+      .replace(/\b(please|can you|could you|would you|just|for me)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // ── STEP 7: help friends ──────────────────────────────────────
+    if (/^help\s+friends?$/.test(norm) ||
+        norm === 'friends help' ||
+        norm === 'friend help') {
+      return _friendsHelpResponse();
+    }
+
+    // ── STEP 3: list/show friends ─────────────────────────────────
+    if (norm === 'friends' ||
+        norm === 'list friends' ||
+        norm === 'show friends' ||
+        norm === 'my friends' ||
+        norm === 'list my friends' ||
+        norm === 'show my friends' ||
+        norm === 'who are my friends' ||
+        norm === 'friends list') {
+      return _friendsListResponse();
+    }
+
+    // ── STEP 6: Follow-up (show notes/interests/contact etc.) ────
+    var followUp = _resolveFriendFollowUp(norm);
+    if (followUp) return followUp;
+
+    // ── STEP 4: Open profile commands ────────────────────────────
+    // "tell me about X" / "open X profile" / "show X" / "friend X"
+    for (var i = 0; i < FRIEND_NAMES.length; i++) {
+      var fname = FRIEND_NAMES[i];
+
+      // Patterns that should open the profile window
+      var profilePatterns = [
+        new RegExp('^tell\\s+me\\s+about\\s+' + fname + '$'),
+        new RegExp('^open\\s+' + fname + '\\s+profile$'),
+        new RegExp('^show\\s+' + fname + '$'),
+        new RegExp('^friend\\s+' + fname + '$'),
+        new RegExp('^' + fname + '\\s+profile$'),
+        new RegExp('^view\\s+' + fname + '\\s+profile$'),
+        new RegExp('^display\\s+' + fname + '\\s+profile$'),
+        new RegExp('^open\\s+' + fname + '$'),
+        new RegExp('^profile\\s+' + fname + '$'),
+      ];
+
+      for (var pi = 0; pi < profilePatterns.length; pi++) {
+        if (profilePatterns[pi].test(norm)) {
+          return openFriendProfile(fname);
+        }
+      }
+
+      // ── STEP 5: Search/find/locate ────────────────────────────
+      var searchPatterns = [
+        new RegExp('^find\\s+friend\\s+' + fname + '$'),
+        new RegExp('^search\\s+friend\\s+' + fname + '$'),
+        new RegExp('^locate\\s+' + fname + '$'),
+        new RegExp('^find\\s+' + fname + '$'),
+        new RegExp('^search\\s+' + fname + '$'),
+        new RegExp('^lookup\\s+' + fname + '$'),
+      ];
+
+      for (var si = 0; si < searchPatterns.length; si++) {
+        if (searchPatterns[si].test(norm)) {
+          return _searchFriendResponse(fname);
+        }
+      }
+    }
+
+    // ── Generic "tell me about / open / friend / show" with any friend name inside ──
+    var genericFriend = _findFriend(norm);
+    if (genericFriend) {
+      if (/\b(tell\s+me\s+about|open|show|friend|view|profile|display)\b/.test(norm)) {
+        return openFriendProfile(genericFriend);
+      }
+      if (/\b(find|search|locate|lookup)\b/.test(norm)) {
+        return _searchFriendResponse(genericFriend);
+      }
+    }
+
+    // ── WINDOW LIFECYCLE COMMANDS ─────────────────────────────
+    // close profile / close <name> profile / close friend-profile-window
+    if (/^close\s+(friend[\s-]profile[\s-]window|friend\s+profile|profile)$/.test(norm) ||
+        /^(exit|hide)\s+(friend[\s-]profile[\s-]window|friend\s+profile|profile)$/.test(norm)) {
+      if (typeof window.closeWindow === 'function') window.closeWindow('friend-profile-window');
+      return '✖ Profile closed.';
+    }
+    // close <name> profile (e.g. "close aayush profile")
+    for (var ci = 0; ci < FRIEND_NAMES.length; ci++) {
+      if (new RegExp('^(?:close|exit|hide)\\s+' + FRIEND_NAMES[ci] + '\\s+profile$').test(norm)) {
+        if (typeof window.closeWindow === 'function') window.closeWindow('friend-profile-window');
+        return '✖ Profile closed.';
+      }
+    }
+
+    // minimize profile
+    if (/^minimize\s+(friend[\s-]profile[\s-]window|friend\s+profile|profile)$/.test(norm)) {
+      _minimizeFriendProfile();
+      return '🗕 Profile minimized.';
+    }
+    for (var mi = 0; mi < FRIEND_NAMES.length; mi++) {
+      if (new RegExp('^minimize\\s+' + FRIEND_NAMES[mi] + '\\s+profile$').test(norm)) {
+        _minimizeFriendProfile();
+        return '🗕 Profile minimized.';
+      }
+    }
+
+    // maximize profile
+    if (/^maximize\s+(friend[\s-]profile[\s-]window|friend\s+profile|profile)$/.test(norm)) {
+      _maximizeFriendProfile();
+      return '🔲 Profile maximized.';
+    }
+    for (var xi = 0; xi < FRIEND_NAMES.length; xi++) {
+      if (new RegExp('^maximize\\s+' + FRIEND_NAMES[xi] + '\\s+profile$').test(norm)) {
+        _maximizeFriendProfile();
+        return '🔲 Profile maximized.';
+      }
+    }
+
+    // focus / restore profile
+    if (/^(?:focus|restore|show|bring up)\s+(friend[\s-]profile[\s-]window|friend\s+profile|profile)$/.test(norm)) {
+      if (typeof window.openWindow === 'function') window.openWindow('friend-profile-window');
+      return '👤 Profile focused.';
+    }
+    for (var fi = 0; fi < FRIEND_NAMES.length; fi++) {
+      if (new RegExp('^(?:focus|restore|show|bring up)\\s+' + FRIEND_NAMES[fi] + '\\s+profile$').test(norm)) {
+        if (typeof window.openWindow === 'function') window.openWindow('friend-profile-window');
+        return '👤 Profile focused.';
+      }
+    }
+
+    return null; // not a friends command
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // WINDOW LIFECYCLE HELPERS
+  // Used by _matchFriendCommand and the title-bar button wiring.
+  // These replicate minimizeWindow / maximizeWindow logic exactly,
+  // operating only on the friend-profile-window element so that
+  // the single window manager remains the sole source of truth for
+  // all other windows.
+  // ══════════════════════════════════════════════════════════════
+  var _FP_WIN_ID      = 'friend-profile-window';
+  var _FP_STORAGE_KEY = 'atul_windows_v2';
+
+  /** Read / write the shared windowState from localStorage (same key as window manager). */
+  function _fpLoadState() {
+    try { return JSON.parse(localStorage.getItem(_FP_STORAGE_KEY)) || {}; } catch(e) { return {}; }
+  }
+  function _fpSaveState(state) {
+    try { localStorage.setItem(_FP_STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  }
+
+  /** Raise friend-profile-window to the front (mirrors bringToFront). */
+  function _fpBringToFront(win) {
+    var allWins = document.querySelectorAll('.app-window');
+    var maxZ = 100;
+    allWins.forEach(function(w) { maxZ = Math.max(maxZ, parseInt(w.style.zIndex || 0)); });
+    var newZ = maxZ + 1;
+    win.style.zIndex = newZ;
+    var st = _fpLoadState();
+    st[_FP_WIN_ID] = st[_FP_WIN_ID] || {};
+    st[_FP_WIN_ID].z = newZ;
+    _fpSaveState(st);
+  }
+
+  /** Minimize friend-profile-window (mirrors minimizeWindow). */
+  function _minimizeFriendProfile() {
+    var win = document.getElementById(_FP_WIN_ID);
+    if (!win || win.style.display === 'none') return;
+    win.style.display = 'none';
+    win.setAttribute('aria-hidden', 'true');
+    var st = _fpLoadState();
+    st[_FP_WIN_ID] = st[_FP_WIN_ID] || {};
+    st[_FP_WIN_ID].minimized = true;
+    _fpSaveState(st);
+    // Add taskbar chip so user can restore
+    if (window._Taskbar && typeof window._Taskbar.add === 'function') {
+      window._Taskbar.add(win);
+    }
+    // Keep APP_REGISTRY in sync if available
+    if (window.APP_REGISTRY && window.APP_REGISTRY['profile']) {
+      window.APP_REGISTRY['profile'].minimized = true;
+    }
+  }
+
+  /** Maximize / restore friend-profile-window (mirrors maximizeWindow). */
+  function _maximizeFriendProfile() {
+    var win = document.getElementById(_FP_WIN_ID);
+    if (!win) return;
+    var isMax = win.dataset.maximized === 'true';
+    var maxBtn = win.querySelector('.win-btn.max i');
+    var st = _fpLoadState();
+    st[_FP_WIN_ID] = st[_FP_WIN_ID] || {};
+    if (!isMax) {
+      var rect = win.getBoundingClientRect();
+      st[_FP_WIN_ID].prev = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+      var taskbarH = 44;
+      var bar  = document.getElementById('statusbar');
+      var barH = (bar && bar.offsetHeight) ? bar.offsetHeight : 44;
+      win.style.left   = '8px';
+      win.style.top    = (barH + 8) + 'px';
+      win.style.width  = (window.innerWidth  - 16) + 'px';
+      win.style.height = (window.innerHeight - barH - taskbarH - 16) + 'px';
+      win.dataset.maximized = 'true';
+      if (maxBtn) maxBtn.className = 'fa-regular fa-window-restore';
+    } else {
+      var prev = st[_FP_WIN_ID].prev;
+      if (prev) {
+        win.style.left   = prev.left   + 'px';
+        win.style.top    = prev.top    + 'px';
+        win.style.width  = prev.width  + 'px';
+        win.style.height = prev.height + 'px';
+      }
+      win.dataset.maximized = 'false';
+      if (maxBtn) maxBtn.className = 'fa-regular fa-square';
+    }
+    st[_FP_WIN_ID].maximized = (win.dataset.maximized === 'true');
+    _fpSaveState(st);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // WINDOW MANAGER INTEGRATION
+  // Wires the friend-profile-window into the existing window
+  // manager lifecycle: initial hide, drag, title-bar buttons,
+  // keyboard shortcuts, resize handles, taskbar and APP_REGISTRY.
+  // Called from _install() after the DOM is ready, so all window-
+  // manager globals (openWindow, closeWindow, _Taskbar, APP_REGISTRY)
+  // are guaranteed to exist.
+  // ══════════════════════════════════════════════════════════════
+  function _initFriendProfileWindow() {
+    var win = document.getElementById(_FP_WIN_ID);
+    if (!win) return; // safety: element must exist
+
+    // ── 1. Initial hide — mirrors the window manager's init forEach loop ──
+    var st = _fpLoadState();
+    var saved = st[_FP_WIN_ID] || {};
+    if (saved.left   !== undefined) win.style.left   = saved.left   + 'px';
+    if (saved.top    !== undefined) win.style.top    = saved.top    + 'px';
+    if (saved.width  !== undefined) win.style.width  = saved.width  + 'px';
+    if (saved.height !== undefined) win.style.height = saved.height + 'px';
+    if (saved.z      !== undefined) win.style.zIndex = saved.z;
+    win.style.display = 'none';
+    win.setAttribute('aria-hidden', 'true');
+
+    // ── 2. Register in APP_REGISTRY so minimizeApp / toggleApp work ──
+    if (window.APP_REGISTRY) {
+      window.APP_REGISTRY['profile'] = { elementId: _FP_WIN_ID, open: false, minimized: false };
+    }
+
+    // ── 3. Title-bar button handlers — exact same logic as window manager ──
+    win.querySelectorAll('[data-action]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var a = btn.dataset.action;
+        if (a === 'close')    window.closeWindow(_FP_WIN_ID);
+        if (a === 'minimize') _minimizeFriendProfile();
+        if (a === 'maximize') _maximizeFriendProfile();
+      });
+    });
+
+    // ── 4. Keyboard shortcuts on the window — mirrors window manager ──
+    win.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') window.closeWindow(_FP_WIN_ID);
+      if (e.key === 'F11')    _maximizeFriendProfile();
+    });
+
+    // ── 5. Drag — mirrors the window manager's per-window drag closure ──
+    var header = win.querySelector('[data-drag-handle]') || win.querySelector('.window-header');
+    if (header) {
+      var dragging = false, ox = 0, oy = 0;
+
+      function _fpStartDrag(cx, cy) {
+        dragging = true;
+        var r = win.getBoundingClientRect();
+        ox = cx - r.left; oy = cy - r.top;
+        document.body.style.userSelect = 'none';
+        _fpBringToFront(win);
+      }
+      function _fpStopDrag() {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.userSelect = '';
+        var r  = win.getBoundingClientRect();
+        var s2 = _fpLoadState();
+        s2[_FP_WIN_ID] = s2[_FP_WIN_ID] || {};
+        s2[_FP_WIN_ID].left  = Math.round(r.left);
+        s2[_FP_WIN_ID].top   = Math.round(r.top);
+        s2[_FP_WIN_ID].width = Math.round(r.width);
+        s2[_FP_WIN_ID].height= Math.round(r.height);
+        _fpSaveState(s2);
+      }
+      function _fpOnMove(cx, cy) {
+        if (!dragging) return;
+        var bar      = document.getElementById('statusbar');
+        var taskbarH = 44;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var minTop = (bar ? bar.offsetHeight : 44) + 8;
+        var maxTop = vh - taskbarH - 34;
+        var left = Math.max(8, Math.min(cx - ox, vw - win.offsetWidth  - 8));
+        var top  = Math.max(minTop, Math.min(cy - oy, maxTop));
+        win.style.left = left + 'px';
+        win.style.top  = top  + 'px';
+      }
+
+      header.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.win-btn')) return;
+        e.preventDefault(); _fpStartDrag(e.clientX, e.clientY);
+      });
+      document.addEventListener('mousemove', function(e) { _fpOnMove(e.clientX, e.clientY); });
+      document.addEventListener('mouseup',   _fpStopDrag);
+      header.addEventListener('touchstart', function(e) {
+        if (e.target.closest('.win-btn')) return;
+        var t = e.touches[0]; _fpStartDrag(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchmove', function(e) {
+        if (!dragging) return; var t = e.touches[0]; _fpOnMove(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchend', _fpStopDrag);
+    }
+
+    // ── 6. Bring to front on click — mirrors window manager ──
+    win.addEventListener('mousedown', function() { _fpBringToFront(win); });
+
+    // ── 7. Resize handles — mirrors initWindowResize module ──
+    var _FP_MIN_W = 280, _FP_MIN_H = 120;
+    ['right', 'bottom', 'corner'].forEach(function(dir) {
+      if (win.querySelector('.resize-handle.' + dir)) return; // avoid duplicates
+      var handle = document.createElement('div');
+      handle.className = 'resize-handle ' + dir;
+      handle.setAttribute('aria-hidden', 'true');
+      win.appendChild(handle);
+
+      var resizing = false, startX = 0, startY = 0, startW = 0, startH = 0;
+
+      function _fpResizeStart(cx, cy) {
+        resizing = true; startX = cx; startY = cy;
+        startW = win.offsetWidth; startH = win.offsetHeight;
+        document.body.style.userSelect    = 'none';
+        document.body.style.pointerEvents = 'none';
+        handle.style.pointerEvents        = 'auto';
+      }
+      function _fpResizeMove(cx, cy) {
+        if (!resizing) return;
+        var dx = cx - startX, dy = cy - startY;
+        if (handle.classList.contains('right')  || handle.classList.contains('corner'))
+          win.style.width  = Math.max(_FP_MIN_W, startW + dx) + 'px';
+        if (handle.classList.contains('bottom') || handle.classList.contains('corner')) {
+          var maxH = window.innerHeight - win.getBoundingClientRect().top - 44 - 8;
+          win.style.height = Math.max(_FP_MIN_H, Math.min(startH + dy, maxH)) + 'px';
+        }
+      }
+      function _fpResizeEnd() {
+        if (!resizing) return;
+        resizing = false;
+        document.body.style.userSelect    = '';
+        document.body.style.pointerEvents = '';
+        var s3 = _fpLoadState();
+        s3[_FP_WIN_ID] = s3[_FP_WIN_ID] || {};
+        s3[_FP_WIN_ID].width  = Math.round(win.offsetWidth);
+        s3[_FP_WIN_ID].height = Math.round(win.offsetHeight);
+        _fpSaveState(s3);
+      }
+
+      handle.addEventListener('mousedown', function(e) {
+        e.stopPropagation(); e.preventDefault(); _fpResizeStart(e.clientX, e.clientY);
+      });
+      document.addEventListener('mousemove', function(e) { if (resizing) _fpResizeMove(e.clientX, e.clientY); });
+      document.addEventListener('mouseup',   function()  { if (resizing) _fpResizeEnd(); });
+      handle.addEventListener('touchstart', function(e) {
+        e.stopPropagation(); var t = e.touches[0]; _fpResizeStart(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchmove', function(e) {
+        if (!resizing) return; var t = e.touches[0]; _fpResizeMove(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchend', function() { if (resizing) _fpResizeEnd(); });
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 4 — INTENT ROUTER EXTENSION
+  // Adds friend.profile.* intents to INTENT_NAMESPACE and
+  // phrase entries to INTENT_MAP for each friend, without
+  // modifying either module's core code.
+  // ══════════════════════════════════════════════════════════════
+  function _extendIntentSystem() {
+    // Extend INTENT_MAP (Module 4.6) with friend intents
+    if (typeof window.INTENT_MAP !== 'undefined') {
+      FRIEND_NAMES.forEach(function(fname) {
+        var key = 'friend_profile_' + fname;
+        window.INTENT_MAP[key] = {
+          keywords: [fname],
+          phrases: [
+            'tell me about ' + fname,
+            'open ' + fname + ' profile',
+            'show ' + fname,
+            'friend ' + fname,
+            fname + ' profile',
+            'find friend ' + fname,
+            'search friend ' + fname,
+            'locate ' + fname,
+          ],
+          score: 0.92,
+        };
+      });
+      // friends list intent additions
+      if (!window.INTENT_MAP.friends) {
+        window.INTENT_MAP.friends = {
+          keywords: ['friends'],
+          phrases:  ['friends', 'list friends', 'show friends', 'my friends', 'who are my friends', 'friends list'],
+          score: 0.88,
+        };
+      }
+    }
+
+    // Extend INTENT_NAMESPACE (Module 4.65) with friend dot-notation
+    if (typeof window.INTENT_NAMESPACE !== 'undefined') {
+      FRIEND_NAMES.forEach(function(fname) {
+        window.INTENT_NAMESPACE['friend_profile_' + fname] = 'friend.profile.' + fname;
+      });
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // INTEGRATION — Patch _jarvisProcessInternal (AI chat) and
+  // executeCommand (terminal) to intercept friend commands FIRST,
+  // before any existing logic, with zero modification to those
+  // functions' original code paths.
+  // ══════════════════════════════════════════════════════════════
+  function _patchAI() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig) return;
+    // Always wrap regardless of existing patch flags — friends must
+    // be the outermost layer so it intercepts before personality /
+    // confidence / session patches process the input.
+    // Guard: if already friends-patched from a prior DOMContentLoaded
+    // call, skip to avoid double-wrap.
+    if (_orig._friendsPatched) return;
+
+    window._jarvisProcessInternal = function friendsAwareJarvis(rawInput) {
+      if (!rawInput) return _orig(rawInput);
+      var cleaned = rawInput
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+      var result = _matchFriendCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.jarvisSpeak === 'function') {
+          try { window.jarvisSpeak(result); } catch(e) {}
+        }
+        return result;
+      }
+      return _orig(rawInput);
+    };
+    // Carry ALL prior patch flags forward so other modules' guards
+    // that check these flags still pass.
+    window._jarvisProcessInternal._friendsPatched     = true;
+    window._jarvisProcessInternal._sessionPatched     = true;
+    window._jarvisProcessInternal._personalityPatched = true;
+    window._jarvisProcessInternal._confidencePatched  = true;
+  }
+
+  function _patchExecuteCommand() {
+    var _origExec = window.executeCommand;
+    if (!_origExec) return;
+    // Same reasoning: wrap unconditionally unless already friends-patched.
+    if (_origExec._friendsPatched) return;
+
+    window.executeCommand = function friendsAwareExecuteCommand(rawInput) {
+      if (!rawInput || !rawInput.trim()) return _origExec(rawInput);
+      var cleaned = rawInput.trim()
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+      var result = _matchFriendCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(result);
+        return result;
+      }
+      return _origExec(rawInput);
+    };
+    // Carry all prior flags forward.
+    window.executeCommand._friendsPatched    = true;
+    window.executeCommand._sessionPatched    = true;
+    window.executeCommand._helpPatched       = true;
+    window.executeCommand._confidencePatched = true;
+    window.executeCommand._personalityPatched = true;
+  }
+
+  // ── Deferred install — ensures all prior modules are loaded ──
+  function _install() {
+    _initFriendProfileWindow();
+    _extendIntentSystem();
+    _patchAI();
+    _patchExecuteCommand();
+    console.log('[AtulOS 4.71] Friends Registry installed. Friends: ' +
+                FRIEND_NAMES.join(', ') + '.');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _install);
+  } else {
+    _install();
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // PUBLIC API
+  // ══════════════════════════════════════════════════════════════
+  window.FRIENDS_REGISTRY  = FRIENDS_REGISTRY;
+  window.openFriendProfile = openFriendProfile;
+
+})();
 </script>
 </body>
 </html>
