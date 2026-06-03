@@ -12227,6 +12227,7 @@ window.safeAppend = function safeAppend(parent, child) {
   display: flex; align-items: center; justify-content: center;
   font-size: 22px;
   flex-shrink: 0;
+  object-fit: cover;
 }
 .friend-header-info { flex: 1; }
 .friend-profile-name {
@@ -12389,7 +12390,7 @@ window.safeAppend = function safeAppend(parent, child) {
       email:        '',
       notes:        '',
       interests:    [],
-      profileImage: '',
+      profileImage: 'assets/friends/lucky.jpeg',
       lastContact:  '',
       friendshipTimeline: [],
       socialLinks:        {},
@@ -12472,9 +12473,7 @@ window.safeAppend = function safeAppend(parent, child) {
 
   // ── Build profile HTML content ─────────────────────────────────
   function _buildProfileHTML(p) {
-    var avatar = p.profileImage
-      ? '<img src="' + p.profileImage + '" alt="' + p.name + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />'
-      : '<span>👤</span>';
+    var avatar = '<img src="' + (p.profileImage || 'assets/default-avatar.png') + '" class="friend-avatar" alt="' + p.name + '" />';
 
     var relation  = _renderFieldValue(p.relation);
     var nickname  = _renderFieldValue(p.nickname);
@@ -12507,7 +12506,7 @@ window.safeAppend = function safeAppend(parent, child) {
 
     return [
       '<div class="friend-profile-header">',
-        '<div class="friend-avatar">' + avatar + '</div>',
+        avatar,
         '<div class="friend-header-info">',
           '<div class="friend-profile-name">' + _escHtml(p.name) + '</div>',
           '<div class="friend-profile-relation">' + (relation.isNA ? 'Friend' : _escHtml(relation.text)) + '</div>',
