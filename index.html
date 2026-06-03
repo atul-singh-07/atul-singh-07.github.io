@@ -3144,7 +3144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="auth-logo">A T U L</div>
     <div class="auth-subtitle">ATUL AUTH SYSTEM v1.0</div>
     <div class="auth-ring"><i class="fa-solid fa-lock"></i></div>
-    <div class="auth-label">ENTER ACCESS CODE</div>
+    <div class="auth-label" id="atul-auth-label-text">ENTER ACCESS CODE</div>
     <input id="atul-auth-input" type="password" placeholder="••••••••" autocomplete="off" spellcheck="false" />
     <div id="atul-auth-msg"></div>
     <button id="atul-auth-btn">VERIFY</button>
@@ -9114,8 +9114,18 @@ window.termPrintLine = termPrintLine;
 (function () {
   'use strict';
 
-  const AUTH_PASSWORD = 'atul0775';
+  // ── Module 4.75: scope-isolated passwords ──────────────────────
+  // Device scope  → atul0775   (unchanged — original device password)
+  // Friends scope → atul2206   (new — completely separate)
+  // These must NEVER cross-authenticate.
+  var _SCOPE_PASSWORDS = {
+    device:  'atul0775',
+    friends: 'atul2206',
+  };
+  var _DEFAULT_SCOPE   = 'device';
+
   let _pendingCallback = null;
+  let _pendingScope    = _DEFAULT_SCOPE;   // track which scope is being verified
   let _listenersReady  = false;
 
   function _el(id) { return document.getElementById(id); }
@@ -9124,23 +9134,30 @@ window.termPrintLine = termPrintLine;
     const overlay = _el('atul-auth-overlay');
     const input   = _el('atul-auth-input');
     const msg     = _el('atul-auth-msg');
+    const label   = _el('atul-auth-label-text');
     if (overlay) overlay.classList.remove('active');
     if (input)   input.value = '';
     if (msg)     { msg.textContent = ''; msg.style.color = ''; }
+    if (label)   label.textContent = 'ENTER ACCESS CODE';
     _pendingCallback = null;
+    _pendingScope    = _DEFAULT_SCOPE;
   }
 
   function _tryVerify() {
-    const input = _el('atul-auth-input');
-    const msg   = _el('atul-auth-msg');
+    const input    = _el('atul-auth-input');
+    const msg      = _el('atul-auth-msg');
     if (!input) return;
 
-    if (input.value === AUTH_PASSWORD) {
+    // Look up the correct password for the current scope only
+    var expected = _SCOPE_PASSWORDS[_pendingScope] || _SCOPE_PASSWORDS[_DEFAULT_SCOPE];
+
+    if (input.value === expected) {
       if (msg) { msg.textContent = '✔ Access granted.'; msg.style.color = '#28c840'; }
       setTimeout(function () {
-        const cb = _pendingCallback;
+        const cb    = _pendingCallback;
+        const scope = _pendingScope;
         _closeOverlay();
-        if (typeof cb === 'function') cb();
+        if (typeof cb === 'function') cb(scope);
       }, 480);
     } else {
       if (msg) { msg.textContent = '✖ Incorrect code. Try again.'; msg.style.color = '#ff5f57'; }
@@ -9176,16 +9193,36 @@ window.termPrintLine = termPrintLine;
 
   document.addEventListener('DOMContentLoaded', _attachListeners);
 
+  // Original API — device scope (unchanged behaviour for all existing callers)
   window.triggerSecurityAlert = function (callback) {
+    window.triggerSecurityAlertScoped(callback, 'device');
+  };
+
+  // New scoped API used by Module 4.75 friend authentication
+  window.triggerSecurityAlertScoped = function (callback, scope) {
     _attachListeners();
     _pendingCallback = (typeof callback === 'function') ? callback : null;
+    _pendingScope    = (scope === 'friends') ? 'friends' : 'device';
+
     const overlay = _el('atul-auth-overlay');
     const input   = _el('atul-auth-input');
     const msg     = _el('atul-auth-msg');
+    const label   = _el('atul-auth-label-text');
+
     if (!overlay) {
-      window.addEventListener('load', function () { window.triggerSecurityAlert(callback); }, { once: true });
+      window.addEventListener('load', function () {
+        window.triggerSecurityAlertScoped(callback, scope);
+      }, { once: true });
       return;
     }
+
+    // Update label to reflect scope
+    if (label) {
+      label.textContent = (_pendingScope === 'friends')
+        ? 'ENTER FRIENDS ACCESS CODE'
+        : 'ENTER ACCESS CODE';
+    }
+
     if (msg)   { msg.textContent = ''; msg.style.color = ''; }
     if (input) { input.value = ''; }
     overlay.classList.add('active');
@@ -9196,13 +9233,33 @@ window.termPrintLine = termPrintLine;
 </script>
 
 <script>
-/* ── MULTI-SCOPE SESSION AUTH ── */
+/* ── MULTI-SCOPE SESSION AUTH — Module 4.75 upgrade ── */
+// Session-only flags: both reset to false on page load / refresh.
+// DO NOT store these in localStorage or sessionStorage.
 let ATULAI_DEVICE_AUTH  = false;
 let ATULAI_FRIENDS_AUTH = false;
 
+// AI_MEMORY namespace alias (spec requirement)
+// Safely attach friendAuthenticated to existing AI_MEMORY once it exists.
+(function _attachFriendAuthToAIMemory() {
+  function _doAttach() {
+    var mem = window.AI_MEMORY;
+    if (!mem) return;
+    if (mem.hasOwnProperty('friendAuthenticated')) return; // already attached
+    Object.defineProperty(mem, 'friendAuthenticated', {
+      get: function () { return window.ATULAI_FRIENDS_AUTH === true; },
+      set: function (v) { window.ATULAI_FRIENDS_AUTH = !!v; },
+      configurable: true,
+    });
+  }
+  // Try now (if AI_MEMORY is already defined), else wait for DOMContentLoaded
+  _doAttach();
+  document.addEventListener('DOMContentLoaded', _doAttach);
+})();
+
 function requireAuth(actionFn, scope) {
-  let isAuthenticated = false;
-  if (scope === 'device')  isAuthenticated = ATULAI_DEVICE_AUTH;
+  var isAuthenticated = false;
+  if (scope === 'device')       isAuthenticated = ATULAI_DEVICE_AUTH;
   else if (scope === 'friends') isAuthenticated = ATULAI_FRIENDS_AUTH;
 
   if (isAuthenticated === true) {
@@ -9213,16 +9270,17 @@ function requireAuth(actionFn, scope) {
     aiAppendMessage('ai', '🔐 Authentication required for ' + scope + ' access…', true);
   }
 
-  window.triggerSecurityAlert(function () {
+  // Use scoped trigger — ensures device password never unlocks friends and vice versa
+  window.triggerSecurityAlertScoped(function () {
     if (scope === 'device')       ATULAI_DEVICE_AUTH  = true;
-    else if (scope === 'friends') ATULAI_FRIENDS_AUTH = true;
+    else if (scope === 'friends') { ATULAI_FRIENDS_AUTH = true; if (window.AI_MEMORY) window.AI_MEMORY.friendAuthenticated = true; }
 
     if (typeof aiAppendMessage === 'function') {
       aiAppendMessage('ai', '✅ ' + scope.charAt(0).toUpperCase() + scope.slice(1) + ' access granted for this session.', true);
     }
 
     if (typeof actionFn === 'function') actionFn();
-  });
+  }, scope);
 
   return '🔐 Verifying identity…';
 }
@@ -9230,6 +9288,7 @@ function requireAuth(actionFn, scope) {
 function resetAtulAISession() {
   ATULAI_DEVICE_AUTH  = false;
   ATULAI_FRIENDS_AUTH = false;
+  if (window.AI_MEMORY) window.AI_MEMORY.friendAuthenticated = false;
 }
 </script>
 
@@ -13253,7 +13312,92 @@ window.safeAppend = function safeAppend(parent, child) {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // STEP 4 — INTENT ROUTER EXTENSION
+  // MODULE 4.75 — FRIEND AUTHENTICATION GATE
+  // Wraps every protected friend command through requireAuth with
+  // scope='friends'. Session-only; resets on page refresh.
+  // Passwords are scope-isolated:
+  //   friends → atul2206    device → atul0775  (never cross-auth)
+  // ══════════════════════════════════════════════════════════════
+
+  /**
+   * Execute a friend command, gating through friends auth if needed.
+   * @param {Function} commandFn  - zero-arg fn that runs the actual command
+   * @param {Function} [outputFn] - fn(result) to display async output (optional)
+   * @returns {string} immediate status string for synchronous callers
+   */
+  function _runWithFriendAuth(commandFn, outputFn) {
+    // Check current session state
+    if (window.ATULAI_FRIENDS_AUTH === true) {
+      var r = commandFn();
+      if (typeof outputFn === 'function' && r !== undefined) outputFn(r);
+      return r;
+    }
+
+    // Not authenticated — show popup with friends scope
+    if (typeof window.triggerSecurityAlertScoped === 'function') {
+      window.triggerSecurityAlertScoped(function () {
+        // Mark friends session authenticated
+        window.ATULAI_FRIENDS_AUTH = true;
+        if (typeof window.AI_MEMORY !== 'undefined') window.AI_MEMORY.friendAuthenticated = true;
+
+        // Notify in AI chat if available
+        if (typeof aiAppendMessage === 'function') {
+          aiAppendMessage('ai', '✅ Friend Session Authenticated.', true);
+        }
+
+        // Execute the original command now
+        var result = commandFn();
+        if (typeof outputFn === 'function' && result !== undefined) outputFn(result);
+        else if (typeof window.dispatchOutput === 'function' && result !== undefined) window.dispatchOutput(result);
+      }, 'friends');
+    } else {
+      // Fallback: standard requireAuth if scoped version not ready yet
+      if (typeof requireAuth === 'function') {
+        requireAuth(function () {
+          var result = commandFn();
+          if (typeof outputFn === 'function' && result !== undefined) outputFn(result);
+          else if (typeof window.dispatchOutput === 'function' && result !== undefined) window.dispatchOutput(result);
+        }, 'friends');
+      }
+    }
+
+    return '🔐 Friend Session — verifying identity…';
+  }
+
+  // ── Protected command check ───────────────────────────────────
+  // Returns true for commands that REQUIRE friend authentication.
+  function _isFriendProtectedCommand(norm) {
+    // Profile open commands for any friend name
+    for (var i = 0; i < FRIEND_NAMES.length; i++) {
+      var fname = FRIEND_NAMES[i];
+      var profilePatterns = [
+        new RegExp('^tell\\s+me\\s+about\\s+' + fname + '$'),
+        new RegExp('^open\\s+' + fname + '\\s+profile$'),
+        new RegExp('^show\\s+' + fname + '$'),
+        new RegExp('^friend\\s+' + fname + '$'),
+        new RegExp('^' + fname + '\\s+profile$'),
+        new RegExp('^view\\s+' + fname + '\\s+profile$'),
+        new RegExp('^display\\s+' + fname + '\\s+profile$'),
+        new RegExp('^open\\s+' + fname + '$'),
+        new RegExp('^profile\\s+' + fname + '$'),
+        new RegExp('^find\\s+friend\\s+' + fname + '$'),
+        new RegExp('^search\\s+friend\\s+' + fname + '$'),
+        new RegExp('^locate\\s+' + fname + '$'),
+        new RegExp('^find\\s+' + fname + '$'),
+        new RegExp('^search\\s+' + fname + '$'),
+        new RegExp('^lookup\\s+' + fname + '$'),
+      ];
+      for (var pi = 0; pi < profilePatterns.length; pi++) {
+        if (profilePatterns[pi].test(norm)) return true;
+      }
+    }
+    // Follow-up commands (show notes, show memories, etc.)
+    if (_FRIEND_FOLLOWUP_RE && _FRIEND_FOLLOWUP_RE.test(norm)) return true;
+    // Generic open/show with a friend name embedded
+    var gf = _findFriend(norm);
+    if (gf && /\b(tell\s+me\s+about|open|show|friend|view|profile|display|find|search|locate|lookup)\b/.test(norm)) return true;
+    return false;
+  }
   // Adds friend.profile.* intents to INTENT_NAMESPACE and
   // phrase entries to INTENT_MAP for each friend, without
   // modifying either module's core code.
@@ -13319,6 +13463,29 @@ window.safeAppend = function safeAppend(parent, child) {
         .replace(/^hello atulos?\s*/i, '')
         .replace(/^ok atulos?\s*/i, '')
         .trim();
+
+      var norm = cleaned.toLowerCase().replace(/[?!.]+$/, '').replace(/\s+/g, ' ').trim();
+
+      // Check if this is a protected friend command
+      if (_isFriendProtectedCommand(norm)) {
+        return _runWithFriendAuth(
+          function () {
+            var result = _matchFriendCommand(cleaned);
+            return result;
+          },
+          function (result) {
+            if (typeof window.jarvisSpeak === 'function') {
+              try { window.jarvisSpeak(result); } catch(e) {}
+            }
+            // Also push to AI chat output if available
+            if (typeof aiAppendMessage === 'function' && result) {
+              aiAppendMessage('ai', result, true);
+            }
+          }
+        );
+      }
+
+      // Non-protected friend command (help, list friends, close profile, etc.)
       var result = _matchFriendCommand(cleaned);
       if (result !== null) {
         if (typeof window.jarvisSpeak === 'function') {
@@ -13349,6 +13516,20 @@ window.safeAppend = function safeAppend(parent, child) {
         .replace(/^hello atulos?\s*/i, '')
         .replace(/^ok atulos?\s*/i, '')
         .trim();
+
+      var norm = cleaned.toLowerCase().replace(/[?!.]+$/, '').replace(/\s+/g, ' ').trim();
+
+      // Gate protected friend commands through friend authentication
+      if (_isFriendProtectedCommand(norm)) {
+        return _runWithFriendAuth(
+          function () { return _matchFriendCommand(cleaned); },
+          function (result) {
+            if (typeof window.dispatchOutput === 'function') window.dispatchOutput(result);
+          }
+        );
+      }
+
+      // Non-protected friend command (help, list friends, window controls, etc.)
       var result = _matchFriendCommand(cleaned);
       if (result !== null) {
         if (typeof window.dispatchOutput === 'function') window.dispatchOutput(result);
@@ -13370,8 +13551,8 @@ window.safeAppend = function safeAppend(parent, child) {
     _extendIntentSystem();
     _patchAI();
     _patchExecuteCommand();
-    console.log('[AtulOS 4.71] Friends Registry installed. Friends: ' +
-                FRIEND_NAMES.join(', ') + '.');
+    console.log('[AtulOS 4.75] Friends Registry + Friend Session Auth installed. Friends: ' +
+                FRIEND_NAMES.join(', ') + '. Auth scope: friends (atul2206) | device (atul0775) — isolated.');
   }
 
   if (document.readyState === 'loading') {
