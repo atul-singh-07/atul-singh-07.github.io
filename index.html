@@ -12551,6 +12551,969 @@ window.safeAppend = function safeAppend(parent, child) {
 }
 </style>
 
+<!-- ── NANCY ART STUDIO — DESKTOP ICON (added to desktop icons group via JS) ── -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     NANCY ART STUDIO — MODULE 4.80
+     Completely isolated from Friends Module, Auth, Window Manager.
+     Self-contained CSS + HTML + JS.
+════════════════════════════════════════════════════════════════ -->
+
+<style>
+/* ── Nancy Studio — AtulOS Native Theme ── */
+#nancy-studio-window {
+  width: 780px;
+  max-width: calc(100vw - 32px);
+  top: 80px;
+  left: 120px;
+}
+
+/* ── Body layout ── */
+#nancy-studio-window .window-body {
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
+  background: var(--window);
+}
+
+/* ── Hero / Profile Banner ── */
+.ns-hero {
+  position: relative;
+  padding: 32px 28px 28px;
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.ns-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.ns-avatar {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  display: block;
+}
+.ns-avatar-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(99,168,255,0.2);
+  animation: ns-ring-pulse 3s ease-in-out infinite;
+}
+@keyframes ns-ring-pulse {
+  0%,100% { transform: scale(1); opacity: 0.5; }
+  50%     { transform: scale(1.04); opacity: 1; }
+}
+.ns-avatar-placeholder {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px; color: var(--muted);
+}
+.ns-bio {
+  flex: 1;
+  min-width: 0;
+}
+.ns-artist-label {
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+  opacity: 0.8;
+}
+.ns-artist-name {
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.15;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+.ns-artist-name em {
+  font-style: normal;
+  color: var(--accent);
+}
+.ns-tagline {
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.ns-bio-text {
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 440px;
+}
+.ns-bio-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.ns-tag {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(99,168,255,0.07);
+}
+
+/* ── Section Headers ── */
+.ns-section {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.ns-section:last-child { border-bottom: none; }
+.ns-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.ns-section-title {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.ns-section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+.ns-section-count {
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* ── Gallery Grid ── */
+.ns-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.ns-art-card {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--card);
+  aspect-ratio: 1;
+  transition: transform 0.25s ease, border-color 0.25s, box-shadow 0.25s;
+}
+.ns-art-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  border-color: rgba(99,168,255,0.4);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.ns-art-card img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.ns-art-card:hover img {
+  transform: scale(1.05);
+}
+.ns-art-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(5,7,11,0.88) 0%, transparent 55%);
+  opacity: 0;
+  transition: opacity 0.25s;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+}
+.ns-art-card:hover .ns-art-card-overlay {
+  opacity: 1;
+}
+.ns-art-card-label {
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+.ns-art-placeholder {
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 26px;
+}
+.ns-art-placeholder span {
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Featured Art Card ── */
+.ns-featured-card {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--card);
+  transition: border-color 0.25s, box-shadow 0.25s;
+  cursor: pointer;
+}
+.ns-featured-card:hover {
+  border-color: rgba(99,168,255,0.35);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.35);
+}
+.ns-featured-img-wrap {
+  width: 200px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ns-featured-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.ns-featured-card:hover .ns-featured-img {
+  transform: scale(1.04);
+}
+.ns-featured-placeholder {
+  width: 100%; height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 36px;
+}
+.ns-featured-info {
+  padding: 22px 22px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  border-left: 1px solid var(--border);
+}
+.ns-featured-badge {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.8;
+}
+.ns-featured-badge::before {
+  content: '';
+  width: 16px; height: 1px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+.ns-featured-title {
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+.ns-featured-desc {
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+.ns-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(99,168,255,0.08);
+  color: var(--accent);
+  font-size: 11px;
+  font-family: inherit;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  align-self: flex-start;
+}
+.ns-view-btn:hover {
+  background: rgba(99,168,255,0.16);
+  border-color: rgba(99,168,255,0.45);
+}
+
+/* ── Artwork Preview Modal ── */
+#ns-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 99000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+  animation: ns-overlay-in 0.2s ease;
+}
+#ns-preview-overlay.ns-open {
+  display: flex;
+}
+@keyframes ns-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ns-preview-panel {
+  position: relative;
+  max-width: 85vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: ns-panel-in 0.25s cubic-bezier(.4,0,.2,1);
+}
+@keyframes ns-panel-in {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.ns-preview-img {
+  max-width: 100%;
+  max-height: calc(85vh - 80px);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+  display: block;
+  object-fit: contain;
+}
+.ns-preview-caption {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-align: center;
+}
+.ns-preview-close {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ns-preview-close:hover {
+  background: #e81123;
+  color: #fff;
+  border-color: transparent;
+}
+.ns-preview-nav {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.ns-prev-btn, .ns-next-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--fg);
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ns-prev-btn:hover, .ns-next-btn:hover {
+  background: rgba(99,168,255,0.1);
+  border-color: rgba(99,168,255,0.35);
+  color: var(--accent);
+}
+</style>
+
+<!-- ── NANCY STUDIO WINDOW ── -->
+<div class="app-window" id="nancy-studio-window" role="dialog"
+     aria-labelledby="nancy-studio-title" tabindex="0"
+     data-window-id="nancy-studio-window">
+
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <i class="fa-solid fa-palette"></i>
+      <span id="nancy-studio-title">Nancy &nbsp;·&nbsp; Art Studio</span>
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+
+  <div class="window-body" id="nancy-studio-body">
+
+    <!-- ── HERO / PROFILE ── -->
+    <div class="ns-hero" id="ns-section-about">
+      <div class="ns-avatar-wrap">
+        <img src="assets/nancy/profile.jpeg" class="ns-avatar" alt="Nancy"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+        <div class="ns-avatar-placeholder" style="display:none;"><i class="fa-solid fa-user-pen"></i></div>
+        <div class="ns-avatar-ring"></div>
+      </div>
+      <div class="ns-bio">
+        <div class="ns-artist-label">Artist &nbsp;·&nbsp; Creator</div>
+        <div class="ns-artist-name">Nancy<em>.</em></div>
+        <div class="ns-tagline">Painting &nbsp;·&nbsp; Illustration &nbsp;·&nbsp; Fine Art</div>
+        <div class="ns-bio-text">
+          A passionate visual artist whose work explores the interplay of colour, emotion, and memory.
+          Each piece is a quiet conversation — between light and shadow, between the seen and the felt.
+        </div>
+        <div class="ns-bio-tags">
+          <span class="ns-tag">Acrylics</span>
+          <span class="ns-tag">Watercolour</span>
+          <span class="ns-tag">Sketching</span>
+          <span class="ns-tag">Mixed Media</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FEATURED ARTWORK ── -->
+    <div class="ns-section" id="ns-section-featured">
+      <div class="ns-section-header">
+        <span class="ns-section-title">Featured</span>
+        <div class="ns-section-line"></div>
+        <span class="ns-section-count">No. 1</span>
+      </div>
+      <div class="ns-featured-card" onclick="window._nancyStudio && window._nancyStudio.previewArt(0)">
+        <div class="ns-featured-img-wrap">
+          <img src="assets/nancy/art1.jpeg" class="ns-featured-img" alt="Featured Artwork"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+          <div class="ns-featured-placeholder" style="display:none;"><i class="fa-solid fa-image"></i></div>
+        </div>
+        <div class="ns-featured-info">
+          <div class="ns-featured-badge">Featured Work</div>
+          <div class="ns-featured-title">Artwork I</div>
+          <div class="ns-featured-desc">
+            Selected from the studio collection. Click to view in full detail.
+          </div>
+          <button class="ns-view-btn"><i class="fa-solid fa-expand"></i>&nbsp; View Full</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GALLERY ── -->
+    <div class="ns-section" id="ns-section-gallery">
+      <div class="ns-section-header">
+        <span class="ns-section-title">Gallery</span>
+        <div class="ns-section-line"></div>
+        <span class="ns-section-count">5 Works</span>
+      </div>
+      <div class="ns-gallery-grid">
+        <!-- Cards injected by JS to handle image errors gracefully -->
+      </div>
+    </div>
+
+  </div><!-- /.window-body -->
+</div><!-- /#nancy-studio-window -->
+
+<!-- ── ARTWORK PREVIEW OVERLAY ── -->
+<div id="ns-preview-overlay" role="dialog" aria-modal="true" aria-label="Artwork Preview">
+  <div class="ns-preview-panel">
+    <button class="ns-preview-close" id="ns-preview-close" aria-label="Close preview">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <img src="" class="ns-preview-img" id="ns-preview-img" alt="Artwork" />
+    <div class="ns-preview-caption" id="ns-preview-caption"></div>
+    <div class="ns-preview-nav">
+      <button class="ns-prev-btn" id="ns-prev-btn">&#8592; Prev</button>
+      <button class="ns-next-btn" id="ns-next-btn">Next &#8594;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NANCY ART STUDIO MODULE SCRIPT ── -->
+<script>
+(function _installNancyStudioModule() {
+  'use strict';
+
+  var NS_WIN_ID = 'nancy-studio-window';
+
+  // ── Artwork catalogue ──
+  var NS_ARTWORKS = [
+    { src: 'assets/nancy/art1.jpeg', label: 'Artwork I'   },
+    { src: 'assets/nancy/art2.jpeg', label: 'Artwork II'  },
+    { src: 'assets/nancy/art3.jpeg', label: 'Artwork III' },
+    { src: 'assets/nancy/art4.jpeg', label: 'Artwork IV'  },
+    { src: 'assets/nancy/art5.jpeg', label: 'Artwork V'   },
+  ];
+
+  // ── Build gallery grid ──
+  function _buildGallery() {
+    var grid = document.querySelector('#nancy-studio-window .ns-gallery-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    NS_ARTWORKS.forEach(function(art, idx) {
+      var card = document.createElement('div');
+      card.className = 'ns-art-card';
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', 'View ' + art.label);
+      card.innerHTML =
+        '<img src="' + art.src + '" alt="' + art.label + '" ' +
+          'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" />' +
+        '<div class="ns-art-placeholder" style="display:none;">' +
+          '<i class="fa-solid fa-image"></i><span>' + art.label + '</span>' +
+        '</div>' +
+        '<div class="ns-art-card-overlay">' +
+          '<span class="ns-art-card-label">' + art.label + '</span>' +
+        '</div>';
+      card.addEventListener('click', function() { _previewArt(idx); });
+      card.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _previewArt(idx); }
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  // ── Preview modal ──
+  var _previewIdx = 0;
+
+  function _previewArt(idx) {
+    _previewIdx = idx;
+    var art = NS_ARTWORKS[idx];
+    var overlay = document.getElementById('ns-preview-overlay');
+    var img     = document.getElementById('ns-preview-img');
+    var caption = document.getElementById('ns-preview-caption');
+    if (!overlay || !img) return;
+    img.src = art.src;
+    img.alt = art.label;
+    if (caption) caption.textContent = art.label + ' · Nancy Art Studio';
+    overlay.classList.add('ns-open');
+    document.body.style.overflow = 'hidden';
+    overlay.focus();
+  }
+
+  function _closePreview() {
+    var overlay = document.getElementById('ns-preview-overlay');
+    if (overlay) overlay.classList.remove('ns-open');
+    document.body.style.overflow = '';
+  }
+
+  function _navPreview(delta) {
+    _previewIdx = (_previewIdx + delta + NS_ARTWORKS.length) % NS_ARTWORKS.length;
+    _previewArt(_previewIdx);
+  }
+
+  // ── Wire preview UI ──
+  function _wirePreview() {
+    var closeBtn = document.getElementById('ns-preview-close');
+    var overlay  = document.getElementById('ns-preview-overlay');
+    var prevBtn  = document.getElementById('ns-prev-btn');
+    var nextBtn  = document.getElementById('ns-next-btn');
+
+    if (closeBtn) closeBtn.addEventListener('click', _closePreview);
+    if (prevBtn)  prevBtn.addEventListener('click',  function() { _navPreview(-1); });
+    if (nextBtn)  nextBtn.addEventListener('click',  function() { _navPreview(1);  });
+
+    // Click outside panel closes
+    if (overlay) {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) _closePreview();
+      });
+    }
+
+    // Keyboard nav
+    document.addEventListener('keydown', function(e) {
+      var overlay = document.getElementById('ns-preview-overlay');
+      if (!overlay || !overlay.classList.contains('ns-open')) return;
+      if (e.key === 'Escape')     _closePreview();
+      if (e.key === 'ArrowLeft')  _navPreview(-1);
+      if (e.key === 'ArrowRight') _navPreview(1);
+    });
+  }
+
+  // ── Open/show the studio window ──
+  function _openNancyStudio() {
+    if (typeof window.openWindow === 'function') {
+      window.openWindow(NS_WIN_ID);
+    } else {
+      var win = document.getElementById(NS_WIN_ID);
+      if (win) { win.style.display = 'flex'; win.removeAttribute('aria-hidden'); }
+    }
+    return '🎨 Opening Nancy Art Studio…';
+  }
+
+  // ── Scroll to a section inside the studio ──
+  function _scrollToSection(sectionId) {
+    _openNancyStudio();
+    setTimeout(function() {
+      var el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+  }
+
+  // ── Command matcher — returns response string or null ──
+  function _matchNancyCommand(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    var norm = raw.toLowerCase()
+      .replace(/[?!.]+$/, '')
+      .replace(/\b(please|can you|could you|just|for me)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Open studio
+    if (norm === 'open nancy studio'       ||
+        norm === 'nancy studio'            ||
+        norm === 'open nancy art studio'   ||
+        norm === 'nancy art studio'        ||
+        norm === 'open art studio'         ||
+        norm === 'show nancy studio') {
+      return _openNancyStudio();
+    }
+
+    // Profile / about
+    if (norm === 'open nancy profile'      ||
+        norm === 'nancy profile'           ||
+        norm === 'show nancy profile'      ||
+        norm === 'about nancy'             ||
+        norm === 'nancy about') {
+      _scrollToSection('ns-section-about');
+      return '🎨 Showing Nancy\'s profile…';
+    }
+
+    // Gallery
+    if (norm === 'open art gallery'        ||
+        norm === 'open gallery'            ||
+        norm === 'show gallery'            ||
+        norm === 'art gallery'             ||
+        norm === 'nancy gallery'           ||
+        norm === 'show nancy artwork'      ||
+        norm === 'show artwork'            ||
+        norm === 'show nancy art') {
+      _scrollToSection('ns-section-gallery');
+      return '🎨 Opening artwork gallery…';
+    }
+
+    // Featured
+    if (norm === 'show featured art'       ||
+        norm === 'featured art'            ||
+        norm === 'nancy featured'          ||
+        norm === 'show featured artwork') {
+      _scrollToSection('ns-section-featured');
+      return '🎨 Showing featured artwork…';
+    }
+
+    return null;
+  }
+
+  // ── Wire Nancy Studio into native AtulOS Window Manager ──────────────────
+  // The native window manager's forEach loops already ran at parse time and
+  // only covered windows that existed then. We replicate the exact same
+  // wiring here: initial hide, drag, button actions, keyboard, bringToFront,
+  // and resize handles — using the same APIs the native manager uses.
+  // ─────────────────────────────────────────────────────────────────────────
+  function _wireNativeWindowManager() {
+    var win = document.getElementById(NS_WIN_ID);
+    if (!win) return;
+
+    // ── 1. Initial hide (mirrors native forEach at line ~8761) ──
+    win.style.display = 'none';
+    win.setAttribute('aria-hidden', 'true');
+
+    // ── 2. APP_REGISTRY ──
+    if (window.APP_REGISTRY) {
+      window.APP_REGISTRY['nancy-studio'] = { elementId: NS_WIN_ID, open: false, minimized: false };
+    }
+
+    // ── 3. bringToFront helper (mirrors native bringToFront) ──
+    function bringToFront() {
+      var allWins = document.querySelectorAll('.app-window');
+      var maxZ = 100;
+      allWins.forEach(function(w) { maxZ = Math.max(maxZ, parseInt(w.style.zIndex || 0)); });
+      win.style.zIndex = maxZ + 1;
+    }
+
+    // ── 4. minimizeWindow (mirrors native minimizeWindow) ──
+    function minimizeWin() {
+      win.style.display = 'none';
+      win.setAttribute('aria-hidden', 'true');
+      if (window._Taskbar && typeof window._Taskbar.add === 'function') {
+        window._Taskbar.add(win);
+      }
+    }
+
+    // ── 5. maximizeWindow (mirrors native maximizeWindow exactly) ──
+    function maximizeWin() {
+      var isMax  = win.dataset.maximized === 'true';
+      var maxBtn = win.querySelector('.win-btn.max i');
+      var STORAGE_KEY = 'atul_windows_v2';
+      var state;
+      try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { state = {}; }
+      state[NS_WIN_ID] = state[NS_WIN_ID] || {};
+      if (!isMax) {
+        var rect = win.getBoundingClientRect();
+        state[NS_WIN_ID].prev = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+        var bar  = document.getElementById('statusbar');
+        var barH = (bar && bar.offsetHeight) ? bar.offsetHeight : 44;
+        win.style.left   = '8px';
+        win.style.top    = (barH + 8) + 'px';
+        win.style.width  = (window.innerWidth  - 16) + 'px';
+        win.style.height = (window.innerHeight - barH - 44 - 16) + 'px';
+        win.dataset.maximized = 'true';
+        if (maxBtn) maxBtn.className = 'fa-regular fa-window-restore';
+      } else {
+        var prev = state[NS_WIN_ID].prev;
+        if (prev) {
+          win.style.left   = prev.left   + 'px';
+          win.style.top    = prev.top    + 'px';
+          win.style.width  = prev.width  + 'px';
+          win.style.height = prev.height + 'px';
+        }
+        win.dataset.maximized = 'false';
+        if (maxBtn) maxBtn.className = 'fa-regular fa-square';
+      }
+      state[NS_WIN_ID].maximized = (win.dataset.maximized === 'true');
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+    }
+
+    // ── 6. Button actions (data-action="close/minimize/maximize") ──
+    win.querySelectorAll('[data-action]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var a = btn.dataset.action;
+        if (a === 'close')    { if (typeof window.closeWindow === 'function') window.closeWindow(NS_WIN_ID); }
+        if (a === 'minimize') { minimizeWin(); }
+        if (a === 'maximize') { maximizeWin(); }
+      });
+    });
+
+    // ── 7. Keyboard shortcuts (mirrors native) ──
+    win.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { if (typeof window.closeWindow === 'function') window.closeWindow(NS_WIN_ID); }
+      if (e.key === 'F11')    { maximizeWin(); }
+    });
+
+    // ── 8. Bring to front on mousedown (mirrors native) ──
+    win.addEventListener('mousedown', function() { bringToFront(); });
+
+    // ── 9. Drag (mirrors native drag closure exactly) ──
+    var header = win.querySelector('[data-drag-handle]') || win.querySelector('.window-header');
+    if (header) {
+      var dragging = false, ox = 0, oy = 0;
+      function startDrag(cx, cy) {
+        dragging = true;
+        var r = win.getBoundingClientRect();
+        ox = cx - r.left; oy = cy - r.top;
+        document.body.style.userSelect = 'none';
+        bringToFront();
+      }
+      function stopDrag() {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.userSelect = '';
+        var r = win.getBoundingClientRect();
+        var STORAGE_KEY = 'atul_windows_v2';
+        var state; try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { state = {}; }
+        state[NS_WIN_ID] = Object.assign(state[NS_WIN_ID] || {}, {
+          left: Math.round(r.left), top: Math.round(r.top),
+          width: Math.round(r.width), height: Math.round(r.height)
+        });
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+      }
+      function onMove(cx, cy) {
+        if (!dragging) return;
+        var bar = document.getElementById('statusbar');
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var minTop = (bar ? bar.offsetHeight : 44) + 8;
+        var maxTop = vh - 44 - 34;
+        var left = Math.max(8, Math.min(cx - ox, vw - win.offsetWidth  - 8));
+        var top  = Math.max(minTop, Math.min(cy - oy, maxTop));
+        win.style.left = left + 'px';
+        win.style.top  = top  + 'px';
+      }
+      header.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.win-btn')) return;
+        e.preventDefault(); startDrag(e.clientX, e.clientY);
+      });
+      document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+      document.addEventListener('mouseup', stopDrag);
+      header.addEventListener('touchstart', function(e) {
+        if (e.target.closest('.win-btn')) return;
+        var t = e.touches[0]; startDrag(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchmove', function(e) {
+        if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchend', stopDrag);
+    }
+
+    // ── 10. Resize handles (mirrors initWindowResize.injectHandles + attachResizeListeners) ──
+    var MIN_W = 480, MIN_H = 320;
+    ['right', 'bottom', 'corner'].forEach(function(dir) {
+      if (win.querySelector('.resize-handle.' + dir)) return;
+      var handle = document.createElement('div');
+      handle.className = 'resize-handle ' + dir;
+      handle.setAttribute('aria-hidden', 'true');
+      win.appendChild(handle);
+
+      var resizing = false, startX = 0, startY = 0, startW = 0, startH = 0;
+      function onResizeStart(cx, cy) {
+        resizing = true; startX = cx; startY = cy;
+        startW = win.offsetWidth; startH = win.offsetHeight;
+        document.body.style.userSelect    = 'none';
+        document.body.style.pointerEvents = 'none';
+        handle.style.pointerEvents        = 'auto';
+      }
+      function onResizeMove(cx, cy) {
+        if (!resizing) return;
+        var dx = cx - startX, dy = cy - startY;
+        if (dir === 'right'  || dir === 'corner') win.style.width  = Math.max(MIN_W, startW + dx) + 'px';
+        if (dir === 'bottom' || dir === 'corner') {
+          var maxH = window.innerHeight - win.getBoundingClientRect().top - 44 - 8;
+          win.style.height = Math.max(MIN_H, Math.min(startH + dy, maxH)) + 'px';
+        }
+      }
+      function onResizeEnd() {
+        if (!resizing) return;
+        resizing = false;
+        document.body.style.userSelect    = '';
+        document.body.style.pointerEvents = '';
+        handle.style.pointerEvents        = '';
+      }
+      handle.addEventListener('mousedown',  function(e) { e.stopPropagation(); e.preventDefault(); onResizeStart(e.clientX, e.clientY); });
+      document.addEventListener('mousemove', function(e) { if (resizing) onResizeMove(e.clientX, e.clientY); });
+      document.addEventListener('mouseup',   function()  { if (resizing) onResizeEnd(); });
+      handle.addEventListener('touchstart', function(e) { e.stopPropagation(); var t = e.touches[0]; onResizeStart(t.clientX, t.clientY); }, { passive: true });
+      document.addEventListener('touchmove', function(e) { if (!resizing) return; var t = e.touches[0]; onResizeMove(t.clientX, t.clientY); }, { passive: true });
+      document.addEventListener('touchend',  function()  { if (resizing) onResizeEnd(); });
+    });
+  }
+
+  function _patchAI() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig || _orig._nancyPatched) return;
+    window._jarvisProcessInternal = function nancyAwareJarvis(rawInput) {
+      if (!rawInput) return _orig(rawInput);
+      var cleaned = rawInput.replace(/^(?:hey|hello|ok)\s+atulos?\s*/i, '').trim();
+      var result = _matchNancyCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.jarvisSpeak === 'function') { try { window.jarvisSpeak(result); } catch(e){} }
+        if (typeof aiAppendMessage === 'function' && result) aiAppendMessage('ai', result, true);
+        return result;
+      }
+      return _orig(rawInput);
+    };
+    // Carry all prior patch flags forward
+    window._jarvisProcessInternal._nancyPatched       = true;
+    window._jarvisProcessInternal._friendsPatched     = (_orig._friendsPatched     || false);
+    window._jarvisProcessInternal._sessionPatched     = (_orig._sessionPatched     || false);
+    window._jarvisProcessInternal._personalityPatched = (_orig._personalityPatched || false);
+    window._jarvisProcessInternal._confidencePatched  = (_orig._confidencePatched  || false);
+    window._jarvisProcessInternal._helpPatched        = (_orig._helpPatched        || false);
+  }
+
+  // ── Patch executeCommand ──
+  function _patchExecuteCommand() {
+    var _origExec = window.executeCommand;
+    if (!_origExec || _origExec._nancyPatched) return;
+    window.executeCommand = function nancyAwareExecuteCommand(rawInput) {
+      if (!rawInput || !rawInput.trim()) return _origExec(rawInput);
+      var cleaned = rawInput.trim().replace(/^(?:hey|hello|ok)\s+atulos?\s*/i, '').trim();
+      var result = _matchNancyCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(result);
+        return result;
+      }
+      return _origExec(rawInput);
+    };
+    // Carry all prior patch flags
+    window.executeCommand._nancyPatched       = true;
+    window.executeCommand._friendsPatched     = (_origExec._friendsPatched     || false);
+    window.executeCommand._sessionPatched     = (_origExec._sessionPatched     || false);
+    window.executeCommand._helpPatched        = (_origExec._helpPatched        || false);
+    window.executeCommand._confidencePatched  = (_origExec._confidencePatched  || false);
+    window.executeCommand._personalityPatched = (_origExec._personalityPatched || false);
+  }
+
+  // ── Install ──
+  function _install() {
+    _wireNativeWindowManager();   // ← replaces _registerApp(); handles ALL native wiring
+    _buildGallery();
+    _wirePreview();
+    _patchAI();
+    _patchExecuteCommand();
+
+    // Add desktop icon
+    var icons = document.querySelector('.desktop-icons');
+    if (icons && !document.getElementById('ns-desktop-icon')) {
+      var icon = document.createElement('div');
+      icon.id = 'ns-desktop-icon';
+      icon.className = 'icon';
+      icon.setAttribute('role', 'button');
+      icon.setAttribute('tabindex', '0');
+      icon.setAttribute('aria-label', 'Open Nancy Art Studio');
+      icon.innerHTML = '<i class="fa-solid fa-palette"></i><span>Nancy Studio</span>';
+      icon.addEventListener('click', _openNancyStudio);
+      icon.addEventListener('keydown', function(e) { if (e.key === 'Enter') _openNancyStudio(); });
+      icons.appendChild(icon);
+    }
+
+    // Expose public API
+    window._nancyStudio = {
+      open:       _openNancyStudio,
+      previewArt: _previewArt,
+      closePreview: _closePreview,
+    };
+
+    console.log('[AtulOS 4.80] Nancy Art Studio installed. Commands: open nancy studio | show nancy artwork | open art gallery | show featured art | open nancy profile');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _install);
+  } else {
+    _install();
+  }
+
+})();
+</script>
+
 <!-- ── FRIEND PROFILE WINDOW HTML ── -->
 <!-- One reusable window — content swapped by openFriendProfile() -->
 <div class="app-window" id="friend-profile-window" role="dialog"
