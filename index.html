@@ -5981,6 +5981,26 @@ window.INTENT_MAP    = INTENT_MAP;
     { text: 'tell me about yugal',       intent: 'friend_profile_yugal',      device: false },
     { text: 'open yugal profile',        intent: 'friend_profile_yugal',      device: false },
     { text: 'help friends',              intent: 'friends',                   device: false },
+    // Dashboard (Module 4.81)
+    { text: 'open dashboard',            intent: 'open_dashboard',            device: false },
+    { text: 'show dashboard',            intent: 'open_dashboard',            device: false },
+    { text: 'system dashboard',          intent: 'open_dashboard',            device: false },
+    // Milestones (Module 4.82)
+    { text: 'open milestones',           intent: 'open_milestones',           device: false },
+    { text: 'show milestones',           intent: 'open_milestones',           device: false },
+    { text: 'open roadmap',              intent: 'open_milestones',           device: false },
+    { text: 'show atulos progress',      intent: 'open_milestones',           device: false },
+    // System Monitor (Module 4.88)
+    { text: 'open system monitor',       intent: 'open_monitor',              device: false },
+    { text: 'open monitor',              intent: 'open_monitor',              device: false },
+    { text: 'system monitor',            intent: 'open_monitor',              device: false },
+    { text: 'show system stats',         intent: 'open_monitor',              device: false },
+    // Nancy Art Studio (Module 4.87)
+    { text: 'open nancy studio',         intent: 'open_nancy_studio',         device: false },
+    { text: 'nancy studio',              intent: 'open_nancy_studio',         device: false },
+    { text: 'open nancy art studio',     intent: 'open_nancy_studio',         device: false },
+    { text: 'open art gallery',          intent: 'open_nancy_studio',         device: false },
+    { text: 'show nancy artwork',        intent: 'open_nancy_studio',         device: false },
   ];
 
   // ── 3. TYPO / ALIAS DICTIONARY ────────────────────────────────
@@ -6546,6 +6566,51 @@ window.INTENT_MAP    = INTENT_MAP;
       related:     ['notes', 'applications'],
     },
 
+    dashboard: {
+      category:    'applications',
+      title:       'Dashboard',
+      icon:        '📊',
+      description: 'Open the AtulOS live system dashboard with stats and quick access.',
+      commands:    ['open dashboard', 'show dashboard', 'system dashboard'],
+      aliases:     ['dashboard', 'show system dashboard', 'open stats'],
+      auth:        null,
+      examples:    ['open dashboard', 'show dashboard'],
+      related:     ['monitor', 'status', 'applications'],
+    },
+    milestones: {
+      category:    'applications',
+      title:       'Milestones',
+      icon:        '🚀',
+      description: 'Open the AtulOS Milestones tracker to view project progress and roadmap.',
+      commands:    ['open milestones', 'show milestones', 'open roadmap'],
+      aliases:     ['milestones', 'show atulos progress', 'roadmap', 'progress'],
+      auth:        null,
+      examples:    ['open milestones', 'show milestones'],
+      related:     ['dashboard', 'applications'],
+    },
+    monitor: {
+      category:    'applications',
+      title:       'System Monitor',
+      icon:        '🖥️',
+      description: 'Open the System Monitor to view real-time CPU, memory, and OS stats.',
+      commands:    ['open system monitor', 'open monitor', 'system monitor'],
+      aliases:     ['show system stats', 'system stats', 'show system status', 'monitor'],
+      auth:        null,
+      examples:    ['open monitor', 'system monitor', 'show system stats'],
+      related:     ['dashboard', 'status', 'applications'],
+    },
+    nancy: {
+      category:    'applications',
+      title:       'Nancy Art Studio',
+      icon:        '🎨',
+      description: 'Open Nancy\'s Art Studio to view artwork, gallery, achievements, and artist timeline.',
+      commands:    ['open nancy studio', 'open nancy art studio', 'nancy studio'],
+      aliases:     ['show nancy artwork', 'open art gallery', 'show featured art', 'open nancy profile', 'show achievements', 'show timeline', 'artist profile'],
+      auth:        null,
+      examples:    ['open nancy studio', 'open art gallery'],
+      related:     ['friends', 'applications'],
+    },
+
     // ── System ───────────────────────────────────────────────────
     voice: {
       category:    'system',
@@ -6699,7 +6764,7 @@ window.INTENT_MAP    = INTENT_MAP;
   // ── Category metadata ────────────────────────────────────────
   var HELP_CATEGORIES = {
     devices:      { title: 'Device Control',  icon: '📡', keys: ['light','fan','buzzer','devices'] },
-    applications: { title: 'Applications',    icon: '🖥️', keys: ['terminal','projects','about','skills','settings','calculator','calendar','notes','browser','ai'] },
+    applications: { title: 'Applications',    icon: '🖥️', keys: ['terminal','projects','about','skills','settings','calculator','calendar','notes','browser','ai','dashboard','milestones','monitor','nancy'] },
     system:       { title: 'System',          icon: '⚙️', keys: ['voice','wake','theme','status'] },
     ai:           { title: 'AI Features',     icon: '🤖', keys: ['ai','memory','friends'] },
     utilities:    { title: 'Utilities',       icon: '🧰', keys: ['time','joke','whoami','clear','stop','lock'] },
@@ -6709,6 +6774,7 @@ window.INTENT_MAP    = INTENT_MAP;
   var CATEGORY_ALIASES = {
     'device': 'devices', 'device control': 'devices', 'iot': 'devices', 'smart home': 'devices',
     'app': 'applications', 'apps': 'applications', 'application': 'applications', 'windows': 'applications', 'window': 'applications',
+    'dashboard': 'applications', 'milestones': 'applications', 'system monitor': 'applications', 'nancy studio': 'applications', 'art studio': 'applications',
     'sys': 'system', 'os': 'system',
     'ai features': 'ai', 'assistant': 'ai',
     'util': 'utilities', 'tools': 'utilities', 'utility': 'utilities',
@@ -12554,7 +12620,9 @@ window.safeAppend = function safeAppend(parent, child) {
 <!-- ── NANCY ART STUDIO — DESKTOP ICON (added to desktop icons group via JS) ── -->
 
 <!-- ══════════════════════════════════════════════════════════════
-     NANCY ART STUDIO — MODULE 4.80
+     NANCY ART STUDIO — MODULE 4.87
+     Enhancement of 4.80. Adds: Category Tabs, About The Artist,
+     Achievements, and Artistic Timeline sections.
      Completely isolated from Friends Module, Auth, Window Manager.
      Self-contained CSS + HTML + JS.
 ════════════════════════════════════════════════════════════════ -->
@@ -12971,6 +13039,203 @@ window.safeAppend = function safeAppend(parent, child) {
 }
 </style>
 
+<!-- ══════════════════════════════════════════════════════════════
+     NANCY STUDIO — MODULE 4.87 — EXPANSION STYLES
+     Extends 4.80 without touching any other module.
+════════════════════════════════════════════════════════════════ -->
+<style>
+/* ── 4.87 · Category Tabs ── */
+.ns-cat-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.ns-cat-tab {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.ns-cat-tab:hover {
+  background: rgba(99,168,255,0.08);
+  color: var(--fg);
+  border-color: rgba(99,168,255,0.25);
+}
+.ns-cat-tab.ns-cat-active {
+  background: rgba(99,168,255,0.12);
+  color: var(--accent);
+  border-color: rgba(99,168,255,0.4);
+}
+
+/* ── 4.87 · About The Artist Panel ── */
+.ns-about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 500px) {
+  .ns-about-grid { grid-template-columns: 1fr; }
+}
+.ns-about-field {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.ns-about-field.ns-about-wide {
+  grid-column: 1 / -1;
+}
+.ns-about-field-label {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+.ns-about-field-value {
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--fg);
+  line-height: 1.6;
+}
+
+/* ── 4.87 · Achievements ── */
+.ns-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.ns-achievement-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ns-achievement-card:hover {
+  border-color: rgba(99,168,255,0.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+.ns-achievement-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(99,168,255,0.1);
+  border: 1px solid rgba(99,168,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.ns-achievement-name {
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.3;
+}
+.ns-achievement-desc {
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+
+/* ── 4.87 · Timeline ── */
+.ns-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.ns-timeline::before {
+  content: '';
+  position: absolute;
+  left: 38px;
+  top: 20px;
+  bottom: 20px;
+  width: 1px;
+  background: linear-gradient(to bottom, rgba(99,168,255,0.3), transparent);
+}
+.ns-timeline-item {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 14px 0;
+  position: relative;
+}
+.ns-timeline-item:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+.ns-timeline-year-col {
+  flex-shrink: 0;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+.ns-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--window);
+  box-shadow: 0 0 0 2px rgba(99,168,255,0.25);
+  flex-shrink: 0;
+}
+.ns-timeline-year {
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-align: center;
+}
+.ns-timeline-content {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+}
+.ns-timeline-content:hover {
+  border-color: rgba(99,168,255,0.25);
+}
+.ns-timeline-event {
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.ns-timeline-note {
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--muted);
+  line-height: 1.5;
+}
+</style>
+
 <!-- ── NANCY STUDIO WINDOW ── -->
 <div class="app-window" id="nancy-studio-window" role="dialog"
      aria-labelledby="nancy-studio-title" tabindex="0"
@@ -13044,10 +13309,54 @@ window.safeAppend = function safeAppend(parent, child) {
       <div class="ns-section-header">
         <span class="ns-section-title">Gallery</span>
         <div class="ns-section-line"></div>
-        <span class="ns-section-count">5 Works</span>
+        <span class="ns-section-count" id="ns-gallery-count">5 Works</span>
       </div>
+
+      <!-- ── 4.87: Category Tabs ── -->
+      <div class="ns-cat-tabs" id="ns-cat-tabs">
+        <button class="ns-cat-tab ns-cat-active" data-cat="all">All</button>
+        <button class="ns-cat-tab" data-cat="sketches">Sketches</button>
+        <button class="ns-cat-tab" data-cat="paintings">Paintings</button>
+        <button class="ns-cat-tab" data-cat="digital">Digital Art</button>
+        <button class="ns-cat-tab" data-cat="mixed">Mixed</button>
+      </div>
+
       <div class="ns-gallery-grid">
         <!-- Cards injected by JS to handle image errors gracefully -->
+      </div>
+    </div>
+
+    <!-- ══ 4.87 · NEW SECTION: About The Artist ══ -->
+    <div class="ns-section" id="ns-section-artist-profile">
+      <div class="ns-section-header">
+        <span class="ns-section-title">🌸 About The Artist</span>
+        <div class="ns-section-line"></div>
+      </div>
+      <div class="ns-about-grid" id="ns-about-grid">
+        <!-- Populated by JS from NS_ARTIST_PROFILE config -->
+      </div>
+    </div>
+
+    <!-- ══ 4.87 · NEW SECTION: Achievements ══ -->
+    <div class="ns-section" id="ns-section-achievements">
+      <div class="ns-section-header">
+        <span class="ns-section-title">🏆 Achievements</span>
+        <div class="ns-section-line"></div>
+        <span class="ns-section-count" id="ns-ach-count"></span>
+      </div>
+      <div class="ns-achievements-grid" id="ns-achievements-grid">
+        <!-- Populated by JS from NS_ACHIEVEMENTS config -->
+      </div>
+    </div>
+
+    <!-- ══ 4.87 · NEW SECTION: Artistic Timeline ══ -->
+    <div class="ns-section" id="ns-section-timeline">
+      <div class="ns-section-header">
+        <span class="ns-section-title">📅 Artistic Timeline</span>
+        <div class="ns-section-line"></div>
+      </div>
+      <div class="ns-timeline" id="ns-timeline">
+        <!-- Populated by JS from NS_TIMELINE config -->
       </div>
     </div>
 
@@ -13078,19 +13387,66 @@ window.safeAppend = function safeAppend(parent, child) {
 
   // ── Artwork catalogue ──
   var NS_ARTWORKS = [
-    { src: 'assets/nancy/art1.jpeg', label: 'Artwork I'   },
-    { src: 'assets/nancy/art2.jpeg', label: 'Artwork II'  },
-    { src: 'assets/nancy/art3.jpeg', label: 'Artwork III' },
-    { src: 'assets/nancy/art4.jpeg', label: 'Artwork IV'  },
-    { src: 'assets/nancy/art5.jpeg', label: 'Artwork V'   },
+    { src: 'assets/nancy/art1.jpeg', label: 'Artwork I',   category: 'paintings'  },
+    { src: 'assets/nancy/art2.jpeg', label: 'Artwork II',  category: 'sketches'   },
+    { src: 'assets/nancy/art3.jpeg', label: 'Artwork III', category: 'digital'    },
+    { src: 'assets/nancy/art4.jpeg', label: 'Artwork IV',  category: 'mixed'      },
+    { src: 'assets/nancy/art5.jpeg', label: 'Artwork V',   category: 'paintings'  },
   ];
 
-  // ── Build gallery grid ──
-  function _buildGallery() {
+  // ── 4.87 · Artist profile config (editable) ──
+  var NS_ARTIST_PROFILE = {
+    name:        'Nancy',
+    interests:   'Painting, Illustration, Sketching, Mixed Media',
+    medium:      'Watercolour & Acrylics',
+    inspiration: 'Nature, Light, Emotion, and the quiet spaces between moments',
+    bio:         'A passionate visual artist whose work explores the interplay of colour, emotion, and memory. Each piece is a quiet conversation — between light and shadow, between the seen and the felt. Nancy brings a distinctive voice to every canvas, weaving personal narrative into abstract form.',
+  };
+
+  // ── 4.87 · Achievements config ──
+  var NS_ACHIEVEMENTS = [
+    { icon: 'fa-solid fa-star',         name: 'Featured Artist',      desc: 'Highlighted in the AtulOS creative showcase'         },
+    { icon: 'fa-solid fa-images',       name: '100+ Artworks',        desc: 'Prolific creator with a rich personal collection'     },
+    { icon: 'fa-solid fa-briefcase',    name: 'Creative Portfolio',   desc: 'Curated studio portfolio across multiple mediums'     },
+    { icon: 'fa-solid fa-palette',      name: 'Studio Milestone',     desc: 'Nancy Studio launched within AtulOS'                  },
+    { icon: 'fa-solid fa-award',        name: 'Mixed Media Master',   desc: 'Proficient in acrylics, watercolour & digital art'    },
+    { icon: 'fa-solid fa-book-open',    name: 'Gallery Curator',      desc: 'Built and maintained a personal digital gallery'      },
+  ];
+
+  // ── 4.87 · Timeline config ──
+  var NS_TIMELINE = [
+    { year: '2024', event: 'Started Artwork Collection',     note: 'Began curating a personal collection of original artworks across multiple mediums.' },
+    { year: '2025', event: 'Built Personal Gallery',         note: 'Developed a dedicated digital gallery to showcase creative work.' },
+    { year: '2026', event: 'Nancy Studio Added To AtulOS',   note: 'A custom studio module added to AtulOS — a creative home within the system.' },
+  ];
+
+  // ── 4.87 · Active category state ──
+  var _activeCategory = 'all';
+
+  // ── Build gallery grid (category-aware) ──
+  function _buildGallery(category) {
+    category = category || _activeCategory || 'all';
     var grid = document.querySelector('#nancy-studio-window .ns-gallery-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    NS_ARTWORKS.forEach(function(art, idx) {
+    var filtered = category === 'all'
+      ? NS_ARTWORKS
+      : NS_ARTWORKS.filter(function(a) { return a.category === category; });
+
+    // Update count badge
+    var countEl = document.getElementById('ns-gallery-count');
+    if (countEl) countEl.textContent = filtered.length + (filtered.length === 1 ? ' Work' : ' Works');
+
+    if (filtered.length === 0) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'grid-column:1/-1;padding:28px;text-align:center;color:var(--muted);font-size:12px;letter-spacing:1px;';
+      empty.textContent = 'No artworks in this category yet.';
+      grid.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach(function(art) {
+      var idx = NS_ARTWORKS.indexOf(art);
       var card = document.createElement('div');
       card.className = 'ns-art-card';
       card.setAttribute('tabindex', '0');
@@ -13111,6 +13467,74 @@ window.safeAppend = function safeAppend(parent, child) {
       });
       grid.appendChild(card);
     });
+  }
+
+  // ── 4.87 · Wire category tabs ──
+  function _wireCategoryTabs() {
+    var tabs = document.getElementById('ns-cat-tabs');
+    if (!tabs) return;
+    tabs.addEventListener('click', function(e) {
+      var btn = e.target.closest('.ns-cat-tab');
+      if (!btn) return;
+      tabs.querySelectorAll('.ns-cat-tab').forEach(function(t) { t.classList.remove('ns-cat-active'); });
+      btn.classList.add('ns-cat-active');
+      _activeCategory = btn.getAttribute('data-cat') || 'all';
+      _buildGallery(_activeCategory);
+    });
+  }
+
+  // ── 4.87 · Build About The Artist panel ──
+  function _buildArtistProfile() {
+    var grid = document.getElementById('ns-about-grid');
+    if (!grid) return;
+    var fields = [
+      { label: 'Artist Name',        value: NS_ARTIST_PROFILE.name,        wide: false },
+      { label: 'Favorite Medium',    value: NS_ARTIST_PROFILE.medium,       wide: false },
+      { label: 'Creative Interests', value: NS_ARTIST_PROFILE.interests,    wide: false },
+      { label: 'Inspiration',        value: NS_ARTIST_PROFILE.inspiration,  wide: false },
+      { label: 'Biography',          value: NS_ARTIST_PROFILE.bio,          wide: true  },
+    ];
+    grid.innerHTML = fields.map(function(f) {
+      return '<div class="ns-about-field' + (f.wide ? ' ns-about-wide' : '') + '">' +
+               '<div class="ns-about-field-label">' + f.label + '</div>' +
+               '<div class="ns-about-field-value">' + f.value + '</div>' +
+             '</div>';
+    }).join('');
+  }
+
+  // ── 4.87 · Build Achievements ──
+  function _buildAchievements() {
+    var grid = document.getElementById('ns-achievements-grid');
+    var countEl = document.getElementById('ns-ach-count');
+    if (!grid) return;
+    if (countEl) countEl.textContent = NS_ACHIEVEMENTS.length + ' Earned';
+    grid.innerHTML = NS_ACHIEVEMENTS.map(function(a) {
+      return '<div class="ns-achievement-card">' +
+               '<div class="ns-achievement-icon"><i class="' + a.icon + '"></i></div>' +
+               '<div>' +
+                 '<div class="ns-achievement-name">' + a.name + '</div>' +
+                 '<div class="ns-achievement-desc">' + a.desc + '</div>' +
+               '</div>' +
+             '</div>';
+    }).join('');
+  }
+
+  // ── 4.87 · Build Timeline ──
+  function _buildTimeline() {
+    var tl = document.getElementById('ns-timeline');
+    if (!tl) return;
+    tl.innerHTML = NS_TIMELINE.map(function(item) {
+      return '<div class="ns-timeline-item">' +
+               '<div class="ns-timeline-year-col">' +
+                 '<div class="ns-timeline-dot"></div>' +
+                 '<div class="ns-timeline-year">' + item.year + '</div>' +
+               '</div>' +
+               '<div class="ns-timeline-content">' +
+                 '<div class="ns-timeline-event">' + item.event + '</div>' +
+                 '<div class="ns-timeline-note">' + item.note + '</div>' +
+               '</div>' +
+             '</div>';
+    }).join('');
   }
 
   // ── Preview modal ──
@@ -13241,15 +13665,32 @@ window.safeAppend = function safeAppend(parent, child) {
       return '🎨 Showing featured artwork…';
     }
 
+    // 4.87 new commands
+    if (norm === 'show achievements'       ||
+        norm === 'nancy achievements'      ||
+        norm === 'open achievements') {
+      _scrollToSection('ns-section-achievements');
+      return '🏆 Showing Nancy\'s achievements…';
+    }
+
+    if (norm === 'show timeline'           ||
+        norm === 'nancy timeline'          ||
+        norm === 'artistic timeline') {
+      _scrollToSection('ns-section-timeline');
+      return '📅 Showing artistic timeline…';
+    }
+
+    if (norm === 'about the artist'        ||
+        norm === 'artist profile'          ||
+        norm === 'nancy artist profile') {
+      _scrollToSection('ns-section-artist-profile');
+      return '🌸 Showing artist profile…';
+    }
+
     return null;
   }
 
   // ── Wire Nancy Studio into native AtulOS Window Manager ──────────────────
-  // The native window manager's forEach loops already ran at parse time and
-  // only covered windows that existed then. We replicate the exact same
-  // wiring here: initial hide, drag, button actions, keyboard, bringToFront,
-  // and resize handles — using the same APIs the native manager uses.
-  // ─────────────────────────────────────────────────────────────────────────
   function _wireNativeWindowManager() {
     var win = document.getElementById(NS_WIN_ID);
     if (!win) return;
@@ -13257,6 +13698,7 @@ window.safeAppend = function safeAppend(parent, child) {
     // ── 1. Initial hide (mirrors native forEach at line ~8761) ──
     win.style.display = 'none';
     win.setAttribute('aria-hidden', 'true');
+
 
     // ── 2. APP_REGISTRY ──
     if (window.APP_REGISTRY) {
@@ -13475,8 +13917,12 @@ window.safeAppend = function safeAppend(parent, child) {
   // ── Install ──
   function _install() {
     _wireNativeWindowManager();   // ← replaces _registerApp(); handles ALL native wiring
-    _buildGallery();
+    _buildGallery('all');
+    _wireCategoryTabs();
     _wirePreview();
+    _buildArtistProfile();
+    _buildAchievements();
+    _buildTimeline();
     _patchAI();
     _patchExecuteCommand();
 
@@ -13497,12 +13943,15 @@ window.safeAppend = function safeAppend(parent, child) {
 
     // Expose public API
     window._nancyStudio = {
-      open:       _openNancyStudio,
-      previewArt: _previewArt,
+      open:         _openNancyStudio,
+      previewArt:   _previewArt,
       closePreview: _closePreview,
+      // 4.87 additions
+      scrollTo:     _scrollToSection,
+      rebuildGallery: _buildGallery,
     };
 
-    console.log('[AtulOS 4.80] Nancy Art Studio installed. Commands: open nancy studio | show nancy artwork | open art gallery | show featured art | open nancy profile');
+    console.log('[AtulOS 4.87] Nancy Art Studio (Expansion) installed. Commands: open nancy studio | show nancy artwork | open art gallery | show featured art | open nancy profile | show achievements | show timeline | artist profile');
   }
 
   if (document.readyState === 'loading') {
@@ -14532,5 +14981,4257 @@ window.safeAppend = function safeAppend(parent, child) {
 
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODULE 4.81 — AtulOS DASHBOARD
+     Standalone read-only system overview application.
+     DO NOT modify window manager, friends, nancy, auth, or AI.
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Dashboard Window sizing / position ── */
+#dashboard-window {
+  width: 680px;
+  max-width: calc(100vw - 32px);
+  top: 72px;
+  left: 100px;
+}
+#dashboard-window .window-body {
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
+  background: var(--window);
+}
+
+/* ── Grid layout ── */
+.db-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+.db-grid > * {
+  background: var(--window);
+}
+
+/* ── Panel base ── */
+.db-panel {
+  padding: 20px 22px;
+}
+.db-panel-full {
+  grid-column: 1 / -1;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Panel heading ── */
+.db-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+  opacity: 0.85;
+}
+.db-heading i {
+  font-size: 11px;
+}
+.db-divider {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin-left: 4px;
+}
+
+/* ── Status rows ── */
+.db-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.db-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg);
+}
+.db-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.db-dot.online  { background: #28c840; box-shadow: 0 0 5px rgba(40,200,64,0.5); }
+.db-dot.warning { background: #ffcc00; box-shadow: 0 0 5px rgba(255,204,0,0.4); }
+.db-dot.offline { background: #e81123; }
+
+/* ── Stat cards ── */
+.db-stat-row {
+  display: flex;
+  gap: 10px;
+}
+.db-stat {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.db-stat-label {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.db-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.1;
+}
+.db-stat-sub {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* ── Security badges ── */
+.db-badge-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.db-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 12px;
+}
+.db-badge-label {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.db-badge-label i { color: var(--accent); opacity: 0.7; }
+.db-badge-state {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+.db-badge-state.unlocked {
+  background: rgba(40,200,64,0.12);
+  color: #28c840;
+  border: 1px solid rgba(40,200,64,0.25);
+}
+.db-badge-state.locked {
+  background: rgba(232,17,35,0.1);
+  color: #e05b65;
+  border: 1px solid rgba(232,17,35,0.2);
+}
+
+/* ── Date / Time ── */
+.db-clock-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.db-clock-time {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.db-clock-date {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+/* ── App list ── */
+.db-app-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.db-app-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--fg);
+  transition: border-color 0.15s;
+}
+.db-app-row:hover {
+  border-color: rgba(99,168,255,0.3);
+}
+.db-app-icon {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: rgba(99,168,255,0.08);
+  border: 1px solid rgba(99,168,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.db-app-name { flex: 1; }
+.db-app-status {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #28c840;
+  opacity: 0.8;
+}
+</style>
+
+<!-- ── DASHBOARD WINDOW HTML ── -->
+<div class="app-window" id="dashboard-window" role="dialog"
+     aria-labelledby="dashboard-title" tabindex="0"
+     data-window-id="dashboard-window"
+     style="display:none;" aria-hidden="true">
+
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <i class="fa-solid fa-gauge-high"></i>
+      <span id="dashboard-title">System Dashboard</span>
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+
+  <div class="window-body" id="dashboard-body">
+    <div class="db-grid">
+
+      <!-- ── SYSTEM STATUS ── -->
+      <div class="db-panel" style="border-right:1px solid var(--border); border-bottom:1px solid var(--border);">
+        <div class="db-heading"><i class="fa-solid fa-microchip"></i> System Status <div class="db-divider"></div></div>
+        <div class="db-status-list" id="db-system-status">
+          <div class="db-status-row"><span class="db-dot online"></span>AtulAI Online</div>
+          <div class="db-status-row"><span class="db-dot online"></span>Memory Active</div>
+          <div class="db-status-row" id="db-friends-status-row"><span class="db-dot online"></span>Friends Module Active</div>
+          <div class="db-status-row" id="db-nancy-status-row"><span class="db-dot online"></span>Nancy Studio Installed</div>
+        </div>
+      </div>
+
+      <!-- ── DATE & TIME ── -->
+      <div class="db-panel" style="border-bottom:1px solid var(--border);">
+        <div class="db-heading"><i class="fa-regular fa-clock"></i> Date &amp; Time <div class="db-divider"></div></div>
+        <div class="db-clock-wrap">
+          <div class="db-clock-time" id="db-clock">--:--:--</div>
+          <div class="db-clock-date" id="db-date">---</div>
+        </div>
+      </div>
+
+      <!-- ── FRIENDS ── -->
+      <div class="db-panel" style="border-right:1px solid var(--border); border-bottom:1px solid var(--border);">
+        <div class="db-heading"><i class="fa-solid fa-users"></i> Friends <div class="db-divider"></div></div>
+        <div class="db-stat-row">
+          <div class="db-stat">
+            <div class="db-stat-label">Total Friends</div>
+            <div class="db-stat-value" id="db-friend-count">—</div>
+            <div class="db-stat-sub">Registered contacts</div>
+          </div>
+          <div class="db-stat">
+            <div class="db-stat-label">Active Session</div>
+            <div class="db-stat-value" id="db-friend-session" style="font-size:13px;padding-top:4px;">—</div>
+            <div class="db-stat-sub" id="db-current-friend-label">No profile open</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECURITY ── -->
+      <div class="db-panel" style="border-bottom:1px solid var(--border);">
+        <div class="db-heading"><i class="fa-solid fa-shield-halved"></i> Security <div class="db-divider"></div></div>
+        <div class="db-badge-row">
+          <div class="db-badge">
+            <span class="db-badge-label"><i class="fa-solid fa-desktop"></i> Device Security</span>
+            <span class="db-badge-state" id="db-device-auth">—</span>
+          </div>
+          <div class="db-badge">
+            <span class="db-badge-label"><i class="fa-solid fa-user-shield"></i> Friend Security</span>
+            <span class="db-badge-state" id="db-friend-auth">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── APPLICATIONS (full width) ── -->
+      <div class="db-panel-full">
+        <div class="db-heading"><i class="fa-solid fa-grid-2"></i> Applications <div class="db-divider"></div></div>
+        <div class="db-app-list">
+          <div class="db-app-row">
+            <div class="db-app-icon"><i class="fa-solid fa-calculator"></i></div>
+            <span class="db-app-name">Calculator</span>
+            <span class="db-app-status">Installed</span>
+          </div>
+          <div class="db-app-row">
+            <div class="db-app-icon"><i class="fa-solid fa-globe"></i></div>
+            <span class="db-app-name">Browser</span>
+            <span class="db-app-status">Installed</span>
+          </div>
+          <div class="db-app-row">
+            <div class="db-app-icon"><i class="fa-solid fa-users"></i></div>
+            <span class="db-app-name">Friends</span>
+            <span class="db-app-status" id="db-friends-app-status">Installed</span>
+          </div>
+          <div class="db-app-row">
+            <div class="db-app-icon"><i class="fa-solid fa-palette"></i></div>
+            <span class="db-app-name">Nancy Studio</span>
+            <span class="db-app-status" id="db-nancy-app-status">Installed</span>
+          </div>
+          <div class="db-app-row">
+            <div class="db-app-icon"><i class="fa-solid fa-gauge-high"></i></div>
+            <span class="db-app-name">Dashboard</span>
+            <span class="db-app-status">Active</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD MODULE SCRIPT ── -->
+<script>
+(function _installDashboardModule() {
+  'use strict';
+
+  var DB_WIN_ID = 'dashboard-window';
+
+  // ── Clock tick ────────────────────────────────────────────────
+  var _clockTimer = null;
+  var _DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var _MONTHS = ['January','February','March','April','May','June',
+                 'July','August','September','October','November','December'];
+
+  function _tickClock() {
+    var clockEl = document.getElementById('db-clock');
+    var dateEl  = document.getElementById('db-date');
+    if (!clockEl || !dateEl) return;
+    var now = new Date();
+    var h = String(now.getHours()).padStart(2, '0');
+    var m = String(now.getMinutes()).padStart(2, '0');
+    var s = String(now.getSeconds()).padStart(2, '0');
+    clockEl.textContent = h + ':' + m + ':' + s;
+    dateEl.textContent  = _DAYS[now.getDay()] + ', ' + _MONTHS[now.getMonth()] +
+                          ' ' + now.getDate() + ', ' + now.getFullYear();
+  }
+
+  // ── Live data refresh ──────────────────────────────────────────
+  function _refreshData() {
+    // Friends count
+    var registry = window.FRIENDS_REGISTRY || {};
+    var count    = Object.keys(registry).length;
+    var countEl  = document.getElementById('db-friend-count');
+    if (countEl) countEl.textContent = count || '—';
+
+    // Current friend session
+    var currentFriend = (window.AI_MEMORY && window.AI_MEMORY.currentFriend) || null;
+    var sessionEl     = document.getElementById('db-friend-session');
+    var sessionLabel  = document.getElementById('db-current-friend-label');
+    if (sessionEl) {
+      if (currentFriend) {
+        var profile = registry[currentFriend];
+        sessionEl.textContent = profile ? profile.name : currentFriend;
+        sessionEl.style.color = 'var(--fg)';
+      } else {
+        sessionEl.textContent = 'None';
+        sessionEl.style.color = 'var(--muted)';
+      }
+    }
+    if (sessionLabel) {
+      sessionLabel.textContent = currentFriend ? 'Profile viewed' : 'No profile open';
+    }
+
+    // Device auth
+    var deviceAuthEl  = document.getElementById('db-device-auth');
+    var friendAuthEl  = document.getElementById('db-friend-auth');
+    var deviceUnlocked = window.ATULAI_DEVICE_AUTH  === true;
+    var friendUnlocked = window.ATULAI_FRIENDS_AUTH === true ||
+                         (window.AI_MEMORY && window.AI_MEMORY.friendAuthenticated === true);
+    if (deviceAuthEl) {
+      deviceAuthEl.textContent = deviceUnlocked ? 'Unlocked' : 'Locked';
+      deviceAuthEl.className   = 'db-badge-state ' + (deviceUnlocked ? 'unlocked' : 'locked');
+    }
+    if (friendAuthEl) {
+      friendAuthEl.textContent = friendUnlocked ? 'Unlocked' : 'Locked';
+      friendAuthEl.className   = 'db-badge-state ' + (friendUnlocked ? 'unlocked' : 'locked');
+    }
+
+    // Nancy Studio presence
+    var nancyInstalled = !!window._nancyStudio;
+    var nancyRow    = document.getElementById('db-nancy-status-row');
+    var nancyStatus = document.getElementById('db-nancy-app-status');
+    if (nancyRow) {
+      nancyRow.querySelector('.db-dot').className = 'db-dot ' + (nancyInstalled ? 'online' : 'warning');
+      nancyRow.childNodes[nancyRow.childNodes.length - 1].textContent =
+        nancyInstalled ? 'Nancy Studio Installed' : 'Nancy Studio Unavailable';
+    }
+    if (nancyStatus) nancyStatus.textContent = nancyInstalled ? 'Installed' : 'Unavailable';
+
+    // Friends module presence
+    var friendsRow   = document.getElementById('db-friends-status-row');
+    var friendsStatus = document.getElementById('db-friends-app-status');
+    var friendsOk    = count > 0;
+    if (friendsRow) {
+      friendsRow.querySelector('.db-dot').className = 'db-dot ' + (friendsOk ? 'online' : 'warning');
+    }
+    if (friendsStatus) friendsStatus.textContent = friendsOk ? 'Installed' : 'Unavailable';
+  }
+
+  // ── Open / show ────────────────────────────────────────────────
+  function _openDashboard() {
+    _refreshData();
+    if (typeof window.openWindow === 'function') {
+      window.openWindow(DB_WIN_ID);
+    } else {
+      var win = document.getElementById(DB_WIN_ID);
+      if (win) { win.style.display = 'flex'; win.removeAttribute('aria-hidden'); }
+    }
+    // Start clock and periodic refresh
+    if (!_clockTimer) {
+      _tickClock();
+      _clockTimer = setInterval(function () { _tickClock(); _refreshData(); }, 1000);
+    }
+    return '📊 Opening System Dashboard…';
+  }
+
+  // ── Command matcher ────────────────────────────────────────────
+  function _matchDashboardCommand(raw) {
+    var norm = (raw || '').toLowerCase()
+      .replace(/[?!.]+$/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (norm === 'open dashboard'   ||
+        norm === 'show dashboard'   ||
+        norm === 'system dashboard' ||
+        norm === 'dashboard') {
+      return _openDashboard();
+    }
+    if (norm === 'close dashboard'    ||
+        norm === 'exit dashboard'     ||
+        norm === 'hide dashboard') {
+      if (typeof window.closeWindow === 'function') window.closeWindow(DB_WIN_ID);
+      return '📊 Dashboard closed.';
+    }
+    return null;
+  }
+
+  // ── Wire window title-bar buttons ─────────────────────────────
+  function _initWindowControls() {
+    var win = document.getElementById(DB_WIN_ID);
+    if (!win) return;
+    win.querySelectorAll('[data-action]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var a = btn.dataset.action;
+        if (a === 'close') {
+          if (typeof window.closeWindow === 'function') window.closeWindow(DB_WIN_ID);
+          if (_clockTimer) { clearInterval(_clockTimer); _clockTimer = null; }
+        }
+        if (a === 'minimize') {
+          win.style.display = 'none';
+          win.setAttribute('aria-hidden', 'true');
+          if (window._Taskbar && typeof window._Taskbar.add === 'function') window._Taskbar.add(win);
+          if (window.APP_REGISTRY && window.APP_REGISTRY['dashboard'])
+            window.APP_REGISTRY['dashboard'].minimized = true;
+        }
+        if (a === 'maximize') {
+          var isMax = win.dataset.maximized === 'true';
+          var maxIcon = btn.querySelector('i');
+          var bar     = document.getElementById('statusbar');
+          var barH    = (bar && bar.offsetHeight) ? bar.offsetHeight : 44;
+          if (!isMax) {
+            var r = win.getBoundingClientRect();
+            win.dataset.prevLeft   = r.left;
+            win.dataset.prevTop    = r.top;
+            win.dataset.prevWidth  = r.width;
+            win.dataset.prevHeight = r.height;
+            win.style.left   = '8px';
+            win.style.top    = (barH + 8) + 'px';
+            win.style.width  = (window.innerWidth  - 16) + 'px';
+            win.style.height = (window.innerHeight - barH - 44 - 16) + 'px';
+            win.dataset.maximized = 'true';
+            if (maxIcon) maxIcon.className = 'fa-regular fa-window-restore';
+          } else {
+            win.style.left   = (win.dataset.prevLeft   || '100') + 'px';
+            win.style.top    = (win.dataset.prevTop    || '72')  + 'px';
+            win.style.width  = (win.dataset.prevWidth  || '680') + 'px';
+            win.style.height = (win.dataset.prevHeight || '')    + 'px';
+            win.dataset.maximized = 'false';
+            if (maxIcon) maxIcon.className = 'fa-regular fa-square';
+          }
+        }
+      });
+    });
+    win.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (typeof window.closeWindow === 'function') window.closeWindow(DB_WIN_ID);
+      }
+    });
+    // Bring to front on click
+    win.addEventListener('mousedown', function () {
+      var allWins = document.querySelectorAll('.app-window');
+      var maxZ = 100;
+      allWins.forEach(function (w) { maxZ = Math.max(maxZ, parseInt(w.style.zIndex || 0) || 0); });
+      win.style.zIndex = maxZ + 1;
+    });
+  }
+
+  // ── Register in APP_REGISTRY ───────────────────────────────────
+  function _registerApp() {
+    if (window.APP_REGISTRY) {
+      window.APP_REGISTRY['dashboard'] = { elementId: DB_WIN_ID, open: false, minimized: false };
+    }
+  }
+
+  // ── Patch executeCommand ───────────────────────────────────────
+  function _patchExecuteCommand() {
+    var _orig = window.executeCommand;
+    if (!_orig || _orig._dashboardPatched) return;
+    window.executeCommand = function dashboardAwareExecuteCommand(rawInput) {
+      var cleaned = (rawInput || '').trim()
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+      var result = _matchDashboardCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(result);
+        return result;
+      }
+      return _orig(rawInput);
+    };
+    // Carry all prior patch flags forward
+    window.executeCommand._dashboardPatched   = true;
+    window.executeCommand._nancyPatched       = (_orig._nancyPatched       || false);
+    window.executeCommand._friendsPatched     = (_orig._friendsPatched     || false);
+    window.executeCommand._sessionPatched     = (_orig._sessionPatched     || false);
+    window.executeCommand._helpPatched        = (_orig._helpPatched        || false);
+    window.executeCommand._confidencePatched  = (_orig._confidencePatched  || false);
+    window.executeCommand._personalityPatched = (_orig._personalityPatched || false);
+  }
+
+  // ── Patch _jarvisProcessInternal (voice / Orb path) ───────────
+  function _patchJarvis() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig || _orig._dashboardPatched) return;
+    window._jarvisProcessInternal = function dashboardAwareJarvis(rawInput) {
+      var cleaned = (rawInput || '').trim();
+      var result  = _matchDashboardCommand(cleaned);
+      if (result !== null) return result;
+      return _orig(rawInput);
+    };
+    window._jarvisProcessInternal._dashboardPatched = true;
+    window._jarvisProcessInternal._nancyPatched     = (_orig._nancyPatched || false);
+  }
+
+  // ── Desktop icon ───────────────────────────────────────────────
+  function _addDesktopIcon() {
+    var dock = document.querySelector('.desktop-icons') ||
+               document.querySelector('#desktop-icons') ||
+               document.querySelector('.taskbar-left');
+    if (!dock) return;
+    if (document.getElementById('db-dock-icon')) return;
+    var icon = document.createElement('div');
+    icon.id        = 'db-dock-icon';
+    icon.className = 'icon';
+    icon.setAttribute('role', 'button');
+    icon.setAttribute('tabindex', '0');
+    icon.setAttribute('aria-label', 'Open System Dashboard');
+    icon.innerHTML = '<i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>';
+    icon.addEventListener('click',   _openDashboard);
+    icon.addEventListener('keydown', function (e) { if (e.key === 'Enter') _openDashboard(); });
+    dock.appendChild(icon);
+  }
+
+  // ── Install ────────────────────────────────────────────────────
+  function _install() {
+    _registerApp();
+    _initWindowControls();
+    _patchExecuteCommand();
+    _patchJarvis();
+    _addDesktopIcon();
+    // Expose public API
+    window._dashboardModule = { open: _openDashboard };
+    console.log('[AtulOS 4.81] Dashboard installed. Commands: open dashboard | show dashboard | system dashboard');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _install);
+  } else {
+    _install();
+  }
+
+})();
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.82 — ATULOS MILESTONES
+     Read-only timeline of AtulOS development history and roadmap.
+     Adds: milestones-window, desktop icon, terminal commands.
+     Does NOT modify any existing code — fully additive.
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ── MILESTONES WINDOW HTML ── -->
+<div id="milestones-window" class="app-window" role="dialog"
+     aria-label="AtulOS Milestones" aria-hidden="true"
+     data-window-id="milestones-window"
+     style="top:90px;left:160px;width:640px;">
+  <div class="window-header" id="milestones-drag-handle">
+    <div class="title-left">
+      <i class="fa-solid fa-rocket"></i>
+      AtulOS Milestones
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" title="Minimize" aria-label="Minimize">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <button class="win-btn max" data-action="maximize" title="Maximize" aria-label="Maximize">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="win-btn close" data-action="close" title="Close" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="window-body" id="milestones-body" style="padding:0;overflow-y:auto;max-height:calc(100vh - 44px - 48px - 34px);">
+
+    <!-- ── HEADER BAND ── -->
+    <div style="
+      padding:20px 22px 16px;
+      background:rgba(99,168,255,0.06);
+      border-bottom:1px solid var(--border);
+    ">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:16px;font-weight:700;color:var(--fg);letter-spacing:0.5px;">
+            AtulOS Development History
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">
+            A visual record of every milestone reached
+          </div>
+        </div>
+        <!-- Progress ring area -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);" id="ms-pct-label">72%</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;">Complete</div>
+        </div>
+        <div style="width:100%;margin-top:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:5px;">
+            <span>AtulOS Development Progress</span>
+            <span id="ms-pct-fraction">13 / 18 milestones</span>
+          </div>
+          <div style="
+            height:6px;border-radius:3px;
+            background:rgba(255,255,255,0.08);
+            overflow:hidden;
+          ">
+            <div id="ms-progress-bar" style="
+              height:100%;border-radius:3px;
+              background:linear-gradient(90deg,#63a8ff,#00d4ff);
+              width:72%;
+              transition:width 0.8s ease;
+            "></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TIMELINE SECTION ── -->
+    <div style="padding:20px 22px 4px;">
+      <div style="
+        font-size:11px;text-transform:uppercase;
+        letter-spacing:2px;color:var(--accent);
+        display:flex;align-items:center;gap:10px;
+        margin-bottom:18px;
+      ">
+        <i class="fa-solid fa-timeline"></i>
+        Completed &amp; In Progress
+        <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+      </div>
+
+      <!-- timeline list -->
+      <div id="ms-timeline" style="display:flex;flex-direction:column;gap:0;">
+
+        <!-- each milestone card inserted by JS -->
+
+      </div>
+    </div>
+
+    <!-- ── ROADMAP SECTION ── -->
+    <div style="padding:20px 22px 4px;margin-top:4px;">
+      <div style="
+        font-size:11px;text-transform:uppercase;
+        letter-spacing:2px;color:var(--accent);
+        display:flex;align-items:center;gap:10px;
+        margin-bottom:18px;
+      ">
+        <i class="fa-solid fa-map"></i>
+        Roadmap — Planned Features
+        <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+      </div>
+
+      <div id="ms-roadmap" style="display:flex;flex-direction:column;gap:0;">
+      </div>
+    </div>
+
+    <!-- bottom breathing room -->
+    <div style="height:20px;"></div>
+  </div>
+</div>
+<!-- ── END MILESTONES WINDOW HTML ── -->
+
+
+<!-- ── MILESTONES MODULE SCRIPT ── -->
+<script>
+(function _installMilestonesModule() {
+  'use strict';
+
+  var WIN_ID = 'milestones-window';
+
+  // ════════════════════════════════════════════════════════════════
+  // 1. DATA — milestone definitions
+  // ════════════════════════════════════════════════════════════════
+  var MILESTONES = [
+    {
+      emoji: '🚀',
+      title: 'AtulOS Project Started',
+      desc:  'The idea of a browser-based OS simulation was conceived. Project structure and vision defined.',
+      status: 'completed',
+    },
+    {
+      emoji: '🖥️',
+      title: 'Classical AtulOS Created',
+      desc:  'The core desktop environment was built — statusbar, taskbar, draggable app windows, and boot screen.',
+      status: 'completed',
+    },
+    {
+      emoji: '⚡',
+      title: 'eDEX Mode Added',
+      desc:  'An immersive full-screen eDEX-style terminal interface was layered on top of the classical OS.',
+      status: 'completed',
+    },
+    {
+      emoji: '🤖',
+      title: 'AtulAI Assistant Added',
+      desc:  'Natural-language AI assistant integrated with voice support, TTS, and command processing.',
+      status: 'completed',
+    },
+    {
+      emoji: '🧠',
+      title: 'Session Memory Installed',
+      desc:  'AtulAI gained memory across the session — tracking last device used, context, and conversation state.',
+      status: 'completed',
+    },
+    {
+      emoji: '💡',
+      title: 'Context Resolution Installed',
+      desc:  'Pronoun resolution engine added — AtulAI can now understand "it", "that", and implicit references.',
+      status: 'completed',
+    },
+    {
+      emoji: '👥',
+      title: 'Friends Module Added',
+      desc:  'A personal contacts module was built with profiles for Aayush, Muskan, Sameer, Kushal, Lucky, and Yugal.',
+      status: 'completed',
+    },
+    {
+      emoji: '🔒',
+      title: 'Friend Authentication Added',
+      desc:  'PIN-based security layer added to the Friends module — profiles locked behind authentication.',
+      status: 'completed',
+    },
+    {
+      emoji: '🎨',
+      title: 'Nancy Art Studio Added',
+      desc:  'A creative drawing studio added, dedicated to Nancy — featuring canvas tools and colour palettes.',
+      status: 'completed',
+    },
+    {
+      emoji: '✨',
+      title: 'Premium Orb System Added',
+      desc:  'The AtulAI Orb UI was upgraded with a premium animated interface and contextual glow effects.',
+      status: 'completed',
+    },
+    {
+      emoji: '📊',
+      title: 'System Dashboard Added',
+      desc:  'A live system dashboard added — showing clock, device status, friend sessions, and app registry.',
+      status: 'completed',
+    },
+    {
+      emoji: '🗂️',
+      title: 'Scalable App Registry',
+      desc:  'APPS registry and openApp/closeApp system centralised. New apps can be registered with a single entry.',
+      status: 'completed',
+    },
+    {
+      emoji: '🪟',
+      title: 'Window Resizing &amp; Start Menu',
+      desc:  'Resize handles added to all windows. Windows 11-style Start Menu with app grid and search filter.',
+      status: 'completed',
+    },
+    {
+      emoji: '🗺️',
+      title: 'AtulOS Milestones Tracker',
+      desc:  'This very module — a visual timeline of every AtulOS milestone, now part of the OS itself.',
+      status: 'in-progress',
+    },
+  ];
+
+  var ROADMAP = [
+    {
+      emoji: '🏆',
+      title: 'Achievements System',
+      desc:  'Unlock badges and achievements as you use AtulOS features — gamified experience layer.',
+      status: 'planned',
+    },
+    {
+      emoji: '⚡',
+      title: 'Quick Actions Panel',
+      desc:  'A slide-out panel for one-tap device controls, theme switching, and frequent commands.',
+      status: 'planned',
+    },
+    {
+      emoji: '📈',
+      title: 'System Monitor',
+      desc:  'Real-time CPU, memory, and session metrics visualised with live charts inside the OS.',
+      status: 'planned',
+    },
+    {
+      emoji: '🎨',
+      title: 'Nancy Studio Expansion',
+      desc:  'Layers, stickers, brushes, and export-to-PNG functionality for the Nancy Art Studio.',
+      status: 'planned',
+    },
+    {
+      emoji: '🌐',
+      title: 'Multi-user Profiles',
+      desc:  'Multiple named user sessions — each with their own settings, memory, and desktop layout.',
+      status: 'planned',
+    },
+  ];
+
+  // ════════════════════════════════════════════════════════════════
+  // 2. STATUS CONFIG
+  // ════════════════════════════════════════════════════════════════
+  var STATUS_CFG = {
+    completed:   { label: '✅ Completed',   color: '#28c840', bg: 'rgba(40,200,64,0.10)',  border: 'rgba(40,200,64,0.25)'  },
+    'in-progress':{ label: '🚧 In Progress', color: '#febc2e', bg: 'rgba(254,188,46,0.10)', border: 'rgba(254,188,46,0.25)' },
+    planned:     { label: '🔮 Planned',      color: '#9b7ef8', bg: 'rgba(155,126,248,0.10)',border: 'rgba(155,126,248,0.25)'},
+  };
+
+  // ════════════════════════════════════════════════════════════════
+  // 3. RENDER HELPERS
+  // ════════════════════════════════════════════════════════════════
+  function _buildCard(item, index, isLast) {
+    var cfg  = STATUS_CFG[item.status] || STATUS_CFG.planned;
+    var isCompleted = item.status === 'completed';
+
+    var card = document.createElement('div');
+    card.style.cssText = [
+      'display:flex;gap:0;position:relative;',
+      'padding-bottom:' + (isLast ? '0' : '4px') + ';',
+    ].join('');
+
+    // ── timeline spine ──
+    var spine = document.createElement('div');
+    spine.style.cssText = [
+      'display:flex;flex-direction:column;align-items:center;',
+      'width:36px;flex-shrink:0;padding-top:2px;',
+    ].join('');
+
+    var dot = document.createElement('div');
+    dot.style.cssText = [
+      'width:14px;height:14px;border-radius:50%;',
+      'border:2px solid ' + cfg.color + ';',
+      'background:' + (isCompleted ? cfg.color : 'var(--window)') + ';',
+      'flex-shrink:0;z-index:1;',
+      'box-shadow: 0 0 ' + (isCompleted ? '8px ' + cfg.color : '0px transparent') + ';',
+    ].join('');
+    spine.appendChild(dot);
+
+    if (!isLast) {
+      var line = document.createElement('div');
+      line.style.cssText = [
+        'width:2px;flex:1;min-height:20px;',
+        'background:' + (isCompleted ? 'rgba(40,200,64,0.3)' : 'var(--border)') + ';',
+        'margin-top:4px;',
+      ].join('');
+      spine.appendChild(line);
+    }
+    card.appendChild(spine);
+
+    // ── content card ──
+    var content = document.createElement('div');
+    content.style.cssText = [
+      'flex:1;',
+      'background:var(--card);',
+      'border:1px solid ' + cfg.border + ';',
+      'border-radius:10px;',
+      'padding:12px 14px;',
+      'margin-bottom:' + (isLast ? '0' : '12px') + ';',
+      'backdrop-filter:blur(8px);',
+      'transition:border-color 0.2s,background 0.2s;',
+    ].join('');
+
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;';
+
+    var titleSpan = document.createElement('div');
+    titleSpan.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--fg);';
+    titleSpan.innerHTML = '<span style="font-size:16px;">' + item.emoji + '</span>' + item.title;
+
+    var badge = document.createElement('span');
+    badge.style.cssText = [
+      'font-size:10px;padding:2px 8px;border-radius:20px;white-space:nowrap;',
+      'color:' + cfg.color + ';',
+      'background:' + cfg.bg + ';',
+      'border:1px solid ' + cfg.border + ';',
+      'font-weight:600;letter-spacing:0.3px;',
+    ].join('');
+    badge.innerHTML = cfg.label;
+
+    header.appendChild(titleSpan);
+    header.appendChild(badge);
+    content.appendChild(header);
+
+    var descEl = document.createElement('div');
+    descEl.style.cssText = 'font-size:12px;color:var(--muted);line-height:1.6;';
+    descEl.innerHTML = item.desc;
+    content.appendChild(descEl);
+
+    card.appendChild(content);
+    return card;
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 4. CALCULATE PROGRESS
+  // ════════════════════════════════════════════════════════════════
+  function _calcProgress() {
+    var all    = MILESTONES.length + ROADMAP.length;
+    var done   = MILESTONES.filter(function(m){ return m.status === 'completed'; }).length;
+    var pct    = Math.round((done / all) * 100);
+    return { done: done, total: all, pct: pct };
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 5. RENDER MILESTONE WINDOW CONTENT
+  // ════════════════════════════════════════════════════════════════
+  function _renderContent() {
+    var timelineEl = document.getElementById('ms-timeline');
+    var roadmapEl  = document.getElementById('ms-roadmap');
+    if (!timelineEl || !roadmapEl) return;
+
+    // ── milestones ──
+    timelineEl.innerHTML = '';
+    MILESTONES.forEach(function(item, idx) {
+      timelineEl.appendChild(_buildCard(item, idx, idx === MILESTONES.length - 1));
+    });
+
+    // ── roadmap ──
+    roadmapEl.innerHTML = '';
+    ROADMAP.forEach(function(item, idx) {
+      roadmapEl.appendChild(_buildCard(item, idx, idx === ROADMAP.length - 1));
+    });
+
+    // ── progress header ──
+    var prog = _calcProgress();
+    var pctLabel   = document.getElementById('ms-pct-label');
+    var pctFrac    = document.getElementById('ms-pct-fraction');
+    var progressBar= document.getElementById('ms-progress-bar');
+    if (pctLabel)    pctLabel.textContent    = prog.pct + '%';
+    if (pctFrac)     pctFrac.textContent     = prog.done + ' / ' + prog.total + ' milestones';
+    if (progressBar) progressBar.style.width = prog.pct + '%';
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 6. OPEN / CLOSE helpers
+  // ════════════════════════════════════════════════════════════════
+  function _openMilestones() {
+    _renderContent();
+    if (typeof window.openWindow === 'function') {
+      window.openWindow(WIN_ID);
+    } else {
+      var win = document.getElementById(WIN_ID);
+      if (win) { win.style.display = 'flex'; win.removeAttribute('aria-hidden'); }
+    }
+    return '🚀 Opening AtulOS Milestones…';
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 7. COMMAND MATCHER
+  // ════════════════════════════════════════════════════════════════
+  function _matchCommand(raw) {
+    var norm = (raw || '').toLowerCase()
+      .replace(/[?!.]+$/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (
+      norm === 'open milestones'     ||
+      norm === 'show milestones'     ||
+      norm === 'open roadmap'        ||
+      norm === 'show roadmap'        ||
+      norm === 'show atulos progress'||
+      norm === 'milestones'          ||
+      norm === 'roadmap'
+    ) {
+      return _openMilestones();
+    }
+    if (
+      norm === 'close milestones' ||
+      norm === 'exit milestones'  ||
+      norm === 'hide milestones'  ||
+      norm === 'close roadmap'
+    ) {
+      if (typeof window.closeWindow === 'function') window.closeWindow(WIN_ID);
+      return '🚀 Milestones closed.';
+    }
+    return null;
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 8. WINDOW CONTROLS (close · minimize · maximize · drag)
+  // ════════════════════════════════════════════════════════════════
+  function _initWindowControls() {
+    var win = document.getElementById(WIN_ID);
+    if (!win) return;
+
+    // ── title-bar buttons ──
+    win.querySelectorAll('[data-action]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var a = btn.dataset.action;
+
+        if (a === 'close') {
+          if (typeof window.closeWindow === 'function') window.closeWindow(WIN_ID);
+          else { win.style.display = 'none'; win.setAttribute('aria-hidden', 'true'); }
+        }
+
+        if (a === 'minimize') {
+          win.style.display = 'none';
+          win.setAttribute('aria-hidden', 'true');
+          // Taskbar integration — reuse existing _Taskbar if present
+          if (window._Taskbar && typeof window._Taskbar.add === 'function') {
+            window._Taskbar.add(win);
+          }
+          if (window.APP_REGISTRY && window.APP_REGISTRY['milestones']) {
+            window.APP_REGISTRY['milestones'].minimized = true;
+          }
+        }
+
+        if (a === 'maximize') {
+          var isMax   = win.dataset.maximized === 'true';
+          var maxIcon = btn.querySelector('i');
+          var bar     = document.getElementById('statusbar');
+          var barH    = (bar && bar.offsetHeight) ? bar.offsetHeight : 44;
+          if (!isMax) {
+            var r = win.getBoundingClientRect();
+            win.dataset.prevLeft   = r.left;
+            win.dataset.prevTop    = r.top;
+            win.dataset.prevWidth  = r.width;
+            win.dataset.prevHeight = r.height;
+            win.style.left   = '8px';
+            win.style.top    = (barH + 8) + 'px';
+            win.style.width  = (window.innerWidth  - 16) + 'px';
+            win.style.height = (window.innerHeight - barH - 44 - 16) + 'px';
+            win.dataset.maximized = 'true';
+            if (maxIcon) maxIcon.className = 'fa-regular fa-window-restore';
+          } else {
+            win.style.left   = (win.dataset.prevLeft   || '160') + 'px';
+            win.style.top    = (win.dataset.prevTop    || '90')  + 'px';
+            win.style.width  = (win.dataset.prevWidth  || '640') + 'px';
+            win.style.height = (win.dataset.prevHeight || '')    + 'px';
+            win.dataset.maximized = 'false';
+            if (maxIcon) maxIcon.className = 'fa-regular fa-square';
+          }
+        }
+      });
+    });
+
+    // ── Escape key to close ──
+    win.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        if (typeof window.closeWindow === 'function') window.closeWindow(WIN_ID);
+      }
+    });
+
+    // ── Bring to front on click ──
+    win.addEventListener('mousedown', function() {
+      var allWins = document.querySelectorAll('.app-window');
+      var maxZ = 100;
+      allWins.forEach(function(w) {
+        maxZ = Math.max(maxZ, parseInt(w.style.zIndex || 0) || 0);
+      });
+      win.style.zIndex = maxZ + 1;
+    });
+
+    // ── Dragging via existing global drag wiring ──
+    // The existing makeDraggable / initWindowDrag is already called on all
+    // .app-window elements during boot. We only need to ensure the element
+    // is present in the DOM with class="app-window" (it is).
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 9. REGISTER IN APP_REGISTRY
+  // ════════════════════════════════════════════════════════════════
+  function _registerApp() {
+    if (window.APP_REGISTRY) {
+      window.APP_REGISTRY['milestones'] = {
+        elementId: WIN_ID,
+        open:      false,
+        minimized: false,
+      };
+    }
+    // Also register in the APPS object used by openApp/closeApp
+    if (window.APPS) {
+      window.APPS['milestones'] = {
+        id:        'milestones',
+        elementId: WIN_ID,
+        title:     'Milestones',
+        icon:      'fa-solid fa-rocket',
+      };
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 10. ADD TO START MENU
+  // ════════════════════════════════════════════════════════════════
+  function _addToStartMenu() {
+    // startApps lives inside initStartMenu's IIFE closure, but
+    // we can inject a new item into the rendered DOM after the
+    // existing grid renders. The cleanest approach: re-render
+    // after patching the app list, which we expose via a hook.
+    // Fallback: push to startApps array if exposed, or re-render.
+    if (window._startMenuApps && Array.isArray(window._startMenuApps)) {
+      window._startMenuApps.push({
+        name: 'Milestones',
+        icon: '🚀',
+        action: function() {
+          if (typeof window.closeStartMenu === 'function') window.closeStartMenu();
+          _openMilestones();
+        },
+      });
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 11. PATCH executeCommand
+  // ════════════════════════════════════════════════════════════════
+  function _patchExecuteCommand() {
+    var _orig = window.executeCommand;
+    if (!_orig || _orig._milestonesPatched) return;
+    window.executeCommand = function milestonesAwareExecuteCommand(rawInput) {
+      var cleaned = (rawInput || '').trim()
+        .replace(/^hey atulos?\s*/i, '')
+        .replace(/^hello atulos?\s*/i, '')
+        .replace(/^ok atulos?\s*/i, '')
+        .trim();
+      var result = _matchCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(result);
+        return result;
+      }
+      return _orig(rawInput);
+    };
+    // Carry all prior patch flags forward
+    window.executeCommand._milestonesPatched  = true;
+    window.executeCommand._dashboardPatched   = (_orig._dashboardPatched   || false);
+    window.executeCommand._nancyPatched       = (_orig._nancyPatched       || false);
+    window.executeCommand._friendsPatched     = (_orig._friendsPatched     || false);
+    window.executeCommand._sessionPatched     = (_orig._sessionPatched     || false);
+    window.executeCommand._helpPatched        = (_orig._helpPatched        || false);
+    window.executeCommand._confidencePatched  = (_orig._confidencePatched  || false);
+    window.executeCommand._personalityPatched = (_orig._personalityPatched || false);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 12. PATCH _jarvisProcessInternal (voice / Orb path)
+  // ════════════════════════════════════════════════════════════════
+  function _patchJarvis() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig || _orig._milestonesPatched) return;
+    window._jarvisProcessInternal = function milestonesAwareJarvis(rawInput) {
+      var cleaned = (rawInput || '').trim();
+      var result  = _matchCommand(cleaned);
+      if (result !== null) return result;
+      return _orig(rawInput);
+    };
+    window._jarvisProcessInternal._milestonesPatched = true;
+    window._jarvisProcessInternal._dashboardPatched  = (_orig._dashboardPatched || false);
+    window._jarvisProcessInternal._nancyPatched      = (_orig._nancyPatched     || false);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 13. DESKTOP ICON
+  // ════════════════════════════════════════════════════════════════
+  function _addDesktopIcon() {
+    var dock = document.querySelector('.desktop-icons') ||
+               document.querySelector('#desktop-icons');
+    if (!dock) return;
+    if (document.getElementById('ms-dock-icon')) return;
+    var icon = document.createElement('div');
+    icon.id        = 'ms-dock-icon';
+    icon.className = 'icon';
+    icon.setAttribute('role',     'button');
+    icon.setAttribute('tabindex', '0');
+    icon.setAttribute('aria-label', 'Open AtulOS Milestones');
+    icon.innerHTML = '<i class="fa-solid fa-rocket"></i><span>Milestones</span>';
+    icon.addEventListener('click',   _openMilestones);
+    icon.addEventListener('keydown', function(e) { if (e.key === 'Enter') _openMilestones(); });
+    dock.appendChild(icon);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 14. WIRE RESIZE HANDLES (matches Upgrade 2 pattern)
+  // ════════════════════════════════════════════════════════════════
+  function _initResize() {
+    var win = document.getElementById(WIN_ID);
+    if (!win) return;
+    // initWindowResize (Upgrade 2) scans for .app-window elements at boot.
+    // Because this module loads after that scan, we trigger the injection
+    // directly via the exposed helper if available, or do it ourselves.
+    if (window._injectResizeHandles && typeof window._injectResizeHandles === 'function') {
+      window._injectResizeHandles(win);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 15. INSTALL
+  // ════════════════════════════════════════════════════════════════
+  function _install() {
+    _registerApp();
+    _initWindowControls();
+    _patchExecuteCommand();
+    _patchJarvis();
+    _addDesktopIcon();
+    _addToStartMenu();
+    _initResize();
+
+    // Expose public API
+    window._milestonesModule = { open: _openMilestones };
+
+    console.log('[AtulOS 4.82] Milestones installed. Commands: open milestones | show milestones | open roadmap | show atulos progress');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _install);
+  } else {
+    _install();
+  }
+
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.82 — ATULOS MILESTONES
+════════════════════════════════════════════════════════════════ -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.85 — ATULAI WELCOME SCREEN
+     Futuristic boot-assistant greeting panel shown after OS loads.
+     Read-only — reads existing system state, modifies nothing.
+     Fully additive IIFE — zero modifications to existing modules.
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ── WELCOME PANEL CSS ── -->
+<style>
+/* ── Welcome panel — fixed overlay inside classic desktop ── */
+#atulos-welcome {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 44px - 56px);
+  background: var(--window);
+  border: 1px solid rgba(99,168,255,0.25);
+  border-radius: 14px;
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.7),
+    0 0 0 0.5px rgba(99,168,255,0.08) inset,
+    0 0 60px rgba(99,168,255,0.04);
+  backdrop-filter: blur(24px);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 7500;
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+#atulos-welcome.wl-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ── glowing top accent bar ── */
+#atulos-welcome::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), rgba(0,212,255,0.8), var(--accent), transparent);
+  border-radius: 14px 14px 0 0;
+  animation: wl-scanline 3s ease-in-out infinite;
+}
+@keyframes wl-scanline {
+  0%,100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+/* ── header ── */
+#wl-header {
+  padding: 20px 20px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+#wl-greeting-block { flex: 1; }
+#wl-greeting {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+#wl-greeting em {
+  color: var(--accent);
+  font-style: normal;
+}
+#wl-subtitle {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#wl-subtitle::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #28c840;
+  box-shadow: 0 0 6px #28c840;
+  flex-shrink: 0;
+  animation: wl-dot-pulse 2s ease-in-out infinite;
+}
+@keyframes wl-dot-pulse {
+  0%,100% { opacity: 1; box-shadow: 0 0 6px #28c840; }
+  50%      { opacity: 0.5; box-shadow: 0 0 2px #28c840; }
+}
+
+#wl-close-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+#wl-close-btn:hover { background: #e81123; color: #fff; border-color: transparent; }
+
+/* ── datetime strip ── */
+#wl-datetime {
+  margin: 14px 20px 0;
+  padding: 10px 14px;
+  background: rgba(99,168,255,0.06);
+  border: 1px solid rgba(99,168,255,0.12);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.wl-dt-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.wl-dt-label {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.wl-dt-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+#wl-dt-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* ── scrollable body ── */
+#wl-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 14px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#wl-body::-webkit-scrollbar { width: 4px; }
+#wl-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── section label ── */
+.wl-section-label {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.wl-section-label i { color: var(--accent); font-size: 9px; }
+.wl-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── status grid ── */
+#wl-status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.wl-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--fg);
+  transition: border-color 0.2s;
+}
+.wl-status-item:hover { border-color: rgba(99,168,255,0.2); }
+.wl-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wl-status-dot.online  { background: #28c840; box-shadow: 0 0 5px #28c840; }
+.wl-status-dot.warning { background: #febc2e; box-shadow: 0 0 5px #febc2e; }
+.wl-status-dot.offline { background: #ff5f57; }
+
+/* ── suggestions ── */
+#wl-suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wl-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+}
+.wl-suggestion:hover {
+  background: rgba(99,168,255,0.09);
+  border-color: rgba(99,168,255,0.28);
+  color: var(--fg);
+}
+.wl-suggestion i {
+  color: var(--accent);
+  font-size: 12px;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+/* ── quick actions ── */
+#wl-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+.wl-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  text-align: center;
+}
+.wl-action-btn i {
+  font-size: 18px;
+  color: var(--accent);
+}
+.wl-action-btn:hover {
+  background: rgba(99,168,255,0.1);
+  border-color: rgba(99,168,255,0.3);
+  color: var(--fg);
+  transform: translateY(-2px);
+}
+.wl-action-btn:active { transform: scale(0.95); }
+
+/* ── footer dismiss bar ── */
+#wl-footer {
+  padding: 10px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+#wl-version-tag {
+  font-size: 10px;
+  color: rgba(155,170,190,0.4);
+  letter-spacing: 0.5px;
+}
+#wl-dismiss-btn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--accent);
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#wl-dismiss-btn:hover { filter: brightness(1.12); }
+
+/* ── backdrop dim ── */
+#atulos-welcome-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(3px);
+  z-index: 7499;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+#atulos-welcome-backdrop.wl-visible { opacity: 1; }
+
+/* ── typing animation on subtitle ── */
+@keyframes wl-typing-cursor {
+  0%,100% { border-right-color: var(--accent); }
+  50%      { border-right-color: transparent; }
+}
+
+/* ── responsive ── */
+@media (max-width: 520px) {
+  #atulos-welcome { width: calc(100vw - 24px); }
+  #wl-actions-grid { grid-template-columns: repeat(2, 1fr); }
+  #wl-status-grid  { grid-template-columns: 1fr; }
+}
+</style>
+
+<!-- ── WELCOME BACKDROP ── -->
+<div id="atulos-welcome-backdrop" aria-hidden="true"></div>
+
+<!-- ── WELCOME PANEL ── -->
+<div id="atulos-welcome" role="dialog" aria-modal="true" aria-labelledby="wl-greeting" aria-hidden="true">
+
+  <!-- Header -->
+  <div id="wl-header">
+    <div id="wl-greeting-block">
+      <div id="wl-greeting">Good Evening, <em>Atul.</em></div>
+      <div id="wl-subtitle">AtulAI Systems Online</div>
+    </div>
+    <button id="wl-close-btn" aria-label="Close welcome panel" title="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Date / Time strip -->
+  <div id="wl-datetime">
+    <div class="wl-dt-item">
+      <div class="wl-dt-label">Date</div>
+      <div class="wl-dt-value" id="wl-date-val">—</div>
+    </div>
+    <div id="wl-dt-divider"></div>
+    <div class="wl-dt-item">
+      <div class="wl-dt-label">Time</div>
+      <div class="wl-dt-value" id="wl-time-val">—</div>
+    </div>
+    <div id="wl-dt-divider" style="margin-left:auto;"></div>
+    <div class="wl-dt-item" style="text-align:right;">
+      <div class="wl-dt-label">Build</div>
+      <div class="wl-dt-value" style="font-size:11px;color:var(--muted);">v4.85</div>
+    </div>
+  </div>
+
+  <!-- Scrollable body -->
+  <div id="wl-body">
+
+    <!-- System Status -->
+    <div>
+      <div class="wl-section-label">
+        <i class="fa-solid fa-shield-halved"></i>
+        System Status
+      </div>
+      <div id="wl-status-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Today's Suggestions -->
+    <div>
+      <div class="wl-section-label">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        Today's Suggestions
+      </div>
+      <div id="wl-suggestions-list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div>
+      <div class="wl-section-label">
+        <i class="fa-solid fa-bolt"></i>
+        Quick Actions
+      </div>
+      <div id="wl-actions-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div id="wl-footer">
+    <span id="wl-version-tag">AtulOS v2.2 · Module 4.85</span>
+    <button id="wl-dismiss-btn">
+      <i class="fa-solid fa-arrow-right"></i>
+      Enter AtulOS
+    </button>
+  </div>
+</div>
+<!-- ── END WELCOME PANEL HTML ── -->
+
+
+<!-- ── WELCOME MODULE SCRIPT ── -->
+<script>
+(function _installWelcomeModule() {
+  'use strict';
+
+  var PANEL_ID    = 'atulos-welcome';
+  var BACKDROP_ID = 'atulos-welcome-backdrop';
+
+  // ════════════════════════════════════════════════════════════════
+  // 1. TIME HELPERS
+  // ════════════════════════════════════════════════════════════════
+  function _getGreeting() {
+    var h = new Date().getHours();
+    if (h >= 5  && h < 12) return 'Good Morning';
+    if (h >= 12 && h < 17) return 'Good Afternoon';
+    if (h >= 17 && h < 21) return 'Good Evening';
+    return 'Good Night';
+  }
+
+  var _DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var _MONTHS = ['January','February','March','April','May','June',
+                 'July','August','September','October','November','December'];
+
+  function _formatDate() {
+    var d = new Date();
+    return _DAYS[d.getDay()] + ', ' + _MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  function _formatTime() {
+    var d  = new Date();
+    var h  = d.getHours();
+    var m  = String(d.getMinutes()).padStart(2, '0');
+    var ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return h + ':' + m + ' ' + ap;
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 2. SYSTEM STATUS — reads existing globals, does not write them
+  // ════════════════════════════════════════════════════════════════
+  function _buildStatusItems() {
+    return [
+      {
+        label: 'AtulAI',
+        sub:   'Online',
+        state: (typeof window._jarvisProcessInternal === 'function' ||
+                typeof window.jarvisProcess === 'function') ? 'online' : 'warning',
+      },
+      {
+        label: 'Memory',
+        sub:   'Active',
+        state: (typeof window.AI_MEMORY !== 'undefined' &&
+                window.AI_MEMORY !== null) ? 'online' : 'warning',
+      },
+      {
+        label: 'Friends',
+        sub:   'Installed',
+        state: (typeof window.FRIENDS_REGISTRY !== 'undefined' &&
+                Object.keys(window.FRIENDS_REGISTRY || {}).length > 0) ? 'online' : 'warning',
+      },
+      {
+        label: 'Nancy Studio',
+        sub:   'Installed',
+        state: (typeof window._nancyStudio !== 'undefined' &&
+                window._nancyStudio !== null) ? 'online' : 'warning',
+      },
+      {
+        label: 'Dashboard',
+        sub:   'Installed',
+        state: (typeof window._dashboardModule !== 'undefined') ? 'online' : 'warning',
+      },
+      {
+        label: 'Milestones',
+        sub:   'Installed',
+        state: (typeof window._milestonesModule !== 'undefined') ? 'online' : 'warning',
+      },
+    ];
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 3. SUGGESTIONS — static, context-aware
+  // ════════════════════════════════════════════════════════════════
+  var SUGGESTIONS = [
+    { icon: 'fa-solid fa-gauge-high',   text: 'Open Dashboard to see live system stats',  cmd: 'open dashboard'    },
+    { icon: 'fa-solid fa-rocket',       text: 'View Milestones to track AtulOS progress', cmd: 'open milestones'   },
+    { icon: 'fa-solid fa-palette',      text: 'Continue painting in Nancy Art Studio',    cmd: 'open nancy studio' },
+  ];
+
+  // ════════════════════════════════════════════════════════════════
+  // 4. QUICK ACTIONS
+  // ════════════════════════════════════════════════════════════════
+  var QUICK_ACTIONS = [
+    { icon: 'fa-solid fa-gauge-high',   label: 'Dashboard',  action: function() { _dismiss(); if (typeof window.openWindow === 'function') window.openWindow('dashboard-window'); } },
+    { icon: 'fa-solid fa-palette',      label: 'Art Studio', action: function() { _dismiss(); if (typeof window.openWindow === 'function') window.openWindow('nancy-studio-window'); } },
+    { icon: 'fa-solid fa-rocket',       label: 'Milestones', action: function() { _dismiss(); if (typeof window.openWindow === 'function') window.openWindow('milestones-window'); } },
+    { icon: 'fa-solid fa-calculator',   label: 'Calculator', action: function() { _dismiss(); if (typeof window.openApp === 'function') window.openApp('calculator'); else if (typeof window.openWindow === 'function') window.openWindow('calculator'); } },
+  ];
+
+  // ════════════════════════════════════════════════════════════════
+  // 5. RENDER PANEL CONTENT
+  // ════════════════════════════════════════════════════════════════
+  function _render() {
+    // ── Greeting ──
+    var greetingEl = document.getElementById('wl-greeting');
+    if (greetingEl) {
+      greetingEl.innerHTML = _getGreeting() + ', <em>Atul.</em>';
+    }
+
+    // ── Date / Time ──
+    var dateEl = document.getElementById('wl-date-val');
+    var timeEl = document.getElementById('wl-time-val');
+    if (dateEl) dateEl.textContent = _formatDate();
+    if (timeEl) timeEl.textContent = _formatTime();
+
+    // ── Status grid ──
+    var statusGrid = document.getElementById('wl-status-grid');
+    if (statusGrid) {
+      statusGrid.innerHTML = '';
+      var items = _buildStatusItems();
+      items.forEach(function(item) {
+        var el = document.createElement('div');
+        el.className = 'wl-status-item';
+        el.innerHTML = [
+          '<div class="wl-status-dot ' + item.state + '"></div>',
+          '<div style="flex:1;">',
+            '<div style="font-size:12px;font-weight:600;color:var(--fg);">' + item.label + '</div>',
+            '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + item.sub + '</div>',
+          '</div>',
+          '<div style="font-size:9px;color:' + (item.state === 'online' ? '#28c840' : '#febc2e') + ';letter-spacing:0.5px;font-weight:600;">',
+            item.state === 'online' ? '✓' : '!',
+          '</div>',
+        ].join('');
+        statusGrid.appendChild(el);
+      });
+    }
+
+    // ── Suggestions ──
+    var sugList = document.getElementById('wl-suggestions-list');
+    if (sugList) {
+      sugList.innerHTML = '';
+      SUGGESTIONS.forEach(function(sug) {
+        var btn = document.createElement('button');
+        btn.className = 'wl-suggestion';
+        btn.innerHTML = '<i class="' + sug.icon + '"></i><span>' + sug.text + '</span><i class="fa-solid fa-chevron-right" style="margin-left:auto;font-size:9px;color:var(--border);flex-shrink:0;"></i>';
+        btn.addEventListener('click', function() {
+          _dismiss();
+          setTimeout(function() {
+            if (typeof window.executeCommand === 'function') {
+              window.executeCommand(sug.cmd);
+            }
+          }, 300);
+        });
+        sugList.appendChild(btn);
+      });
+    }
+
+    // ── Quick actions ──
+    var actGrid = document.getElementById('wl-actions-grid');
+    if (actGrid) {
+      actGrid.innerHTML = '';
+      QUICK_ACTIONS.forEach(function(act) {
+        var btn = document.createElement('button');
+        btn.className = 'wl-action-btn';
+        btn.innerHTML = '<i class="' + act.icon + '"></i><span>' + act.label + '</span>';
+        btn.addEventListener('click', act.action);
+        actGrid.appendChild(btn);
+      });
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 6. SHOW / DISMISS
+  // ════════════════════════════════════════════════════════════════
+  function _show() {
+    var panel    = document.getElementById(PANEL_ID);
+    var backdrop = document.getElementById(BACKDROP_ID);
+    if (!panel) return;
+
+    _render();
+
+    // Make sure we only show over classic desktop (not eDEX)
+    // We watch the desktop opacity/display to know we're in classic mode
+    var desktop = document.getElementById('desktop');
+    var inClassicMode = desktop &&
+      (desktop.style.opacity === '1' || desktop.style.opacity === '') &&
+      desktop.style.display !== 'none';
+
+    // Show regardless of mode — the panel is fixed and above everything
+    // but only show in classic mode view
+    if (!inClassicMode) {
+      // Defer until classic mode is active or eDEX -> classic switch
+      return;
+    }
+
+    if (backdrop) {
+      backdrop.style.display = 'block';
+      requestAnimationFrame(function() { backdrop.classList.add('wl-visible'); });
+    }
+
+    panel.style.display = 'flex';
+    panel.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        panel.classList.add('wl-visible');
+      });
+    });
+
+    // Live clock tick while panel is open
+    _startClock();
+  }
+
+  function _dismiss() {
+    var panel    = document.getElementById(PANEL_ID);
+    var backdrop = document.getElementById(BACKDROP_ID);
+
+    if (panel) {
+      panel.classList.remove('wl-visible');
+      panel.setAttribute('aria-hidden', 'true');
+      setTimeout(function() {
+        panel.style.display = 'none';
+        _stopClock();
+      }, 380);
+    }
+    if (backdrop) {
+      backdrop.classList.remove('wl-visible');
+      setTimeout(function() { backdrop.style.display = 'none'; }, 380);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 7. LIVE CLOCK while panel is open
+  // ════════════════════════════════════════════════════════════════
+  var _clockTimer = null;
+
+  function _startClock() {
+    if (_clockTimer) return;
+    _clockTimer = setInterval(function() {
+      var timeEl = document.getElementById('wl-time-val');
+      if (timeEl) timeEl.textContent = _formatTime();
+    }, 1000);
+  }
+
+  function _stopClock() {
+    if (_clockTimer) { clearInterval(_clockTimer); _clockTimer = null; }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 8. WIRE BUTTONS
+  // ════════════════════════════════════════════════════════════════
+  function _wireButtons() {
+    var closeBtn   = document.getElementById('wl-close-btn');
+    var dismissBtn = document.getElementById('wl-dismiss-btn');
+    var backdrop   = document.getElementById(BACKDROP_ID);
+
+    if (closeBtn)   closeBtn.addEventListener('click',   _dismiss);
+    if (dismissBtn) dismissBtn.addEventListener('click', _dismiss);
+    if (backdrop)   backdrop.addEventListener('click',   _dismiss);
+
+    // Keyboard: Escape closes
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var panel = document.getElementById(PANEL_ID);
+        if (panel && panel.style.display !== 'none') _dismiss();
+      }
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 9. DETECT WHEN CLASSIC MODE BECOMES ACTIVE
+  //    We watch for the desktop element's opacity change (set by
+  //    switchToClassicMode / the boot end sequence).
+  //    The eDEX module sets desktop.style.opacity = '1' when switching
+  //    to classic. We use a MutationObserver on the style attribute.
+  // ════════════════════════════════════════════════════════════════
+  function _watchForClassicMode() {
+    var desktop = document.getElementById('desktop');
+    if (!desktop) return;
+
+    // If already in classic mode (opacity=1), show immediately
+    if (desktop.style.opacity === '1') {
+      setTimeout(_show, 500);
+      return;
+    }
+
+    var _shown = false;
+    var observer = new MutationObserver(function() {
+      if (_shown) return;
+      // Desktop is visible when opacity is '1' and pointerEvents is 'auto'
+      if (desktop.style.opacity === '1' && desktop.style.pointerEvents !== 'none') {
+        _shown = true;
+        observer.disconnect();
+        // Small delay so the desktop finishes rendering before we animate in
+        setTimeout(_show, 600);
+      }
+    });
+
+    observer.observe(desktop, { attributes: true, attributeFilter: ['style'] });
+
+    // Also listen for the view-toggle button click (Classic mode button)
+    var classicBtn = document.getElementById('btn-classic-mode');
+    if (classicBtn) {
+      classicBtn.addEventListener('click', function() {
+        if (_shown) return;
+        _shown = true;
+        observer.disconnect();
+        setTimeout(_show, 700);
+      });
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 10. EXPOSE PUBLIC API
+  // ════════════════════════════════════════════════════════════════
+  window._welcomeModule = {
+    show:    _show,
+    dismiss: _dismiss,
+  };
+
+  // ════════════════════════════════════════════════════════════════
+  // 11. INSTALL
+  // ════════════════════════════════════════════════════════════════
+  function _install() {
+    _wireButtons();
+    _watchForClassicMode();
+    console.log('[AtulOS 4.85] Welcome Screen installed.');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _install);
+  } else {
+    _install();
+  }
+
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.85 — ATULAI WELCOME SCREEN
+════════════════════════════════════════════════════════════════ -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.86 — ATULOS QUICK ACTIONS PANEL
+     Compact app-launcher strip fixed to the right edge of the
+     classic desktop. Only visible in Classic mode.
+     Triggers existing openWindow / openApp / executeCommand.
+     Fully additive IIFE — zero modifications to any other module.
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ── QUICK ACTIONS CSS ── -->
+<style>
+/* ══ QUICK ACTIONS PANEL ══════════════════════════════════════ */
+
+/* ── toggle tab (always-visible pull handle) ── */
+#qa-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  padding: 10px 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  z-index: 4900;
+  backdrop-filter: blur(14px);
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+#qa-tab:hover {
+  background: rgba(99,168,255,0.12);
+  border-color: rgba(99,168,255,0.3);
+}
+#qa-tab-dots {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+#qa-tab-dots span {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.15s;
+}
+#qa-tab:hover #qa-tab-dots span { background: var(--accent); }
+#qa-tab-label {
+  font-size: 8px;
+  color: var(--muted);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 4px;
+  user-select: none;
+}
+
+/* ── the panel itself ── */
+#qa-panel {
+  position: fixed;
+  right: -220px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 210px;
+  background: var(--window);
+  border: 1px solid var(--border);
+  border-radius: 12px 0 0 12px;
+  box-shadow: -12px 0 40px rgba(0,0,0,0.45),
+              0 0 0 0.5px rgba(255,255,255,0.03) inset;
+  backdrop-filter: blur(20px);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 4900;
+  transition: right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: calc(100vh - 56px - 52px);
+}
+#qa-panel.qa-open {
+  right: 0;
+}
+
+/* panel header */
+#qa-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+#qa-header-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+#qa-header-title i {
+  font-size: 11px;
+  color: var(--accent);
+}
+#qa-close-btn {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+#qa-close-btn:hover { background: #e81123; color: #fff; border-color: transparent; }
+
+/* search bar */
+#qa-search-wrap {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#qa-search {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+#qa-search:focus { border-color: rgba(99,168,255,0.4); }
+#qa-search::placeholder { color: var(--muted); }
+
+/* scrollable grid */
+#qa-grid-wrap {
+  overflow-y: auto;
+  flex: 1;
+  padding: 10px 10px 12px;
+}
+#qa-grid-wrap::-webkit-scrollbar { width: 3px; }
+#qa-grid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+#qa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+/* individual action button */
+.qa-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 6px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+  text-align: center;
+  transition: background 0.14s, border-color 0.14s, color 0.14s, transform 0.1s;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.qa-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 50%, rgba(99,168,255,0.18), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.qa-btn:hover {
+  background: rgba(99,168,255,0.09);
+  border-color: rgba(99,168,255,0.3);
+  color: var(--fg);
+  transform: translateY(-1px);
+}
+.qa-btn:hover::after { opacity: 1; }
+.qa-btn:active {
+  transform: scale(0.93);
+  background: rgba(99,168,255,0.16);
+}
+.qa-btn .qa-icon {
+  font-size: 20px;
+  color: var(--accent);
+  display: block;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+.qa-btn .qa-label {
+  position: relative;
+  z-index: 1;
+  line-height: 1.2;
+}
+
+/* no-results */
+#qa-no-results {
+  display: none;
+  padding: 18px 10px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* footer */
+#qa-footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 9px;
+  color: rgba(155,170,190,0.35);
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+/* Glow accent on top edge */
+#qa-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.6;
+  border-radius: 12px 0 0 0;
+}
+
+/* keyboard shortcut badge */
+#qa-shortcut-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  color: rgba(155,170,190,0.4);
+  margin-top: 4px;
+}
+#qa-shortcut-hint kbd {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: inherit;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+/* responsive */
+@media (max-width: 700px) {
+  #qa-panel { width: 190px; }
+  #qa-grid  { grid-template-columns: 1fr 1fr; }
+}
+</style>
+
+<!-- ── QUICK ACTIONS TAB (pull handle) ── -->
+<div id="qa-tab" role="button" tabindex="0"
+     aria-label="Open Quick Actions Panel"
+     aria-controls="qa-panel" aria-expanded="false">
+  <div id="qa-tab-dots">
+    <span></span><span></span><span></span>
+    <span></span><span></span><span></span>
+  </div>
+  <div id="qa-tab-label">Apps</div>
+</div>
+
+<!-- ── QUICK ACTIONS PANEL ── -->
+<div id="qa-panel" role="complementary" aria-label="Quick Actions Panel" aria-hidden="true">
+
+  <!-- Header -->
+  <div id="qa-header">
+    <div id="qa-header-title">
+      <i class="fa-solid fa-bolt"></i>
+      Quick Actions
+    </div>
+    <button id="qa-close-btn" aria-label="Close Quick Actions" title="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Search -->
+  <div id="qa-search-wrap">
+    <input id="qa-search" type="text"
+           placeholder="Search apps..."
+           autocomplete="off"
+           aria-label="Search quick actions" />
+  </div>
+
+  <!-- App grid -->
+  <div id="qa-grid-wrap">
+    <div id="qa-grid" role="list">
+      <!-- Populated by JS -->
+    </div>
+    <div id="qa-no-results">No apps match your search.</div>
+  </div>
+
+  <!-- Footer -->
+  <div id="qa-footer">
+    <div id="qa-shortcut-hint">
+      Toggle: <kbd>Alt</kbd>+<kbd>Q</kbd>
+    </div>
+  </div>
+
+</div>
+<!-- ── END QUICK ACTIONS HTML ── -->
+
+
+<!-- ── QUICK ACTIONS MODULE SCRIPT ── -->
+<script>
+(function _installQuickActionsModule() {
+  'use strict';
+
+  var PANEL_ID = 'qa-panel';
+  var TAB_ID   = 'qa-tab';
+
+  // ════════════════════════════════════════════════════════════════
+  // 1. APP REGISTRY
+  //    Each entry defines: icon (FA class), label, and the action.
+  //    All actions call only existing functions.
+  // ════════════════════════════════════════════════════════════════
+  var QA_APPS = [
+    {
+      icon:  'fa-solid fa-gauge-high',
+      label: 'Dashboard',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.openWindow === 'function') window.openWindow('dashboard-window');
+        });
+      },
+    },
+    {
+      icon:  'fa-solid fa-palette',
+      label: 'Art Studio',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.openWindow === 'function') window.openWindow('nancy-studio-window');
+        });
+      },
+    },
+    {
+      icon:  'fa-solid fa-users',
+      label: 'Friends',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.executeCommand === 'function') window.executeCommand('show friends');
+        });
+      },
+    },
+    {
+      icon:  'fa-solid fa-rocket',
+      label: 'Milestones',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.openWindow === 'function') window.openWindow('milestones-window');
+        });
+      },
+    },
+    {
+      icon:  'fa-solid fa-calculator',
+      label: 'Calculator',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.openApp === 'function') window.openApp('calculator');
+          else if (typeof window.openWindow === 'function') window.openWindow('calculator');
+        });
+      },
+    },
+    {
+      icon:  'fa-solid fa-globe',
+      label: 'Browser',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.openApp === 'function') window.openApp('browser');
+          else if (typeof window.openWindow === 'function') window.openWindow('browser');
+        });
+      },
+    },
+    {
+      icon:  'fa-solid fa-gear',
+      label: 'Settings',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.openApp === 'function') window.openApp('settings');
+          else if (typeof window.openWindow === 'function') window.openWindow('settings');
+        });
+      },
+    },
+    {
+      icon:  'fa-solid fa-terminal',
+      label: 'Terminal',
+      action: function() {
+        _dismissAndRun(function() {
+          if (typeof window.openApp === 'function') window.openApp('terminal');
+          else if (typeof window.openWindow === 'function') window.openWindow('terminal');
+        });
+      },
+    },
+  ];
+
+  // ════════════════════════════════════════════════════════════════
+  // 2. STATE
+  // ════════════════════════════════════════════════════════════════
+  var _open     = false;
+  var _rendered = false;
+
+  // ════════════════════════════════════════════════════════════════
+  // 3. OPEN / CLOSE / TOGGLE
+  // ════════════════════════════════════════════════════════════════
+  function _openPanel() {
+    var panel = document.getElementById(PANEL_ID);
+    var tab   = document.getElementById(TAB_ID);
+    if (!panel || _open) return;
+
+    if (!_rendered) { _renderGrid(''); _rendered = true; }
+
+    _open = true;
+    panel.classList.add('qa-open');
+    panel.setAttribute('aria-hidden', 'false');
+    if (tab) tab.setAttribute('aria-expanded', 'true');
+
+    setTimeout(function() {
+      var s = document.getElementById('qa-search');
+      if (s) s.focus();
+    }, 290);
+  }
+
+  function _closePanel() {
+    var panel = document.getElementById(PANEL_ID);
+    var tab   = document.getElementById(TAB_ID);
+    if (!panel || !_open) return;
+
+    _open = false;
+    panel.classList.remove('qa-open');
+    panel.setAttribute('aria-hidden', 'true');
+    if (tab) tab.setAttribute('aria-expanded', 'false');
+
+    var s = document.getElementById('qa-search');
+    if (s) { s.value = ''; _renderGrid(''); }
+  }
+
+  function _toggle() {
+    _open ? _closePanel() : _openPanel();
+  }
+
+  function _dismissAndRun(fn) {
+    _closePanel();
+    setTimeout(fn, 180);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 4. RENDER GRID
+  // ════════════════════════════════════════════════════════════════
+  function _renderGrid(query) {
+    var grid      = document.getElementById('qa-grid');
+    var noResults = document.getElementById('qa-no-results');
+    if (!grid) return;
+
+    var q        = (query || '').toLowerCase().trim();
+    var filtered = q
+      ? QA_APPS.filter(function(a) { return a.label.toLowerCase().indexOf(q) !== -1; })
+      : QA_APPS;
+
+    grid.innerHTML = '';
+    if (noResults) noResults.style.display = filtered.length ? 'none' : 'block';
+
+    filtered.forEach(function(app) {
+      var btn = document.createElement('div');
+      btn.className = 'qa-btn';
+      btn.setAttribute('role', 'listitem');
+      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('aria-label', 'Open ' + app.label);
+      btn.title = 'Open ' + app.label;
+
+      btn.innerHTML =
+        '<span class="qa-icon"><i class="' + app.icon + '"></i></span>' +
+        '<span class="qa-label">' + app.label + '</span>';
+
+      btn.addEventListener('click', app.action);
+      btn.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          app.action();
+        }
+      });
+
+      grid.appendChild(btn);
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 5. WIRE INTERACTIONS
+  // ════════════════════════════════════════════════════════════════
+  function _wireInteractions() {
+    // Tab pull handle
+    var tab = document.getElementById(TAB_ID);
+    if (tab) {
+      tab.addEventListener('click', _toggle);
+      tab.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _toggle(); }
+      });
+    }
+
+    // Close button
+    var closeBtn = document.getElementById('qa-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', _closePanel);
+
+    // Live search
+    var searchEl = document.getElementById('qa-search');
+    if (searchEl) {
+      searchEl.addEventListener('input', function() { _renderGrid(searchEl.value); });
+      searchEl.addEventListener('click', function(e) { e.stopPropagation(); });
+      searchEl.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          if (searchEl.value) { searchEl.value = ''; _renderGrid(''); }
+          else { _closePanel(); }
+        }
+      });
+    }
+
+    // Alt+Q shortcut
+    document.addEventListener('keydown', function(e) {
+      if (e.altKey && (e.key === 'q' || e.key === 'Q')) {
+        e.preventDefault();
+        if (_isClassicMode()) _toggle();
+      }
+    });
+
+    // Click outside closes
+    document.addEventListener('click', function(e) {
+      if (!_open) return;
+      var panel = document.getElementById(PANEL_ID);
+      var tab2  = document.getElementById(TAB_ID);
+      if (panel && !panel.contains(e.target) && tab2 && !tab2.contains(e.target)) {
+        _closePanel();
+      }
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 6. CLASSIC MODE DETECTION
+  // ════════════════════════════════════════════════════════════════
+  function _isClassicMode() {
+    var desktop = document.getElementById('desktop');
+    return desktop &&
+      desktop.style.display !== 'none' &&
+      desktop.style.opacity !== '0' &&
+      desktop.style.pointerEvents !== 'none';
+  }
+
+  function _showChrome() {
+    var panel = document.getElementById(PANEL_ID);
+    var tab   = document.getElementById(TAB_ID);
+    if (panel) panel.style.display = 'flex';
+    if (tab)   tab.style.display   = 'flex';
+  }
+
+  function _hideChrome() {
+    _closePanel();
+    var panel = document.getElementById(PANEL_ID);
+    var tab   = document.getElementById(TAB_ID);
+    if (panel) panel.style.display = 'none';
+    if (tab)   tab.style.display   = 'none';
+  }
+
+  function _watchDesktopMode() {
+    var desktop = document.getElementById('desktop');
+    if (!desktop) return;
+
+    if (_isClassicMode()) { _showChrome(); return; }
+
+    var observer = new MutationObserver(function() {
+      if (_isClassicMode()) { _showChrome(); }
+      else                  { _hideChrome(); }
+    });
+    observer.observe(desktop, { attributes: true, attributeFilter: ['style'] });
+
+    var classicBtn = document.getElementById('btn-classic-mode');
+    var osBtn      = document.getElementById('btn-os-mode');
+    if (classicBtn) classicBtn.addEventListener('click', function() { setTimeout(_showChrome, 120); });
+    if (osBtn)      osBtn.addEventListener('click',      function() { setTimeout(_hideChrome, 120); });
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 7. PUBLIC API
+  // ════════════════════════════════════════════════════════════════
+  window._quickActionsModule = {
+    open:   _openPanel,
+    close:  _closePanel,
+    toggle: _toggle,
+  };
+
+  // ════════════════════════════════════════════════════════════════
+  // 8. INSTALL
+  // ════════════════════════════════════════════════════════════════
+  function _install() {
+    _renderGrid('');
+    _rendered = true;
+    _wireInteractions();
+    _watchDesktopMode();
+    console.log('[AtulOS 4.86] Quick Actions Panel installed. Shortcut: Alt+Q');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _install);
+  } else {
+    _install();
+  }
+
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.86 — ATULOS QUICK ACTIONS PANEL
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.88 — ATULOS SYSTEM MONITOR / COMMAND CENTER
+     Standalone read-only application.
+     Does NOT modify: Window Manager, Friends, Nancy Studio,
+     Auth, Orb, Session Memory, Terminal, eDEX, commands.
+════════════════════════════════════════════════════════════════ -->
+
+<style>
+/* ══ SYSTEM MONITOR / COMMAND CENTER — MODULE 4.88 ══════════════ */
+
+/* ── Window sizing ── */
+#system-monitor-window {
+  width: 860px;
+  max-width: calc(100vw - 32px);
+  top: 70px;
+  left: 120px;
+}
+#system-monitor-window .window-body {
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+  background: var(--window);
+}
+
+/* ── Hero header card ── */
+.sm-hero {
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(99,168,255,0.05) 0%, transparent 60%);
+}
+.sm-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.sm-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.sm-hero-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: rgba(99,168,255,0.1);
+  border: 1px solid rgba(99,168,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.sm-hero-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg);
+  font-family: inherit;
+  line-height: 1.2;
+}
+.sm-hero-sub {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: inherit;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+.sm-hero-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sm-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: rgba(40,200,64,0.1);
+  border: 1px solid rgba(40,200,64,0.25);
+  color: #28c840;
+}
+.sm-status-pill .sm-pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #28c840;
+  box-shadow: 0 0 0 0 rgba(40,200,64,0.6);
+  animation: sm-pulse-anim 2s infinite;
+  flex-shrink: 0;
+}
+@keyframes sm-pulse-anim {
+  0%   { box-shadow: 0 0 0 0 rgba(40,200,64,0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(40,200,64,0); }
+  100% { box-shadow: 0 0 0 0 rgba(40,200,64,0); }
+}
+.sm-version-badge {
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(99,168,255,0.08);
+  border: 1px solid rgba(99,168,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+.sm-refresh-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.sm-refresh-btn:hover {
+  background: rgba(99,168,255,0.08);
+  color: var(--accent);
+  border-color: rgba(99,168,255,0.3);
+}
+
+/* Hero summary strip */
+.sm-hero-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.sm-hero-stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sm-hero-stat-icon {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: rgba(99,168,255,0.08);
+  border: 1px solid rgba(99,168,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.sm-hero-stat-body { min-width: 0; }
+.sm-hero-stat-val {
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1;
+}
+.sm-hero-stat-label {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ── Section wrapper ── */
+.sm-section {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.sm-section:last-child { border-bottom: none; }
+.sm-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sm-section-title {
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.sm-section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+
+/* ── Main 2-col body layout ── */
+.sm-body-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.sm-body-grid > .sm-section {
+  border-right: 1px solid var(--border);
+}
+.sm-body-grid > .sm-section:nth-child(even) {
+  border-right: none;
+}
+@media (max-width: 640px) {
+  .sm-body-grid { grid-template-columns: 1fr; }
+  .sm-body-grid > .sm-section { border-right: none; }
+}
+
+/* ── Card grids ── */
+.sm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 9px;
+}
+.sm-card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+.sm-card-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+
+/* ── Stat Card ── */
+.sm-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.sm-card:hover { border-color: rgba(99,168,255,0.25); }
+.sm-card.sm-card-clickable { cursor: pointer; }
+.sm-card.sm-card-clickable:hover {
+  background: rgba(99,168,255,0.04);
+  border-color: rgba(99,168,255,0.3);
+}
+.sm-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sm-card-label {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sm-card-value {
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--fg);
+  word-break: break-word;
+  line-height: 1.3;
+}
+.sm-card-value.sm-online  { color: #28c840; }
+.sm-card-value.sm-offline { color: #ff5f57; }
+.sm-card-value.sm-accent  { color: var(--accent); }
+.sm-card-value.sm-amber   { color: #febc2e; }
+.sm-card-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: rgba(99,168,255,0.08);
+  border: 1px solid rgba(99,168,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.sm-card-icon.sm-icon-green { background: rgba(40,200,64,0.08); border-color: rgba(40,200,64,0.2); color: #28c840; }
+.sm-card-icon.sm-icon-red   { background: rgba(255,95,87,0.08);  border-color: rgba(255,95,87,0.2);  color: #ff5f57; }
+.sm-card-icon.sm-icon-amber { background: rgba(254,188,46,0.08); border-color: rgba(254,188,46,0.2); color: #febc2e; }
+
+/* ── Progress bar ── */
+.sm-progress-wrap {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.sm-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 0.6s ease;
+}
+.sm-progress-bar.sm-bar-green  { background: #28c840; }
+.sm-progress-bar.sm-bar-amber  { background: #febc2e; }
+.sm-progress-bar.sm-bar-red    { background: #ff5f57; }
+
+/* ── Health big cards ── */
+.sm-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 9px;
+}
+.sm-health-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transition: border-color 0.2s;
+}
+.sm-health-card:hover { border-color: rgba(99,168,255,0.25); }
+.sm-health-label {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sm-health-val {
+  font-size: 22px;
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1;
+}
+.sm-health-sub {
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--muted);
+}
+
+/* ── Uptime row ── */
+.sm-uptime-row {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.sm-uptime-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+.sm-uptime-label {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sm-uptime-val {
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ── Status dot ── */
+.sm-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.sm-dot.green  { background: #28c840; box-shadow: 0 0 6px rgba(40,200,64,0.5); }
+.sm-dot.red    { background: #ff5f57; }
+.sm-dot.amber  { background: #febc2e; }
+.sm-dot.blue   { background: var(--accent); }
+
+/* ── Active windows list ── */
+.sm-window-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sm-window-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.sm-window-item:hover {
+  border-color: rgba(99,168,255,0.3);
+  background: rgba(99,168,255,0.04);
+}
+.sm-window-item-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #28c840;
+  box-shadow: 0 0 5px rgba(40,200,64,0.5);
+  flex-shrink: 0;
+}
+.sm-window-item-name {
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--fg);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sm-window-item-focus {
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+.sm-window-item:hover .sm-window-item-focus { color: var(--accent); }
+.sm-window-empty {
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--muted);
+  text-align: center;
+  padding: 16px 0;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+}
+
+/* ── Activity timeline ── */
+.sm-activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.sm-activity-feed::-webkit-scrollbar { width: 4px; }
+.sm-activity-feed::-webkit-scrollbar-track { background: transparent; }
+.sm-activity-feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.sm-activity-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.sm-activity-item:hover { background: rgba(255,255,255,0.03); }
+.sm-activity-time {
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--accent);
+  font-weight: 500;
+  flex-shrink: 0;
+  width: 44px;
+  text-align: right;
+  opacity: 0.7;
+}
+.sm-activity-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+.sm-activity-dot-inner {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.sm-activity-dot-inner.act-app    { background: var(--accent); }
+.sm-activity-dot-inner.act-iot    { background: #28c840; }
+.sm-activity-dot-inner.act-system { background: #febc2e; }
+.sm-activity-dot-inner.act-help   { background: #a78bfa; }
+.sm-activity-text {
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--fg);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.sm-activity-empty {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: inherit;
+  padding: 16px 0;
+  text-align: center;
+}
+
+/* ── Module status chips ── */
+.sm-module-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sm-module-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  transition: border-color 0.2s;
+}
+.sm-module-chip.sm-chip-ok {
+  border-color: rgba(40,200,64,0.3);
+  background: rgba(40,200,64,0.06);
+  color: #28c840;
+}
+.sm-module-chip.sm-chip-warn {
+  border-color: rgba(254,188,46,0.3);
+  background: rgba(254,188,46,0.06);
+  color: #febc2e;
+}
+.sm-module-chip i { font-size: 9px; }
+
+/* ── Quick action buttons ── */
+.sm-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sm-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 8px 11px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s, transform 0.12s;
+}
+.sm-quick-btn:hover {
+  background: rgba(99,168,255,0.07);
+  border-color: rgba(99,168,255,0.3);
+  transform: translateY(-1px);
+}
+.sm-quick-btn:active { transform: scale(0.97); }
+.sm-quick-btn-icon {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  background: rgba(99,168,255,0.1);
+  border: 1px solid rgba(99,168,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  font-size: 13px;
+}
+.sm-quick-btn-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--fg);
+  text-align: center;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+}
+
+/* ── Friend session cards ── */
+.sm-friend-session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sm-friend-session-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.sm-friend-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(99,168,255,0.1);
+  border: 1px solid rgba(99,168,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.sm-friend-name {
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--fg);
+  flex: 1;
+}
+.sm-friend-auth-badge {
+  font-size: 9px;
+  font-family: inherit;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.sm-friend-auth-badge.auth-ok   { background: rgba(40,200,64,0.1); color: #28c840; border: 1px solid rgba(40,200,64,0.25); }
+.sm-friend-auth-badge.auth-lock { background: rgba(255,95,87,0.08); color: #ff5f57; border: 1px solid rgba(255,95,87,0.2); }
+</style>
+
+<!-- ── SYSTEM MONITOR / COMMAND CENTER WINDOW ── -->
+<div class="app-window" id="system-monitor-window" role="dialog"
+     aria-labelledby="sm-title" tabindex="0"
+     data-window-id="system-monitor-window">
+
+  <div class="window-header" data-drag-handle>
+    <div class="title-left">
+      <i class="fa-solid fa-gauge-high"></i>
+      <span id="sm-title">Command Center</span>
+    </div>
+    <div class="controls">
+      <button class="win-btn min" data-action="minimize" aria-label="Minimize"><i class="fa-solid fa-minus"></i></button>
+      <button class="win-btn max" data-action="maximize" aria-label="Maximize"><i class="fa-regular fa-square"></i></button>
+      <button class="win-btn close" data-action="close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+
+  <div class="window-body" id="sm-body">
+
+    <!-- ══ HERO HEADER ══ -->
+    <div class="sm-hero">
+      <div class="sm-hero-top">
+        <div class="sm-hero-brand">
+          <div class="sm-hero-icon"><i class="fa-solid fa-gauge-high"></i></div>
+          <div>
+            <div class="sm-hero-title">AtulOS Command Center</div>
+            <div class="sm-hero-sub">System Monitor · Live Snapshot</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div class="sm-status-pill">
+            <span class="sm-pulse"></span>
+            ONLINE
+          </div>
+          <span class="sm-version-badge">v4.88</span>
+          <button class="sm-refresh-btn" id="sm-refresh-btn">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+      </div>
+      <!-- Hero summary strip -->
+      <div class="sm-hero-strip" id="sm-hero-strip">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- ══ ROW 1: 2-col — Active Windows + AtulAI Status ══ -->
+    <div class="sm-body-grid">
+
+      <!-- 🪟 Active Windows -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">🪟 Active Windows</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div id="sm-windows-list"><!-- Populated by JS --></div>
+      </div>
+
+      <!-- 🧠 AtulAI Status -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">🧠 AtulAI Status</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div class="sm-card-grid" id="sm-ai-grid"><!-- Populated by JS --></div>
+      </div>
+
+    </div><!-- /.sm-body-grid -->
+
+    <!-- ══ ROW 2: 2-col — Friend Session Monitor + Recent Activity ══ -->
+    <div class="sm-body-grid">
+
+      <!-- 👥 Friend Session Monitor -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">👥 Friend Session Monitor</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div id="sm-friends-session"><!-- Populated by JS --></div>
+      </div>
+
+      <!-- 📋 Recent Activity Feed -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">📋 Recent Activity</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div class="sm-activity-feed" id="sm-activity-feed"><!-- Populated by JS --></div>
+      </div>
+
+    </div><!-- /.sm-body-grid -->
+
+    <!-- ══ ROW 3: Full-width — Quick Actions ══ -->
+    <div class="sm-section">
+      <div class="sm-section-header">
+        <span class="sm-section-title">⚡ Quick Actions</span>
+        <div class="sm-section-line"></div>
+      </div>
+      <div class="sm-quick-grid" id="sm-quick-grid"><!-- Populated by JS --></div>
+    </div>
+
+    <!-- ══ ROW 4: 2-col — System Health + Nancy Studio ══ -->
+    <div class="sm-body-grid">
+
+      <!-- 📊 System Health -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">📊 System Health</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div class="sm-health-grid" id="sm-health-grid"><!-- Populated by JS --></div>
+      </div>
+
+      <!-- 🎨 Nancy Studio -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">🎨 Nancy Studio</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div class="sm-card-grid" id="sm-nancy-grid"><!-- Populated by JS --></div>
+      </div>
+
+    </div><!-- /.sm-body-grid -->
+
+    <!-- ══ ROW 5: 2-col — Installed Modules + Security ══ -->
+    <div class="sm-body-grid">
+
+      <!-- 📦 Installed Modules -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">📦 Installed Modules</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div class="sm-module-chips" id="sm-modules-chips"><!-- Populated by JS --></div>
+      </div>
+
+      <!-- 🔒 Security -->
+      <div class="sm-section">
+        <div class="sm-section-header">
+          <span class="sm-section-title">🔒 Security</span>
+          <div class="sm-section-line"></div>
+        </div>
+        <div class="sm-card-grid" id="sm-security-grid"><!-- Populated by JS --></div>
+      </div>
+
+    </div><!-- /.sm-body-grid -->
+
+    <!-- ══ ROW 6: Full-width — Uptime ══ -->
+    <div class="sm-section">
+      <div class="sm-section-header">
+        <span class="sm-section-title">⏱ Uptime</span>
+        <div class="sm-section-line"></div>
+      </div>
+      <div class="sm-uptime-row" id="sm-uptime-row"><!-- Populated by JS --></div>
+    </div>
+
+  </div><!-- /.window-body -->
+</div><!-- /#system-monitor-window -->
+
+<!-- ── SYSTEM MONITOR / COMMAND CENTER MODULE SCRIPT ── -->
+<script>
+(function _installSystemMonitor() {
+  'use strict';
+
+  var SM_WIN_ID  = 'system-monitor-window';
+  var SM_BOOT_TS = Date.now();
+
+  // ── Helpers ──────────────────────────────────────────────────
+
+  function _el(id) { return document.getElementById(id); }
+
+  function _esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function _simCPU() {
+    return Math.min(98, Math.max(8, 18 + Math.round(Math.sin(Date.now() / 4000) * 12 + Math.random() * 14)));
+  }
+
+  function _simMem() {
+    return Math.min(95, Math.max(22, 38 + Math.round(Math.cos(Date.now() / 6000) * 8 + Math.random() * 10)));
+  }
+
+  function _barColor(pct) {
+    if (pct >= 80) return 'sm-bar-red';
+    if (pct >= 55) return 'sm-bar-amber';
+    return 'sm-bar-green';
+  }
+
+  function _pctClass(pct) {
+    if (pct >= 80) return 'sm-icon-red';
+    if (pct >= 55) return 'sm-icon-amber';
+    return 'sm-icon-green';
+  }
+
+  function _formatUptime(ms) {
+    var secs  = Math.floor(ms / 1000);
+    var mins  = Math.floor(secs / 60);
+    var hours = Math.floor(mins / 60);
+    var s = secs % 60;
+    var m = mins % 60;
+    if (hours > 0) return hours + 'h ' + m + 'm ' + s + 's';
+    if (mins > 0)  return m + 'm ' + s + 's';
+    return s + 's';
+  }
+
+  function _formatTime(ts) {
+    var d  = new Date(ts);
+    var hh = String(d.getHours()).padStart(2,'0');
+    var mm = String(d.getMinutes()).padStart(2,'0');
+    var ss = String(d.getSeconds()).padStart(2,'0');
+    return hh + ':' + mm + ':' + ss;
+  }
+
+  function _formatTimestamp(isoStr) {
+    try {
+      var d  = new Date(isoStr);
+      var hh = String(d.getHours()).padStart(2,'0');
+      var mm = String(d.getMinutes()).padStart(2,'0');
+      return hh + ':' + mm;
+    } catch(e) { return '--:--'; }
+  }
+
+  // ── Small card builder ────────────────────────────────────────
+  function _card(iconClass, iconMod, label, value, valueClass, extra) {
+    return '<div class="sm-card">' +
+             '<div class="sm-card-row">' +
+               '<div class="sm-card-icon ' + (iconMod||'') + '"><i class="' + iconClass + '"></i></div>' +
+               '<span class="sm-card-label">' + _esc(label) + '</span>' +
+             '</div>' +
+             '<div class="sm-card-value ' + (valueClass||'') + '">' + _esc(String(value)) + '</div>' +
+             (extra || '') +
+           '</div>';
+  }
+
+  function _healthCard(iconClass, iconMod, label, pct, sub) {
+    var barClass = _barColor(pct);
+    return '<div class="sm-health-card">' +
+             '<div style="display:flex;align-items:center;gap:8px;">' +
+               '<div class="sm-card-icon ' + iconMod + '"><i class="' + iconClass + '"></i></div>' +
+               '<span class="sm-health-label">' + _esc(label) + '</span>' +
+             '</div>' +
+             '<div class="sm-health-val">' + pct + '<span style="font-size:13px;font-weight:400;color:var(--muted);">%</span></div>' +
+             '<div class="sm-progress-wrap"><div class="sm-progress-bar ' + barClass + '" style="width:' + pct + '%"></div></div>' +
+             '<div class="sm-health-sub">' + _esc(sub) + '</div>' +
+           '</div>';
+  }
+
+  // ── Data readers (read-only from existing globals) ────────────
+
+  function _readActiveWindows() {
+    var items = [];
+    document.querySelectorAll('.app-window').forEach(function(w) {
+      var display = window.getComputedStyle(w).display;
+      if (display === 'none') return;
+      var titleEl = w.querySelector('[id$="-title"], .title-left span');
+      var name = (titleEl && titleEl.textContent.trim()) || w.id;
+      name = name.replace(/\s+/g,' ').trim();
+      if (!name) return;
+      items.push({ name: name, id: w.id });
+    });
+    return items;
+  }
+
+  function _readAIStatus() {
+    var mem      = window.AI_MEMORY || {};
+    var isOnline = (typeof window._jarvisProcessInternal === 'function');
+    var orbEl    = document.querySelector('.orb-ring, .atulai-orb, #ai-orb, .orb');
+    var orbActive = orbEl && window.getComputedStyle(orbEl).display !== 'none';
+    var memActive = !!(mem.history && mem.history.length > 0);
+    var voiceOn   = !!(window.VoiceState && window.VoiceState.enabled);
+    var lastCmd   = (mem.lastCommand && mem.lastCommand.trim()) ? mem.lastCommand : '—';
+    var lastIntent = (mem.lastIntent && mem.lastIntent.trim()) ? mem.lastIntent : '—';
+    var lastAction = (mem.lastActionType && mem.lastActionType.trim()) ? mem.lastActionType : '—';
+    return {
+      online:     isOnline,
+      orbActive:  orbActive,
+      memActive:  memActive,
+      voiceOn:    voiceOn,
+      lastCmd:    lastCmd,
+      lastIntent: lastIntent,
+      lastAction: lastAction,
+      histLen:    mem.history ? mem.history.length : 0,
+    };
+  }
+
+  function _readFriendSession() {
+    var reg   = window.FRIENDS_REGISTRY || {};
+    var names = Object.keys(reg);
+    var authed = !!(window.ATULAI_FRIENDS_AUTH);
+    var currentFriend = (window.AI_MEMORY && window.AI_MEMORY.currentFriend) || null;
+    // Find open friend profile windows by data-window-id prefix
+    var openProfiles = [];
+    document.querySelectorAll('.app-window').forEach(function(w) {
+      var wid = w.getAttribute('data-window-id') || w.id || '';
+      if (wid.indexOf('friend-profile') !== -1 || wid.indexOf('friends-profile') !== -1) {
+        if (w.style.display !== 'none') {
+          var titleEl = w.querySelector('[id$="-title"], .title-left span');
+          var profileName = (titleEl && titleEl.textContent.trim()) || wid;
+          openProfiles.push(profileName);
+        }
+      }
+    });
+    return {
+      total:          names.length,
+      names:          names,
+      openProfiles:   openProfiles,
+      authed:         authed,
+      currentFriend:  currentFriend,
+    };
+  }
+
+  function _readActivity() {
+    var mem = window.AI_MEMORY || {};
+    var history = (mem.history || []).slice().reverse().slice(0, 20);
+    return history;
+  }
+
+  function _readModules() {
+    return [
+      { label: 'Dashboard',      ok: !!(window._dashboardModule),     icon: 'fa-solid fa-gauge-high' },
+      { label: 'Milestones',     ok: !!(window._milestonesModule),    icon: 'fa-solid fa-rocket' },
+      { label: 'Friends',        ok: !!(window.FRIENDS_REGISTRY && Object.keys(window.FRIENDS_REGISTRY).length > 0), icon: 'fa-solid fa-users' },
+      { label: 'Nancy Studio',   ok: !!(window._nancyStudio),         icon: 'fa-solid fa-palette' },
+      { label: 'System Monitor', ok: true,                            icon: 'fa-solid fa-gauge-high' },
+      { label: 'Quick Actions',  ok: !!(window._quickActionsModule),  icon: 'fa-solid fa-grid-2' },
+      { label: 'Welcome Screen', ok: !!(window._welcomeModule),       icon: 'fa-solid fa-house' },
+      { label: 'AtulAI',         ok: !!(typeof window._jarvisProcessInternal === 'function'), icon: 'fa-solid fa-robot' },
+    ];
+  }
+
+  function _readSecurity() {
+    var friendsAuth = !!(window.ATULAI_FRIENDS_AUTH);
+    return { friendsAuth: friendsAuth };
+  }
+
+  function _readNancy() {
+    var installed = !!(window._nancyStudio);
+    var artCount  = 5;
+    var cards = document.querySelectorAll('#nancy-studio-window .ns-art-card');
+    if (cards.length > 0) artCount = cards.length;
+    return { installed: installed, artCount: artCount };
+  }
+
+  // ── Render functions ──────────────────────────────────────────
+
+  function _renderHeroStrip() {
+    var strip = _el('sm-hero-strip');
+    if (!strip) return;
+    var wins    = _readActiveWindows();
+    var ai      = _readAIStatus();
+    var reg     = window.APP_REGISTRY || {};
+    var friends = _readFriendSession();
+    strip.innerHTML =
+      '<div class="sm-hero-stat">' +
+        '<div class="sm-hero-stat-icon"><i class="fa-regular fa-window-restore"></i></div>' +
+        '<div class="sm-hero-stat-body">' +
+          '<div class="sm-hero-stat-val">' + wins.length + '</div>' +
+          '<div class="sm-hero-stat-label">Open Windows</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sm-hero-stat">' +
+        '<div class="sm-hero-stat-icon"><i class="fa-solid fa-robot"></i></div>' +
+        '<div class="sm-hero-stat-body">' +
+          '<div class="sm-hero-stat-val" style="color:' + (ai.online ? '#28c840' : '#ff5f57') + '">' + (ai.online ? 'Online' : 'Offline') + '</div>' +
+          '<div class="sm-hero-stat-label">AtulAI</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sm-hero-stat">' +
+        '<div class="sm-hero-stat-icon"><i class="fa-solid fa-table-cells-large"></i></div>' +
+        '<div class="sm-hero-stat-body">' +
+          '<div class="sm-hero-stat-val">' + Object.keys(reg).length + '</div>' +
+          '<div class="sm-hero-stat-label">Running Apps</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sm-hero-stat">' +
+        '<div class="sm-hero-stat-icon"><i class="fa-solid fa-users"></i></div>' +
+        '<div class="sm-hero-stat-body">' +
+          '<div class="sm-hero-stat-val">' + friends.total + '</div>' +
+          '<div class="sm-hero-stat-label">Friends</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sm-hero-stat">' +
+        '<div class="sm-hero-stat-icon"><i class="fa-solid fa-brain"></i></div>' +
+        '<div class="sm-hero-stat-body">' +
+          '<div class="sm-hero-stat-val">' + ai.histLen + '</div>' +
+          '<div class="sm-hero-stat-label">Memory Entries</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function _renderActiveWindows() {
+    var container = _el('sm-windows-list');
+    if (!container) return;
+    var wins = _readActiveWindows();
+    if (wins.length === 0) {
+      container.innerHTML = '<div class="sm-window-empty">No active windows</div>';
+      return;
+    }
+    var html = '<div class="sm-window-list">';
+    wins.forEach(function(w) {
+      html += '<div class="sm-window-item" data-win-id="' + _esc(w.id) + '" tabindex="0" role="button" aria-label="Focus ' + _esc(w.name) + '">' +
+                '<span class="sm-window-item-dot"></span>' +
+                '<span class="sm-window-item-name">' + _esc(w.name) + '</span>' +
+                '<span class="sm-window-item-focus">Focus</span>' +
+              '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+    // Wire click-to-focus
+    container.querySelectorAll('.sm-window-item').forEach(function(item) {
+      function _doFocus() {
+        var wid = item.getAttribute('data-win-id');
+        if (!wid) return;
+        if (typeof window.openWindow === 'function') {
+          window.openWindow(wid);
+        } else {
+          var w = document.getElementById(wid);
+          if (w) { w.style.display = 'flex'; w.focus(); }
+        }
+      }
+      item.addEventListener('click', _doFocus);
+      item.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _doFocus(); } });
+    });
+  }
+
+  function _renderAI() {
+    var grid = _el('sm-ai-grid');
+    if (!grid) return;
+    var d = _readAIStatus();
+    var lastCmdShort  = d.lastCmd.length > 22  ? d.lastCmd.slice(0,22)  + '…' : d.lastCmd;
+    var lastIntShort  = d.lastIntent.length > 18 ? d.lastIntent.slice(0,18) + '…' : d.lastIntent;
+    grid.innerHTML =
+      _card('fa-solid fa-robot',       d.online    ? 'sm-icon-green' : 'sm-icon-red',
+            'AtulAI',       d.online    ? 'Online'   : 'Offline', d.online    ? 'sm-online' : 'sm-offline') +
+      _card('fa-solid fa-circle-dot',  d.orbActive ? 'sm-icon-green' : 'sm-icon-amber',
+            'Orb State',    d.orbActive ? 'Active'   : 'Standby', d.orbActive ? 'sm-online' : 'sm-amber') +
+      _card('fa-solid fa-brain',       d.memActive ? 'sm-icon-green' : 'sm-icon-amber',
+            'Memory',       d.memActive ? d.histLen + ' entries' : 'Empty',   d.memActive ? 'sm-online' : '') +
+      _card('fa-solid fa-terminal',    '',
+            'Last Command', lastCmdShort,  'sm-accent') +
+      _card('fa-solid fa-bolt',        '',
+            'Last Intent',  lastIntShort,  '') +
+      _card('fa-solid fa-microchip',   '',
+            'Last Action',  d.lastAction,  '');
+  }
+
+  function _renderFriendSession() {
+    var container = _el('sm-friends-session');
+    if (!container) return;
+    var d = _readFriendSession();
+
+    var html = '';
+
+    // Summary cards row
+    html += '<div class="sm-card-grid-3" style="margin-bottom:10px;">';
+    html += _card('fa-solid fa-users',        '',
+                  'Total Friends', String(d.total), 'sm-accent');
+    html += _card('fa-regular fa-id-card',    d.openProfiles.length > 0 ? 'sm-icon-green' : '',
+                  'Open Profiles', String(d.openProfiles.length), d.openProfiles.length > 0 ? 'sm-online' : '');
+    html += _card('fa-solid fa-user-lock',    d.authed ? 'sm-icon-amber' : 'sm-icon-green',
+                  'Auth Session',  d.authed ? 'Active' : 'Locked', d.authed ? 'sm-amber' : '');
+    html += '</div>';
+
+    // Open profiles list
+    if (d.openProfiles.length > 0) {
+      html += '<div class="sm-friend-session-list">';
+      d.openProfiles.forEach(function(name) {
+        var initials = name.split(' ').map(function(p){ return p[0]||''; }).join('').toUpperCase().slice(0,2);
+        html += '<div class="sm-friend-session-item">' +
+                  '<div class="sm-friend-avatar">' + _esc(initials || '👤') + '</div>' +
+                  '<span class="sm-friend-name">' + _esc(name) + '</span>' +
+                  '<span class="sm-friend-auth-badge ' + (d.authed ? 'auth-ok' : 'auth-lock') + '">' +
+                    (d.authed ? '✓ Auth' : '🔒 Locked') +
+                  '</span>' +
+                '</div>';
+      });
+      html += '</div>';
+    } else if (d.total > 0) {
+      html += '<div class="sm-window-empty" style="font-size:10px;">No profiles currently open</div>';
+    } else {
+      html += '<div class="sm-window-empty" style="font-size:10px;">Friends module not loaded</div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  function _renderActivity() {
+    var feed = _el('sm-activity-feed');
+    if (!feed) return;
+    var history = _readActivity();
+    if (!history || history.length === 0) {
+      feed.innerHTML = '<div class="sm-activity-empty">No activity recorded yet</div>';
+      return;
+    }
+    var html = '';
+    history.forEach(function(entry) {
+      var time   = entry.timestamp ? _formatTimestamp(entry.timestamp) : '--:--';
+      var input  = (entry.input  || '').trim();
+      var intent = (entry.intent || '').trim();
+      // Derive display text from intent
+      var text   = input || intent;
+      if (text.length > 46) text = text.slice(0, 46) + '…';
+      // Color dot by action type
+      var dotClass = 'act-app';
+      if (intent.indexOf('light_') !== -1 || intent.indexOf('fan_') !== -1 || intent.indexOf('buzzer_') !== -1) dotClass = 'act-iot';
+      else if (intent === 'capabilities' || intent.indexOf('help') !== -1) dotClass = 'act-help';
+      else if (intent.indexOf('dark_') !== -1 || intent.indexOf('light_mode') !== -1 || intent.indexOf('voice') !== -1 || intent.indexOf('system') !== -1) dotClass = 'act-system';
+      html += '<div class="sm-activity-item">' +
+                '<span class="sm-activity-time">' + _esc(time) + '</span>' +
+                '<div class="sm-activity-dot-col">' +
+                  '<div class="sm-activity-dot-inner ' + dotClass + '"></div>' +
+                '</div>' +
+                '<span class="sm-activity-text">' + _esc(text) + '</span>' +
+              '</div>';
+    });
+    feed.innerHTML = html;
+  }
+
+  function _renderQuickActions() {
+    var grid = _el('sm-quick-grid');
+    if (!grid) return;
+    var actions = [
+      { icon: 'fa-solid fa-gauge-high', label: 'Dashboard',    fn: function() { if (window._dashboardModule) window._dashboardModule.open(); else if (typeof window.executeCommand==='function') window.executeCommand('open dashboard'); } },
+      { icon: 'fa-solid fa-palette',    label: 'Nancy Studio', fn: function() { if (window._nancyStudio) window._nancyStudio.open(); else if (typeof window.executeCommand==='function') window.executeCommand('open nancy studio'); } },
+      { icon: 'fa-solid fa-users',      label: 'Friends',      fn: function() { if (typeof window.executeCommand==='function') window.executeCommand('my friends'); } },
+      { icon: 'fa-solid fa-rocket',     label: 'Milestones',   fn: function() { if (window._milestonesModule) window._milestonesModule.open(); else if (typeof window.executeCommand==='function') window.executeCommand('open milestones'); } },
+      { icon: 'fa-solid fa-calculator', label: 'Calculator',   fn: function() { if (typeof window.openWindow==='function') window.openWindow('calculator'); } },
+      { icon: 'fa-solid fa-globe',      label: 'Browser',      fn: function() { if (typeof window.openApp==='function') window.openApp('browser'); else if (typeof window.openWindow==='function') window.openWindow('browser'); } },
+    ];
+    var html = '';
+    actions.forEach(function(a, i) {
+      html += '<button class="sm-quick-btn" data-qa-idx="' + i + '">' +
+                '<div class="sm-quick-btn-icon"><i class="' + a.icon + '"></i></div>' +
+                '<span class="sm-quick-btn-label">' + _esc(a.label) + '</span>' +
+              '</button>';
+    });
+    grid.innerHTML = html;
+    grid.querySelectorAll('.sm-quick-btn').forEach(function(btn) {
+      var idx = parseInt(btn.getAttribute('data-qa-idx'), 10);
+      btn.addEventListener('click', function() {
+        try { actions[idx].fn(); } catch(e) {}
+      });
+    });
+  }
+
+  function _renderHealth() {
+    var grid = _el('sm-health-grid');
+    if (!grid) return;
+    var cpu  = _simCPU();
+    var mem  = _simMem();
+    var wins = _readActiveWindows();
+    var reg  = window.APP_REGISTRY || {};
+    grid.innerHTML =
+      _healthCard('fa-solid fa-microchip', _pctClass(cpu), 'CPU Usage',    cpu, 'Simulated load') +
+      _healthCard('fa-solid fa-memory',    _pctClass(mem), 'Memory Usage', mem, 'Simulated usage') +
+      '<div class="sm-health-card">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<div class="sm-card-icon"><i class="fa-regular fa-window-restore"></i></div>' +
+          '<span class="sm-health-label">Open Windows</span>' +
+        '</div>' +
+        '<div class="sm-health-val">' + wins.length + '</div>' +
+        '<div class="sm-health-sub">Active windows</div>' +
+      '</div>' +
+      '<div class="sm-health-card">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<div class="sm-card-icon"><i class="fa-solid fa-table-cells-large"></i></div>' +
+          '<span class="sm-health-label">Running Apps</span>' +
+        '</div>' +
+        '<div class="sm-health-val">' + Object.keys(reg).length + '</div>' +
+        '<div class="sm-health-sub">In APP_REGISTRY</div>' +
+      '</div>';
+  }
+
+  function _renderNancy() {
+    var grid = _el('sm-nancy-grid');
+    if (!grid) return;
+    var d = _readNancy();
+    grid.innerHTML =
+      _card('fa-solid fa-palette',              d.installed ? 'sm-icon-green' : 'sm-icon-red',
+            'Nancy Studio',   d.installed ? 'Installed' : 'Not Found', d.installed ? 'sm-online' : 'sm-offline') +
+      _card('fa-regular fa-images',             '',
+            'Gallery Works',  d.artCount + ' items', 'sm-accent') +
+      _card('fa-solid fa-wand-magic-sparkles',  'sm-icon-green',
+            'Module Version', '4.87', '');
+  }
+
+  function _renderModules() {
+    var chips = _el('sm-modules-chips');
+    if (!chips) return;
+    var modules = _readModules();
+    var html = '';
+    modules.forEach(function(m) {
+      var cls = m.ok ? 'sm-chip-ok' : 'sm-chip-warn';
+      html += '<div class="sm-module-chip ' + cls + '">' +
+                '<i class="' + m.icon + '"></i>' +
+                _esc(m.label) +
+              '</div>';
+    });
+    chips.innerHTML = html;
+  }
+
+  function _renderSecurity() {
+    var grid = _el('sm-security-grid');
+    if (!grid) return;
+    var d = _readSecurity();
+    grid.innerHTML =
+      _card('fa-solid fa-user-lock',      d.friendsAuth ? 'sm-icon-amber' : 'sm-icon-green',
+            'Friend Session',   d.friendsAuth ? 'Authenticated' : 'Locked', d.friendsAuth ? 'sm-amber' : '') +
+      _card('fa-solid fa-shield-halved',  'sm-icon-green',
+            'Device Security',  'Secure', 'sm-online') +
+      _card('fa-solid fa-lock',           'sm-icon-green',
+            'Auth Systems',     'Nominal', 'sm-online');
+  }
+
+  function _renderUptime() {
+    var row = _el('sm-uptime-row');
+    if (!row) return;
+    var uptime   = Date.now() - SM_BOOT_TS;
+    var startStr = _formatTime(SM_BOOT_TS);
+    row.innerHTML =
+      '<div class="sm-uptime-block">' +
+        '<div class="sm-uptime-label">Session Start</div>' +
+        '<div class="sm-uptime-val">' + startStr + '</div>' +
+      '</div>' +
+      '<div class="sm-uptime-block">' +
+        '<div class="sm-uptime-label">Current Uptime</div>' +
+        '<div class="sm-uptime-val" id="sm-uptime-live">' + _formatUptime(uptime) + '</div>' +
+      '</div>' +
+      '<div class="sm-uptime-block">' +
+        '<div class="sm-uptime-label">Current Time</div>' +
+        '<div class="sm-uptime-val" id="sm-clock-live">' + _formatTime(Date.now()) + '</div>' +
+      '</div>';
+  }
+
+  // ── Full refresh ──────────────────────────────────────────────
+  function _refresh() {
+    _renderHeroStrip();
+    _renderActiveWindows();
+    _renderAI();
+    _renderFriendSession();
+    _renderActivity();
+    _renderQuickActions();
+    _renderHealth();
+    _renderNancy();
+    _renderModules();
+    _renderSecurity();
+    _renderUptime();
+  }
+
+  // ── Live clock/uptime tick — only two small spans ─────────────
+  function _tick() {
+    var upEl = _el('sm-uptime-live');
+    var clEl = _el('sm-clock-live');
+    if (upEl) upEl.textContent = _formatUptime(Date.now() - SM_BOOT_TS);
+    if (clEl) clEl.textContent = _formatTime(Date.now());
+  }
+
+  // ── Open window ───────────────────────────────────────────────
+  function _openSystemMonitor() {
+    if (typeof window.openWindow === 'function') {
+      window.openWindow(SM_WIN_ID);
+    } else {
+      var win = document.getElementById(SM_WIN_ID);
+      if (win) { win.style.display = 'flex'; win.removeAttribute('aria-hidden'); }
+    }
+    _refresh();
+    return '📊 Opening Command Center…';
+  }
+
+  // ── Command matcher ───────────────────────────────────────────
+  function _matchSMCommand(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    var norm = raw.toLowerCase()
+      .replace(/[?!.]+$/, '')
+      .replace(/\b(please|can you|could you|just|for me)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (norm === 'open system monitor'  ||
+        norm === 'system monitor'       ||
+        norm === 'open monitor'         ||
+        norm === 'show system stats'    ||
+        norm === 'system stats'         ||
+        norm === 'system status'        ||
+        norm === 'show system status'   ||
+        norm === 'monitor') {
+      return _openSystemMonitor();
+    }
+    return null;
+  }
+
+  // ── Wire into native Window Manager ──────────────────────────
+  function _wireNativeWindowManager() {
+    var win = document.getElementById(SM_WIN_ID);
+    if (!win) return;
+
+    win.style.display = 'none';
+    win.setAttribute('aria-hidden', 'true');
+
+    if (window.APP_REGISTRY) {
+      window.APP_REGISTRY['system-monitor'] = { elementId: SM_WIN_ID, open: false, minimized: false };
+    }
+
+    function bringToFront() {
+      if (typeof window.openWindow === 'function') return;
+      var z = 100;
+      document.querySelectorAll('.app-window').forEach(function(w) {
+        var wz = parseInt(w.style.zIndex, 10) || 0;
+        if (wz >= z) z = wz + 1;
+      });
+      win.style.zIndex = z;
+    }
+
+    function minimizeWin() {
+      win.style.display = 'none';
+      win.setAttribute('aria-hidden', 'true');
+      if (typeof window.minimizeWindow === 'function') {
+        window.minimizeWindow(win);
+      } else {
+        var tb = document.getElementById('taskbar');
+        if (tb && !document.getElementById('sm-taskbar-chip')) {
+          var chip = document.createElement('div');
+          chip.className = 'taskbar-chip';
+          chip.id = 'sm-taskbar-chip';
+          chip.innerHTML = '<i class="fa-solid fa-gauge-high"></i><span>Command Center</span>';
+          chip.addEventListener('click', function() {
+            chip.remove();
+            win.style.display = 'flex';
+            win.removeAttribute('aria-hidden');
+          });
+          tb.appendChild(chip);
+        }
+      }
+    }
+
+    function maximizeWin() {
+      if (typeof window.maximizeWindow === 'function') {
+        window.maximizeWindow(win); return;
+      }
+      var isMax = win.dataset.maximized === 'true';
+      if (!isMax) {
+        var r = win.getBoundingClientRect();
+        win.dataset.prevRect = JSON.stringify({ left: r.left, top: r.top, width: r.width, height: r.height });
+        var bar  = document.getElementById('statusbar');
+        var barH = (bar && bar.offsetHeight) ? bar.offsetHeight : 44;
+        win.style.left   = '8px';
+        win.style.top    = (barH + 8) + 'px';
+        win.style.width  = (window.innerWidth  - 16) + 'px';
+        win.style.height = (window.innerHeight - barH - 44 - 16) + 'px';
+        win.dataset.maximized = 'true';
+        var maxI = win.querySelector('.win-btn.max i');
+        if (maxI) maxI.className = 'fa-regular fa-window-restore';
+      } else {
+        try {
+          var prev = JSON.parse(win.dataset.prevRect || 'null');
+          if (prev) {
+            win.style.left   = prev.left   + 'px';
+            win.style.top    = prev.top    + 'px';
+            win.style.width  = prev.width  + 'px';
+            win.style.height = prev.height + 'px';
+          }
+        } catch(e) {}
+        win.dataset.maximized = 'false';
+        var maxI2 = win.querySelector('.win-btn.max i');
+        if (maxI2) maxI2.className = 'fa-regular fa-square';
+      }
+    }
+
+    win.querySelectorAll('[data-action]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var a = btn.dataset.action;
+        if (a === 'close')    { if (typeof window.closeWindow === 'function') window.closeWindow(SM_WIN_ID); }
+        if (a === 'minimize') { minimizeWin(); }
+        if (a === 'maximize') { maximizeWin(); }
+      });
+    });
+
+    win.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { if (typeof window.closeWindow === 'function') window.closeWindow(SM_WIN_ID); }
+      if (e.key === 'F11')    { maximizeWin(); }
+    });
+
+    win.addEventListener('mousedown', function() { bringToFront(); });
+
+    // Drag
+    var header = win.querySelector('[data-drag-handle]') || win.querySelector('.window-header');
+    if (header) {
+      var dragging = false, ox = 0, oy = 0;
+      function startDrag(cx, cy) {
+        dragging = true;
+        var r = win.getBoundingClientRect();
+        ox = cx - r.left; oy = cy - r.top;
+        document.body.style.userSelect = 'none';
+        bringToFront();
+      }
+      function stopDrag() {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.userSelect = '';
+      }
+      function onMove(cx, cy) {
+        if (!dragging) return;
+        var bar    = document.getElementById('statusbar');
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var minTop = (bar ? bar.offsetHeight : 44) + 8;
+        var maxTop = vh - 44 - 34;
+        var left = Math.max(8, Math.min(cx - ox, vw - win.offsetWidth  - 8));
+        var top  = Math.max(minTop, Math.min(cy - oy, maxTop));
+        win.style.left = left + 'px';
+        win.style.top  = top  + 'px';
+      }
+      header.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.win-btn')) return;
+        e.preventDefault(); startDrag(e.clientX, e.clientY);
+      });
+      document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+      document.addEventListener('mouseup', stopDrag);
+      header.addEventListener('touchstart', function(e) {
+        if (e.target.closest('.win-btn')) return;
+        var t = e.touches[0]; startDrag(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchmove', function(e) {
+        if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY);
+      }, { passive: true });
+      document.addEventListener('touchend', stopDrag);
+    }
+
+    // Resize handles
+    var MIN_W = 560, MIN_H = 380;
+    ['right','bottom','corner'].forEach(function(dir) {
+      if (win.querySelector('.resize-handle.' + dir)) return;
+      var handle = document.createElement('div');
+      handle.className = 'resize-handle ' + dir;
+      handle.setAttribute('aria-hidden', 'true');
+      win.appendChild(handle);
+      var resizing = false, sX = 0, sY = 0, sW = 0, sH = 0;
+      handle.addEventListener('mousedown', function(e) {
+        e.stopPropagation(); e.preventDefault();
+        resizing = true; sX = e.clientX; sY = e.clientY;
+        sW = win.offsetWidth; sH = win.offsetHeight;
+        document.body.style.userSelect    = 'none';
+        document.body.style.pointerEvents = 'none';
+        handle.style.pointerEvents        = 'auto';
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (!resizing) return;
+        var dx = e.clientX - sX, dy = e.clientY - sY;
+        if (dir === 'right'  || dir === 'corner') win.style.width  = Math.max(MIN_W, sW + dx) + 'px';
+        if (dir === 'bottom' || dir === 'corner') {
+          var maxH = window.innerHeight - win.getBoundingClientRect().top - 44 - 8;
+          win.style.height = Math.max(MIN_H, Math.min(sH + dy, maxH)) + 'px';
+        }
+      });
+      document.addEventListener('mouseup', function() {
+        if (!resizing) return;
+        resizing = false;
+        document.body.style.userSelect    = '';
+        document.body.style.pointerEvents = '';
+        handle.style.pointerEvents        = '';
+      });
+    });
+  }
+
+  // ── Patch AI / executeCommand ─────────────────────────────────
+  function _patchAI() {
+    var _orig = window._jarvisProcessInternal;
+    if (!_orig || _orig._smPatched) return;
+    window._jarvisProcessInternal = function smAwareJarvis(rawInput) {
+      if (!rawInput) return _orig(rawInput);
+      var cleaned = rawInput.replace(/^(?:hey|hello|ok)\s+atulos?\s*/i, '').trim();
+      var result  = _matchSMCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.jarvisSpeak === 'function') { try { window.jarvisSpeak(result); } catch(e){} }
+        if (typeof aiAppendMessage === 'function') aiAppendMessage('ai', result, true);
+        return result;
+      }
+      return _orig(rawInput);
+    };
+    var flags = ['_nancyPatched','_friendsPatched','_sessionPatched','_personalityPatched','_confidencePatched','_helpPatched'];
+    flags.forEach(function(f) { window._jarvisProcessInternal[f] = (_orig[f] || false); });
+    window._jarvisProcessInternal._smPatched = true;
+  }
+
+  function _patchExecuteCommand() {
+    var _origExec = window.executeCommand;
+    if (!_origExec || _origExec._smPatched) return;
+    window.executeCommand = function smAwareExecuteCommand(rawInput) {
+      if (!rawInput || !rawInput.trim()) return _origExec(rawInput);
+      var cleaned = rawInput.trim().replace(/^(?:hey|hello|ok)\s+atulos?\s*/i, '').trim();
+      var result  = _matchSMCommand(cleaned);
+      if (result !== null) {
+        if (typeof window.dispatchOutput === 'function') window.dispatchOutput(result);
+        return result;
+      }
+      return _origExec(rawInput);
+    };
+    var flags = ['_nancyPatched','_friendsPatched','_sessionPatched','_helpPatched','_confidencePatched','_personalityPatched'];
+    flags.forEach(function(f) { window.executeCommand[f] = (_origExec[f] || false); });
+    window.executeCommand._smPatched = true;
+  }
+
+  // ── Wire refresh button ───────────────────────────────────────
+  function _wireRefreshBtn() {
+    var btn = _el('sm-refresh-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      _refresh();
+      btn.style.color = '#28c840';
+      setTimeout(function() { btn.style.color = ''; }, 600);
+    });
+  }
+
+  // ── Desktop icon ──────────────────────────────────────────────
+  function _addDesktopIcon() {
+    var icons = document.querySelector('.desktop-icons');
+    if (icons && !document.getElementById('sm-desktop-icon')) {
+      var icon = document.createElement('div');
+      icon.id = 'sm-desktop-icon';
+      icon.className = 'icon';
+      icon.setAttribute('role', 'button');
+      icon.setAttribute('tabindex', '0');
+      icon.setAttribute('aria-label', 'Open System Monitor');
+      icon.innerHTML = '<i class="fa-solid fa-gauge-high"></i><span>Monitor</span>';
+      icon.addEventListener('click', _openSystemMonitor);
+      icon.addEventListener('keydown', function(e) { if (e.key === 'Enter') _openSystemMonitor(); });
+      icons.appendChild(icon);
+    }
+  }
+
+  // ── Install ───────────────────────────────────────────────────
+  function _install() {
+    _wireNativeWindowManager();
+    _wireRefreshBtn();
+    _addDesktopIcon();
+    _patchAI();
+    _patchExecuteCommand();
+
+    // Live clock only (one interval, two span updates)
+    setInterval(_tick, 1000);
+
+    window._systemMonitor = {
+      open:    _openSystemMonitor,
+      refresh: _refresh,
+    };
+
+    console.log('[AtulOS 4.88] System Monitor installed. Commands: open system monitor | open monitor | show system stats | system status');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _install);
+  } else {
+    _install();
+  }
+
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.88 — ATULOS SYSTEM MONITOR
+════════════════════════════════════════════════════════════════ -->
 </body>
 </html>
