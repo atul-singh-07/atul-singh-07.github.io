@@ -4410,6 +4410,7 @@ const VoiceState = (function () {
     if (orb) orb.classList.remove('speaking');
     // Auto-return to idle after success burst (1.2 s)
     setTimeout(function() { document.body.classList.remove('ai-success'); }, 1200);
+    if (typeof window.updateOLED === 'function') window.updateOLED('IDLE', 'Ready', 'orb');
   }
 
   function stopSpeaking() {
@@ -4443,8 +4444,7 @@ const VoiceState = (function () {
 
       utt.onstart = showSpeaking;
       utt.onend   = hideSpeaking;
-      utt.onerror = (e) => {
-        hideSpeaking();
+      utt.onerror = (e) => {        hideSpeaking();
         if (e.error !== 'interrupted') {
           console.warn('TTS error:', e.error);
           document.body.classList.remove('ai-success');
@@ -4454,6 +4454,7 @@ const VoiceState = (function () {
       };
 
       window.speechSynthesis.speak(utt);
+      if (typeof window.updateOLED === 'function') window.updateOLED('SPEAKING', clean, 'speak');
     }
 
     const voices = window.speechSynthesis.getVoices();
@@ -4753,6 +4754,7 @@ const SpeechEngine = (function () {
       isListening    = true;
       restartPending = false;
       document.body.classList.add('ai-listening');
+      if (typeof window.updateOLED === 'function') window.updateOLED('LISTENING', 'Listening...', 'listen');
       if (currentMode === MODE.COMMAND) {
         showModeBadge(MODE.COMMAND);
         showMicBadge('🎤 Listening…', false);
@@ -4808,6 +4810,7 @@ const SpeechEngine = (function () {
         setTimeout(hideMicBadge, 2500);
         document.body.classList.remove('ai-listening');
         document.body.classList.add('ai-thinking');
+        if (typeof window.updateOLED === 'function') window.updateOLED('THINKING', 'Processing...', 'think');
         if (text) executeCommand(text);
         returnFromCommand();
       }
@@ -9908,6 +9911,13 @@ document.addEventListener('DOMContentLoaded', function () {
       title:     'Notes',
       icon:      'fa-solid fa-note-sticky',
     },
+    // ── Module 4.88: System Monitor ──
+    monitor: {
+      id:        'monitor',
+      elementId: 'system-monitor-window',
+      title:     'System Monitor',
+      icon:      'fa-solid fa-gauge-high',
+    },
   };
 
   /**
@@ -10039,6 +10049,7 @@ document.addEventListener('DOMContentLoaded', function () {
     { name: 'Calendar',  icon: '📅', action: function(){ closeStartMenu(); openApp('calendar'); } },
     { name: 'Notes',     icon: '📝', action: function(){ closeStartMenu(); openApp('notes'); } },
     { name: 'Browser',   icon: '🌐', action: function(){ closeStartMenu(); openApp('browser'); } },
+    { name: 'Monitor',   icon: '📊', action: function(){ closeStartMenu(); if (window._systemMonitor) { window._systemMonitor.open(); } else if (typeof window.openWindow === 'function') { window.openWindow('system-monitor-window'); } } },
   ];
 
   var taskbar   = document.getElementById('taskbar');
@@ -11908,6 +11919,9 @@ document.addEventListener('DOMContentLoaded', function () {
       _state.deviceStates[name] = next;
       _setDeviceUIState(name, next);
       _printEdexLine('ok', name.toUpperCase() + ' turned ' + (next ? 'ON' : 'OFF') + ' via Firebase.');
+      if (typeof window.updateOLED === 'function') {
+        window.updateOLED('DEVICE', name.toUpperCase() + (next ? ' ON' : ' OFF'), 'device');
+      }
       console.log('[AtulOS eDEX] Device toggle:', name, val);
     } else {
       _printEdexLine('err', 'Firebase IoT not available.');
@@ -19232,6 +19246,88 @@ window.safeAppend = function safeAppend(parent, child) {
 </script>
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.88 — ATULOS SYSTEM MONITOR
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.89.1 — ATULOS OLED / AI ORB FIREBASE SYNC
+     Writes orb lifecycle states to /atulos/oled in Firebase.
+     Payload: state, text (≤40 chars), animation, emotion, timestamp
+     Reuses existing firebase instance. Non-blocking. Silent fail.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── updateOLED ────────────────────────────────────────────────
+  // Central function: writes orb/voice state to /atulos/oled/*.
+  // Signature unchanged: updateOLED(state, text, animation)
+  // Additions (4.89.1):
+  //   • emotion field derived from state
+  //   • text truncated to 40 chars for OLED display safety
+  //   • allowed animations: orb | listen | think | speak | device | boot
+
+  var _OLED_EMOTION_MAP = {
+    'IDLE':      'idle',
+    'LISTENING': 'listening',
+    'THINKING':  'thinking',
+    'SPEAKING':  'speaking',
+    'DEVICE':    'device',
+    'ONLINE':    'idle',
+    'SUCCESS':   'success',
+    'ERROR':     'idle'
+  };
+
+  var _OLED_VALID_ANIMS = { orb:1, listen:1, think:1, speak:1, device:1, boot:1 };
+
+  window.updateOLED = function updateOLED(state, text, animation) {
+    try {
+      if (typeof firebase === 'undefined') return;
+      var db = firebase.database();
+      if (!db) return;
+
+      var safeState = String(state     || 'IDLE');
+      var safeAnim  = String(animation || 'orb');
+      // Guard: only allow known animation values
+      if (!_OLED_VALID_ANIMS[safeAnim]) safeAnim = 'orb';
+      // Truncate text to 40 chars for OLED payload safety
+      var rawText   = String(text || '');
+      var safeText  = rawText.length > 40 ? rawText.slice(0, 37) + '...' : rawText;
+      // Derive emotion from state
+      var emotion   = _OLED_EMOTION_MAP[safeState] || 'idle';
+
+      db.ref('atulos/oled').set({
+        state:     safeState,
+        text:      safeText,
+        animation: safeAnim,
+        emotion:   emotion,
+        timestamp: Date.now()
+      }).catch(function(err) {
+        // Silent fail — OLED sync must never disrupt AtulOS operation
+        console.warn('[AtulOS OLED] Firebase write skipped:', err && err.message);
+      });
+    } catch (e) {
+      // Firebase unavailable (demo mode) — swallow silently
+      console.warn('[AtulOS OLED] updateOLED silently skipped:', e && e.message);
+    }
+  };
+
+  // Boot sequence: ONLINE → delayed IDLE
+  (function _initOLED() {
+    try {
+      if (typeof firebase !== 'undefined' && firebase.database) {
+        window.updateOLED('ONLINE', 'AtulOS Ready', 'boot');
+        setTimeout(function() {
+          window.updateOLED('IDLE', 'Ready', 'orb');
+        }, 2000);
+        console.log('[AtulOS 4.89.1] OLED Sync upgraded. Path: /atulos/oled');
+      }
+    } catch (e) { /* demo mode — skip */ }
+  })();
+
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.89.1 — ATULOS OLED / AI ORB FIREBASE SYNC
 ════════════════════════════════════════════════════════════════ -->
 </body>
 </html>
