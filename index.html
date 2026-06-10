@@ -295,6 +295,7 @@ body {
   min-height: 120px; overflow: hidden;
   backdrop-filter: blur(20px);
   max-height: calc(100vh - 44px - 48px); /* never overlap taskbar (44px) or statusbar (~48px) */
+  will-change: transform; /* perf: GPU layer — prevents backdrop-filter repaint on drag/animate */
 }
 .window-header {
   padding: 0 0 0 14px;
@@ -2783,6 +2784,7 @@ body {
   transition: box-shadow 0.4s ease, background 0.4s ease;
   animation: orbBreath 4s ease-in-out infinite;
   z-index: 1;
+  will-change: transform, box-shadow; /* perf: GPU layer for box-shadow keyframe animation */
 }
 
 /* ── Scanline texture ────────────────────────────────────────── */
@@ -2808,6 +2810,7 @@ body {
   border: 1px solid rgba(0, 200, 255, 0.18);
   pointer-events: none;
   animation: orbRingIdle 5s ease-out infinite;
+  will-change: transform, opacity; /* perf: GPU layer for ring expand/fade animations */
 }
 .ai-orb-ring1 { inset: -7px;  animation-delay: 0s; }
 .ai-orb-ring2 { inset: -16px; animation-delay: 1.6s; }
