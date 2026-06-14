@@ -2601,6 +2601,717 @@ body {
   color: rgba(0,200,255,0.7);
 }
 
+/* ── DEEPSPACE MODE — Module 4.90 Mission Dashboard ── */
+#deepspace-container {
+  position: fixed;
+  inset: 0;
+  background: var(--bg, #05070b);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  font-family: inherit;
+  overflow: hidden;
+}
+#deepspace-container.ds-active {
+  display: flex;
+}
+
+/* Subtle grid background — retained from v1 but dimmed */
+.ds-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(99,168,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,168,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+/* ── Mission Dashboard topbar ── */
+#ds-topbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+.ds-topbar-title {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.ds-topbar-meta {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── DeepSpace Terminal access button — Module 4.91 fix ──
+   Opens the EXISTING #terminal window via openWindow('terminal').
+   #deepspace-container sits at z-index:200; #terminal (an .app-window)
+   normally renders within the OS layer below that, so when opened
+   from DeepSpace we bump it above the DeepSpace overlay via the
+   .ds-terminal-active class (toggled by openDeepSpaceTerminal()). */
+.ds-terminal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(99,168,255,0.08);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ds-terminal-btn:hover {
+  background: rgba(99,168,255,0.16);
+  border-color: var(--accent);
+}
+#terminal.ds-terminal-active {
+  z-index: 999 !important;
+}
+
+.ds-topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #28c840;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.ds-online-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #28c840;
+  animation: ds-dot-pulse 2s ease-in-out infinite;
+}
+@keyframes ds-dot-pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* ── Dashboard scroll area ── */
+#ds-dashboard {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#ds-dashboard::-webkit-scrollbar { width: 4px; }
+#ds-dashboard::-webkit-scrollbar-track { background: transparent; }
+#ds-dashboard::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Row layouts ── */
+.ds-row {
+  display: grid;
+  gap: 14px;
+}
+.ds-row-2 { grid-template-columns: 1fr 1fr; }
+.ds-row-1 { grid-template-columns: 1fr; }
+
+/* ── Panel card ── */
+.ds-panel {
+  background: var(--window, rgba(17,23,32,0.95));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.ds-panel-header {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.ds-panel-title {
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.ds-panel-badge {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-panel-badge.nominal { color: #28c840; }
+.ds-panel-badge.warning  { color: #ffb347; }
+.ds-panel-body {
+  padding: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Data rows inside panels ── */
+.ds-data-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.ds-data-row:last-child { border-bottom: none; }
+.ds-data-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-data-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+}
+.ds-data-value.active  { color: #28c840; }
+.ds-data-value.accent  { color: var(--accent); }
+.ds-data-value.strong  { color: #28c840; }
+.ds-data-value.warning { color: #ffb347; }
+
+/* ── Mission Status state badge ── */
+.ds-mission-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(40,200,64,0.3);
+  background: rgba(40,200,64,0.08);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #28c840;
+}
+
+/* ── Mission Clock panel ── */
+.ds-clock-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ds-clock-utc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ds-clock-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-clock-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.ds-clock-met {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Mission Log panel ── */
+#ds-log-body {
+  padding: 10px 14px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#ds-log-body::-webkit-scrollbar { width: 3px; }
+#ds-log-body::-webkit-scrollbar-track { background: transparent; }
+#ds-log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.ds-log-entry {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  animation: ds-log-in 0.3s ease forwards;
+}
+.ds-log-entry .ds-log-time { color: var(--accent); margin-right: 6px; }
+@keyframes ds-log-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Telemetry refresh flash ── */
+@keyframes ds-refresh-flash {
+  0%   { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+.ds-data-value.refreshing {
+  animation: ds-refresh-flash 0.4s ease;
+}
+
+/* ── Version tag ── */
+.ds-version-tag {
+  position: absolute;
+  bottom: 8px;
+  right: 18px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.1);
+  text-transform: uppercase;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Orbital Visualization Panel ── */
+.ds-orbital-wrap {
+  position: relative;
+  width: 100%;
+  /* 16:6 aspect ratio — wide mission-console proportion */
+  padding-bottom: 37.5%;
+  background: #000;
+  overflow: hidden;
+}
+#ds-orbital-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* Telemetry overlay — bottom-left corner */
+.ds-orb-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 14px;
+  display: flex;
+  gap: 18px;
+  pointer-events: none;
+}
+.ds-orb-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ds-orb-stat-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.5);
+}
+.ds-orb-stat-value {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Active Assets Panel — Module 4.92 Multi-Satellite Tracking ── */
+.ds-assets-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ds-assets-table thead th {
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 0 10px 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.ds-assets-table tbody td {
+  padding: 8px 10px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--fg);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ds-assets-table tbody tr:last-child td { border-bottom: none; }
+.ds-asset-name {
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.ds-asset-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.ds-asset-status.active      { color: #28c840; border: 1px solid rgba(40,200,64,0.3);  background: rgba(40,200,64,0.08); }
+.ds-asset-status.standby     { color: #ffb347; border: 1px solid rgba(255,179,71,0.3); background: rgba(255,179,71,0.08); }
+.ds-asset-status.maintenance { color: #63a8ff; border: 1px solid rgba(99,168,255,0.3); background: rgba(99,168,255,0.08); }
+.ds-asset-status.offline     { color: #8a8f99; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+.ds-asset-signal-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
+  vertical-align: middle;
+}
+.ds-asset-signal-bar span {
+  display: inline-block;
+  width: 3px;
+  border-radius: 1px;
+  background: rgba(255,255,255,0.12);
+}
+.ds-asset-signal-bar span.on { background: var(--accent); }
+.ds-asset-signal-bar span:nth-child(1) { height: 5px; }
+.ds-asset-signal-bar span:nth-child(2) { height: 8px; }
+.ds-asset-signal-bar span:nth-child(3) { height: 11px; }
+.ds-asset-signal-bar span:nth-child(4) { height: 14px; }
+@media (max-width: 700px) {
+  .ds-assets-table { font-size: 10px; }
+  .ds-assets-table thead th:nth-child(4),
+  .ds-assets-table tbody td:nth-child(4) { display: none; } /* hide Velocity col on small screens */
+}
+
+/* ── Mission Operations Center — Module 4.93 ── */
+.ds-missions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.ds-mission-card {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ds-mission-card:hover {
+  border-color: var(--accent);
+  background: rgba(99,168,255,0.04);
+}
+.ds-mission-card.selected {
+  border-color: var(--accent);
+  background: rgba(99,168,255,0.06);
+}
+.ds-mission-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ds-mission-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+.ds-mission-type {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-mission-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.ds-mission-status.active    { color: #28c840; border: 1px solid rgba(40,200,64,0.3);  background: rgba(40,200,64,0.08); }
+.ds-mission-status.planned   { color: #63a8ff; border: 1px solid rgba(99,168,255,0.3); background: rgba(99,168,255,0.08); }
+.ds-mission-status.analyzing { color: #ffb347; border: 1px solid rgba(255,179,71,0.3); background: rgba(255,179,71,0.08); }
+.ds-mission-status.completed { color: #8a8f99; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+/* ── Priority indicator — subtle left-edge accent, no flashing ── */
+.ds-mission-card[data-priority="low"]      { border-left: 3px solid rgba(255,255,255,0.10); }
+.ds-mission-card[data-priority="normal"]   { border-left: 3px solid rgba(99,168,255,0.30); }
+.ds-mission-card[data-priority="high"]     { border-left: 3px solid rgba(255,179,71,0.45); }
+.ds-mission-card[data-priority="critical"] { border-left: 3px solid rgba(255,90,90,0.55); }
+.ds-mission-priority {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-mission-objective {
+  font-size: 10px;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+}
+.ds-mission-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── Mission Timeline panel ── */
+#ds-mission-timeline-title,
+.ds-mission-timeline-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.ds-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.ds-timeline-item:last-child { border-bottom: none; }
+.ds-timeline-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 3px;
+  flex-shrink: 0;
+  background: var(--accent);
+  border: 1px solid rgba(99,168,255,0.4);
+}
+.ds-timeline-dot.pending {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.ds-timeline-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ds-timeline-label {
+  font-size: 11px;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+}
+.ds-timeline-meta {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .ds-missions-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Launch Control Center — Module 4.94 ── */
+.ds-launch-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .ds-launch-grid { grid-template-columns: 1fr; }
+}
+
+/* Launch queue */
+.ds-launch-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ds-launch-card {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ds-launch-card:hover {
+  border-color: var(--accent);
+  background: rgba(99,168,255,0.04);
+}
+.ds-launch-card.selected {
+  border-color: var(--accent);
+  background: rgba(99,168,255,0.06);
+}
+.ds-launch-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ds-launch-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+.ds-launch-vehicle {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-launch-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.ds-launch-status.queued    { color: #63a8ff; border: 1px solid rgba(99,168,255,0.3); background: rgba(99,168,255,0.08); }
+.ds-launch-status.countdown { color: #ffb347; border: 1px solid rgba(255,179,71,0.3); background: rgba(255,179,71,0.08); }
+.ds-launch-status.launched  { color: #28c840; border: 1px solid rgba(40,200,64,0.3);  background: rgba(40,200,64,0.08); }
+.ds-launch-status.hold      { color: #ff5f57; border: 1px solid rgba(255,95,87,0.3);  background: rgba(255,95,87,0.08); }
+
+/* Readiness + countdown panel */
+.ds-launch-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ds-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.ds-readiness-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 5px;
+  background: rgba(255,255,255,0.02);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.ds-readiness-label { color: var(--fg); }
+.ds-readiness-badge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.ds-readiness-badge.ready   { color: #28c840; border: 1px solid rgba(40,200,64,0.3);  background: rgba(40,200,64,0.08); }
+.ds-readiness-badge.checking{ color: #63a8ff; border: 1px solid rgba(99,168,255,0.3); background: rgba(99,168,255,0.08); }
+.ds-readiness-badge.warning { color: #ffb347; border: 1px solid rgba(255,179,71,0.3); background: rgba(255,179,71,0.08); }
+.ds-readiness-badge.offline { color: #8a8f99; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+
+/* Countdown */
+.ds-countdown-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 0;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.015);
+}
+.ds-countdown-value {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.ds-countdown-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-countdown-mission {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--fg);
+}
+
+/* Launch event log */
+.ds-launchlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.ds-launchlog-item {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.ds-launchlog-item:last-child { border-bottom: none; }
+.ds-launchlog-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ds-launchlog-msg { color: var(--fg); }
+@media (max-width: 700px) {
+  .ds-readiness-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .ds-row-2 { grid-template-columns: 1fr; }
+  #ds-dashboard { padding: 10px; gap: 10px; }
+  .ds-clock-value { font-size: 18px; }
+  #ds-log-body { max-height: 140px; }
+  .ds-orbital-wrap { padding-bottom: 60%; }
+}
+
 /* ── EDEX BOOT SCREEN ── */
 #edex-boot {
   position: fixed;
@@ -3576,6 +4287,327 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="os-view-toggle">
   <button class="os-view-btn active" id="btn-os-mode" onclick="switchToOSMode()">⬡ OS MODE</button>
   <button class="os-view-btn" id="btn-classic-mode" onclick="switchToClassicMode()">⬜ CLASSIC</button>
+  <button class="os-view-btn" id="btn-deepspace-mode" onclick="switchToDeepSpaceMode()">✦ DEEPSPACE</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DEEPSPACE MODE CONTAINER — Module 4.90 Foundation
+     Future modules mount here: Mission Dashboard, Telemetry,
+     Orbital Visualization, Rover Control, Satellite Control
+════════════════════════════════════════════════════════════════ -->
+<div id="deepspace-container" role="region" aria-label="DeepSpace Mode">
+  <div class="ds-grid-bg"></div>
+
+  <!-- ── Mission Dashboard Topbar ── -->
+  <div id="ds-topbar">
+    <div class="ds-topbar-title">✦ AtulOS — Mission Control</div>
+    <div class="ds-topbar-meta" id="ds-topbar-mission">ATULSAT-1</div>
+    <button type="button" id="ds-terminal-btn" class="ds-terminal-btn"
+            onclick="window.openDeepSpaceTerminal && window.openDeepSpaceTerminal()"
+            aria-label="Open Mission Command Terminal">
+      <i class="fa-solid fa-terminal" aria-hidden="true"></i> TERMINAL
+    </button>
+    <div class="ds-topbar-status">
+      <div class="ds-online-dot"></div>
+      <span>SYSTEMS NOMINAL</span>
+    </div>
+  </div>
+
+  <!-- ── Dashboard Scroll Area ── -->
+  <div id="ds-dashboard">
+
+    <!-- ROW 1: Mission Status + Mission Clock -->
+    <div class="ds-row ds-row-2">
+
+      <!-- Panel 1: Mission Status -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Mission Status</span>
+          <span class="ds-panel-badge nominal" id="ds-health-badge">NOMINAL</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-data-row">
+            <span class="ds-data-label">Mission Name</span>
+            <span class="ds-data-value accent">ATULSAT-1</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Mission State</span>
+            <span class="ds-data-value">
+              <span class="ds-mission-state">ACTIVE</span>
+            </span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">System Health</span>
+            <span class="ds-data-value strong" id="ds-sys-health">NOMINAL</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Power Status</span>
+            <span class="ds-data-value" id="ds-power">91%</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Signal Status</span>
+            <span class="ds-data-value strong" id="ds-signal">STRONG</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Mission Clock -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Mission Clock</span>
+          <span class="ds-panel-badge">UTC SYNC</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-clock-block">
+            <div class="ds-clock-utc">
+              <span class="ds-clock-label">UTC Time</span>
+              <span class="ds-clock-value" id="ds-utc-clock">--:--:--</span>
+            </div>
+            <div class="ds-clock-utc">
+              <span class="ds-clock-label">Mission Elapsed Time</span>
+              <span class="ds-clock-met" id="ds-met-clock">T+ 000:00:00:00</span>
+            </div>
+            <div class="ds-data-row" style="margin-top:4px;">
+              <span class="ds-data-label">Mission Date</span>
+              <span class="ds-data-value" id="ds-utc-date">---</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 1 -->
+
+    <!-- ROW 2: Telemetry + Communications -->
+    <div class="ds-row ds-row-2">
+
+      <!-- Panel 3: Telemetry -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Telemetry</span>
+          <span class="ds-panel-badge" id="ds-telem-badge">LIVE</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-data-row">
+            <span class="ds-data-label">Altitude</span>
+            <span class="ds-data-value accent" id="ds-altitude">412 KM</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Velocity</span>
+            <span class="ds-data-value" id="ds-velocity">7.68 KM/S</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Temperature</span>
+            <span class="ds-data-value" id="ds-temperature">24°C</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Battery</span>
+            <span class="ds-data-value strong" id="ds-battery">91%</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Orientation</span>
+            <span class="ds-data-value" id="ds-orientation">137°</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 4: Communications -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Communications</span>
+          <span class="ds-panel-badge nominal">CONNECTED</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-data-row">
+            <span class="ds-data-label">Uplink</span>
+            <span class="ds-data-value active" id="ds-uplink">ACTIVE</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Downlink</span>
+            <span class="ds-data-value active" id="ds-downlink">ACTIVE</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Latency</span>
+            <span class="ds-data-value" id="ds-latency">1.4 SEC</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Packet Success</span>
+            <span class="ds-data-value strong" id="ds-packet">98.7%</span>
+          </div>
+          <div class="ds-data-row">
+            <span class="ds-data-label">Ground Station</span>
+            <span class="ds-data-value accent">BANGALORE-01</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 2 -->
+
+    <!-- ROW 3: Mission Log -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 5: Mission Log -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Mission Log</span>
+          <span class="ds-panel-badge" id="ds-log-count">0 ENTRIES</span>
+        </div>
+        <div id="ds-log-body" role="log" aria-live="polite" aria-label="Mission event log"></div>
+      </div>
+
+    </div><!-- /ROW 3 -->
+
+    <!-- ROW 4: Orbital Visualization -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 6: Orbital Visualization -->
+      <div class="ds-panel" id="ds-orbital-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Orbital Visualization</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="ds-panel-badge nominal" id="ds-orbit-status">TRACKING</span>
+            <span class="ds-panel-badge" id="ds-orbit-fps"></span>
+          </div>
+        </div>
+        <div class="ds-orbital-wrap">
+          <canvas id="ds-orbital-canvas" aria-label="Orbital visualization — ATULSAT-1 orbit around Earth"></canvas>
+          <!-- Telemetry overlay -->
+          <div class="ds-orb-overlay">
+            <div class="ds-orb-stat">
+              <span class="ds-orb-stat-label">ALT</span>
+              <span class="ds-orb-stat-value" id="ds-orb-alt">412 KM</span>
+            </div>
+            <div class="ds-orb-stat">
+              <span class="ds-orb-stat-label">VEL</span>
+              <span class="ds-orb-stat-value" id="ds-orb-vel">7.68 KM/S</span>
+            </div>
+            <div class="ds-orb-stat">
+              <span class="ds-orb-stat-label">SIG</span>
+              <span class="ds-orb-stat-value" id="ds-orb-sig">STRONG</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 4 -->
+
+    <!-- ROW 5: Active Assets — Module 4.92 Multi-Satellite Tracking -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 7: Active Assets -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Active Assets</span>
+          <span class="ds-panel-badge nominal" id="ds-assets-count">0 TRACKED</span>
+        </div>
+        <div class="ds-panel-body" style="padding:6px 0;overflow-x:auto;">
+          <table class="ds-assets-table" id="ds-assets-table" aria-label="Tracked spacecraft assets">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Status</th>
+                <th>Altitude</th>
+                <th>Velocity</th>
+                <th>Signal</th>
+                <th>Health</th>
+              </tr>
+            </thead>
+            <tbody id="ds-assets-tbody">
+              <!-- Rows populated by Module 4.92 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /ROW 5 -->
+
+    <!-- ROW 6: Mission Operations Center — Module 4.93 -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 8: Mission Operations -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Mission Operations</span>
+          <span class="ds-panel-badge nominal" id="ds-missions-count">0 MISSIONS</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-missions-grid" id="ds-missions-grid" role="list" aria-label="Active missions">
+            <!-- Mission cards populated by Module 4.93 -->
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 6 -->
+
+    <!-- ROW 7: Mission Timeline — Module 4.93 -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 9: Mission Timeline -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Mission Timeline</span>
+          <span class="ds-panel-badge" id="ds-mission-timeline-title">SELECT A MISSION</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-timeline-list" id="ds-mission-timeline" aria-label="Mission timeline events">
+            <!-- Timeline items populated by Module 4.93 -->
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 7 -->
+
+    <!-- ROW 8: Launch Control Center — Module 4.94 -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 10: Launch Control -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Launch Control</span>
+          <span class="ds-panel-badge nominal" id="ds-launch-count">0 QUEUED</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-launch-grid">
+
+            <!-- Launch Queue -->
+            <div>
+              <div class="ds-mission-timeline-title" style="margin-bottom:8px;">LAUNCH QUEUE</div>
+              <div class="ds-launch-queue" id="ds-launch-queue" role="list" aria-label="Launch queue">
+                <!-- Launch cards populated by Module 4.94 -->
+              </div>
+            </div>
+
+            <!-- Readiness + Countdown + Log -->
+            <div class="ds-launch-detail">
+              <div>
+                <div class="ds-mission-timeline-title" style="margin-bottom:8px;">MISSION READINESS</div>
+                <div class="ds-readiness-grid" id="ds-launch-readiness" aria-label="Mission readiness checklist">
+                  <!-- Readiness items populated by Module 4.94 -->
+                </div>
+              </div>
+
+              <div class="ds-countdown-display" id="ds-launch-countdown-wrap">
+                <span class="ds-countdown-value" id="ds-launch-countdown-value">T-120</span>
+                <span class="ds-countdown-label">Countdown</span>
+                <span class="ds-countdown-mission" id="ds-launch-countdown-mission">No launch selected</span>
+              </div>
+
+              <div>
+                <div class="ds-mission-timeline-title" style="margin-bottom:8px;">LAUNCH EVENT LOG</div>
+                <div class="ds-launchlog-list" id="ds-launchlog" aria-label="Launch event log">
+                  <!-- Log entries populated by Module 4.94 -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 8 -->
+
+  </div><!-- /#ds-dashboard -->
+
+  <div class="ds-version-tag">DEEPSPACE v2.0 — MODULE 4.90</div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════
@@ -8756,7 +9788,20 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     Taskbar.add(win);
     windowState[id] = { ...(windowState[id] || {}), open: true, minimized: false };
     saveWindowState(windowState);
-    if (id === 'terminal') termResetAuth();
+    // FIX: terminal auth is a single shared session across OS/Classic/
+    // DeepSpace modes (#terminal is one physical window). Re-opening it
+    // after switching modes must NOT re-lock an already-authenticated
+    // session. Only reset to the locked state on a genuinely fresh
+    // (never-authenticated) open.
+    if (id === 'terminal') {
+      var alreadyAuthed = (typeof window.isAuthenticated === 'function' && window.isAuthenticated())
+        || window._atulOSTermAuthed === true;
+      if (alreadyAuthed) {
+        if (typeof window.termSyncUnlockedUI === 'function') window.termSyncUnlockedUI();
+      } else {
+        termResetAuth();
+      }
+    }
     // ── UPGRADE: track app context ──
     if (typeof AI_MEMORY !== 'undefined') {
       AI_MEMORY.lastApp        = id;
@@ -8958,14 +10003,7 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
     if (typeof window.systemState !== 'undefined') window.systemState.termAuthenticated = true;
     // FIX: sync eDEX module _state if accessible via global marker
     window._atulOSTermAuthed = true;
-    const classicOverlay = document.getElementById('terminal-auth-overlay');
-    if (classicOverlay) classicOverlay.style.display = 'none';
-    var _sp  = document.getElementById('statusPanel');
-    var _to  = document.getElementById('terminal-output');
-    var _tia = document.getElementById('terminal-input-area');
-    if (_sp)  _sp.style.display  = 'block';
-    if (_to)  _to.style.display  = 'block';
-    if (_tia) _tia.style.display = 'block';
+    termSyncUnlockedUI();
     setTimeout(() => {
       termPrintLine('AI', 'AtulOS Terminal v2.2 — Unified Speech Engine active.', 'jarvis-line');
       termPrintLine('AI', 'Welcome back, Atul. Type "help" for all commands.', 'jarvis-line');
@@ -8975,6 +10013,40 @@ window.atulAIEngine    = (input) => jarvisProcess(input);
       if (termIn) termIn.focus();
     }, 100);
   }
+
+  // FIX: single shared function that puts EVERY mode's terminal UI into
+  // the "unlocked" visual state. Called by termUnlock() (Classic/
+  // DeepSpace overlay path) and by the eDEX panel's auth handler, so
+  // whichever UI the user authenticates through, all modes stay in sync.
+  // Idempotent — safe to call repeatedly (e.g. on window re-open).
+  function termSyncUnlockedUI() {
+    // Classic / DeepSpace shared #terminal window
+    const classicOverlay = document.getElementById('terminal-auth-overlay');
+    if (classicOverlay) classicOverlay.style.display = 'none';
+    var _sp  = document.getElementById('statusPanel');
+    var _to  = document.getElementById('terminal-output');
+    var _tia = document.getElementById('terminal-input-area');
+    if (_sp)  _sp.style.display  = 'block';
+    if (_to)  _to.style.display  = 'block';
+    if (_tia) _tia.style.display = 'block';
+
+    // OS Mode eDEX center panel
+    const edexAuth  = document.getElementById('edex-term-auth');
+    const edexOut   = document.getElementById('edex-term-output');
+    const edexInput = document.getElementById('edex-input-area');
+    const edexQuick = document.getElementById('edex-quickcmds');
+    const edexBadge = document.getElementById('edex-auth-badge');
+    if (edexAuth)  edexAuth.style.display  = 'none';
+    if (edexOut)   edexOut.style.display   = 'block';
+    if (edexInput) edexInput.style.display = 'block';
+    if (edexQuick) edexQuick.style.display = 'flex';
+    if (edexBadge) {
+      edexBadge.textContent      = 'UNLOCKED';
+      edexBadge.style.color      = '#28c840';
+      edexBadge.style.borderColor = 'rgba(40,200,64,0.3)';
+    }
+  }
+  window.termSyncUnlockedUI = termSyncUnlockedUI;
 
   function termTryAuth() {
     // FIX: query all matching elements - eDEX panel renders first in DOM
@@ -11701,7 +12773,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // 1. STATE
   // ═══════════════════════════════════════════════════════════════
   var _state = {
-    mode: 'os',           // 'os' | 'classic'
+    mode: 'os',           // 'os' | 'classic' | 'deepspace'
     termAuth: false,
     evCharging: false,
     evPct: 65,
@@ -12349,6 +13421,12 @@ document.addEventListener('DOMContentLoaded', function () {
   window.switchToOSMode = function() {
     _state.mode = 'os';
 
+    // Module 4.90: hide DeepSpace container
+    var ds = document.getElementById('deepspace-container');
+    if (ds) ds.classList.remove('ds-active');
+    var btnDS = document.getElementById('btn-deepspace-mode');
+    if (btnDS) btnDS.classList.remove('active');
+
     // FIX: Show eDEX dashboard
     var dash = document.getElementById('os-dashboard');
     if (dash) { dash.style.display = 'block'; dash.style.opacity = '1'; dash.style.pointerEvents = 'auto'; }
@@ -12379,6 +13457,12 @@ document.addEventListener('DOMContentLoaded', function () {
   window.switchToClassicMode = function() {
     _state.mode = 'classic';
 
+    // Module 4.90: hide DeepSpace container
+    var ds = document.getElementById('deepspace-container');
+    if (ds) ds.classList.remove('ds-active');
+    var btnDS = document.getElementById('btn-deepspace-mode');
+    if (btnDS) btnDS.classList.remove('active');
+
     // FIX: Hide eDEX dashboard using opacity so it doesn't block clicks
     var dash = document.getElementById('os-dashboard');
     if (dash) { dash.style.opacity = '0'; dash.style.pointerEvents = 'none'; dash.style.display = 'block'; }
@@ -12407,6 +13491,826 @@ document.addEventListener('DOMContentLoaded', function () {
       if (parseInt(w.style.zIndex) >= 8000) w.style.zIndex = parseInt(w.style.zIndex) - 7000;
     });
   };
+
+  // ═══════════════════════════════════════════════════════════════
+  // MODULE 4.90 — DEEPSPACE MODE FOUNDATION
+  // Isolated mode switch. No changes to existing systems.
+  // Future modules attach to #deepspace-container.
+  // ═══════════════════════════════════════════════════════════════
+  window.switchToDeepSpaceMode = function() {
+    _state.mode = 'deepspace';
+
+    // Hide eDEX dashboard
+    var dash = document.getElementById('os-dashboard');
+    if (dash) { dash.style.opacity = '0'; dash.style.pointerEvents = 'none'; dash.style.display = 'block'; }
+
+    // Hide classic UI elements (same pattern as switchToClassicMode)
+    var sb = document.getElementById('statusbar');
+    if (sb) { sb.style.opacity = '0'; sb.style.pointerEvents = 'none'; sb.style.display = 'flex'; }
+
+    var dt = document.getElementById('desktop');
+    if (dt) { dt.style.opacity = '0'; dt.style.pointerEvents = 'none'; dt.style.display = 'block'; }
+
+    var tb = document.getElementById('taskbar');
+    if (tb) { tb.style.opacity = '0'; tb.style.pointerEvents = 'none'; tb.style.display = 'flex'; }
+
+    // Show DeepSpace container
+    var ds = document.getElementById('deepspace-container');
+    if (ds) ds.classList.add('ds-active');
+
+    // Update button states
+    var btnOS  = document.getElementById('btn-os-mode');
+    var btnCls = document.getElementById('btn-classic-mode');
+    var btnDS  = document.getElementById('btn-deepspace-mode');
+    if (btnOS)  btnOS.classList.remove('active');
+    if (btnCls) btnCls.classList.remove('active');
+    if (btnDS)  btnDS.classList.add('active');
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // MODULE 4.90.1 — DEEPSPACE MISSION DASHBOARD
+  // Attaches to #deepspace-container. All timers stop on mode exit.
+  // Future modules hook into window._deepspaceDashboard.
+  // ═══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+
+    var _timers   = [];   // All interval IDs — cleared on dashboard stop
+    var _logEntries = []; // Rolling log buffer (max 20)
+    var _metStart = null; // Mission epoch (set on first activation)
+    var _running  = false;
+
+    // ── Helpers ──────────────────────────────────────────────────
+    function _el(id) { return document.getElementById(id); }
+
+    function _pad(n, w) { return String(n).padStart(w || 2, '0'); }
+
+    function _utcNow() {
+      var d = new Date();
+      return _pad(d.getUTCHours()) + ':' + _pad(d.getUTCMinutes()) + ':' + _pad(d.getUTCSeconds());
+    }
+
+    function _utcDate() {
+      var d = new Date();
+      return d.getUTCFullYear() + '-' + _pad(d.getUTCMonth() + 1) + '-' + _pad(d.getUTCDate()) + ' UTC';
+    }
+
+    function _metString() {
+      if (!_metStart) return 'T+ 000:00:00:00';
+      var elapsed = Math.floor((Date.now() - _metStart) / 1000);
+      var s  = elapsed % 60;
+      var m  = Math.floor(elapsed / 60) % 60;
+      var h  = Math.floor(elapsed / 3600) % 24;
+      var dy = Math.floor(elapsed / 86400);
+      return 'T+ ' + _pad(dy, 3) + ':' + _pad(h) + ':' + _pad(m) + ':' + _pad(s);
+    }
+
+    // ── Mission Log ───────────────────────────────────────────────
+    var _LOG_EVENTS = [
+      'Telemetry Updated',
+      'Signal Acquired',
+      'System Check Complete',
+      'Power Stable',
+      'Downlink Confirmed',
+      'Orbit Nominal',
+      'Attitude Adjusted',
+      'Battery Charging',
+      'Uplink Command Received',
+      'Thermal Regulation OK',
+      'Gyroscope Nominal',
+      'Solar Array Deployed',
+      'Ground Contact Established',
+      'Memory Dump Complete',
+      'Packet Acknowledged',
+      'Navigation Update',
+      'Health Check Passed',
+      'RF Link Stable',
+      'Antenna Tracking Active',
+      'Data Relay Complete'
+    ];
+
+    function _appendLog(msg) {
+      var time = _utcNow();
+      _logEntries.push({ time: time, msg: msg });
+      if (_logEntries.length > 20) _logEntries.shift();
+
+      var body = _el('ds-log-body');
+      if (!body) return;
+
+      var entry = document.createElement('div');
+      entry.className = 'ds-log-entry';
+      entry.innerHTML = '<span class="ds-log-time">[' + time + ']</span>' + msg;
+      body.appendChild(entry);
+
+      // Trim DOM to 20 entries
+      while (body.children.length > 20) body.removeChild(body.firstChild);
+
+      // Auto-scroll
+      body.scrollTop = body.scrollHeight;
+
+      // Update count badge
+      var badge = _el('ds-log-count');
+      if (badge) badge.textContent = _logEntries.length + ' ENTRIES';
+    }
+
+    function _scheduleLogEvent() {
+      // Random interval 6–14 seconds
+      var delay = 6000 + Math.floor(Math.random() * 8000);
+      var t = setTimeout(function() {
+        if (!_running) return;
+        var msg = _LOG_EVENTS[Math.floor(Math.random() * _LOG_EVENTS.length)];
+        _appendLog(msg);
+        _scheduleLogEvent();
+      }, delay);
+      _timers.push(t);
+    }
+
+    // ── Telemetry simulation ──────────────────────────────────────
+    var _telem = {
+      altitude:    412.0,
+      velocity:    7.68,
+      temperature: 24,
+      battery:     91,
+      orientation: 137
+    };
+
+    function _jitter(val, range, min, max) {
+      var delta = (Math.random() - 0.5) * range;
+      var next  = val + delta;
+      if (min !== undefined) next = Math.max(min, next);
+      if (max !== undefined) next = Math.min(max, next);
+      return next;
+    }
+
+    function _refreshTelemetry() {
+      _telem.altitude    = _jitter(_telem.altitude,    0.6, 400, 425);
+      _telem.velocity    = _jitter(_telem.velocity,    0.02, 7.5, 7.9);
+      _telem.temperature = _jitter(_telem.temperature, 0.8, 18, 32);
+      _telem.battery     = _jitter(_telem.battery,     0.3, 70, 99);
+      _telem.orientation = _jitter(_telem.orientation, 1.5, 0, 360);
+
+      function _set(id, val, suffix) {
+        var el = _el(id);
+        if (!el) return;
+        el.textContent = val + (suffix || '');
+        el.classList.remove('refreshing');
+        // Force reflow to restart animation
+        void el.offsetWidth;
+        el.classList.add('refreshing');
+      }
+
+      _set('ds-altitude',    _telem.altitude.toFixed(1),  ' KM');
+      _set('ds-velocity',    _telem.velocity.toFixed(2),  ' KM/S');
+      _set('ds-temperature', Math.round(_telem.temperature), '°C');
+      _set('ds-battery',     Math.round(_telem.battery),  '%');
+      _set('ds-orientation', Math.round(_telem.orientation), '°');
+
+      // Battery colour
+      var batEl = _el('ds-battery');
+      if (batEl) {
+        batEl.className = 'ds-data-value ' + (Math.round(_telem.battery) < 80 ? 'warning' : 'strong');
+      }
+    }
+
+    // ── Communications simulation ─────────────────────────────────
+    function _refreshComms() {
+      // Latency: 1.2–1.8 s
+      var lat = (1.2 + Math.random() * 0.6).toFixed(1);
+      var pkt = (97.5 + Math.random() * 1.5).toFixed(1);
+      var latEl = _el('ds-latency');
+      var pktEl = _el('ds-packet');
+      if (latEl) latEl.textContent = lat + ' SEC';
+      if (pktEl) pktEl.textContent = pkt + '%';
+    }
+
+    // ── Clock tick ────────────────────────────────────────────────
+    function _tickClock() {
+      var utcEl  = _el('ds-utc-clock');
+      var metEl  = _el('ds-met-clock');
+      var dateEl = _el('ds-utc-date');
+      if (utcEl)  utcEl.textContent  = _utcNow();
+      if (metEl)  metEl.textContent  = _metString();
+      if (dateEl) dateEl.textContent = _utcDate();
+    }
+
+    // ── Start / Stop ──────────────────────────────────────────────
+    function _start() {
+      if (_running) return;
+      _running = true;
+
+      // Set MET epoch on first ever start
+      if (!_metStart) _metStart = Date.now();
+
+      // Initial population
+      _tickClock();
+      _refreshTelemetry();
+      _refreshComms();
+
+      // Boot log entries
+      _appendLog('Mission Dashboard Online');
+      _appendLog('System Check Complete');
+      _appendLog('Signal Acquired');
+
+      // Clock: every 1 s
+      _timers.push(setInterval(_tickClock, 1000));
+
+      // Telemetry: every 5 s
+      _timers.push(setInterval(function() {
+        _refreshTelemetry();
+        _refreshComms();
+      }, 5000));
+
+      // Log events: staggered random
+      _scheduleLogEvent();
+    }
+
+    function _stop() {
+      _running = false;
+      _timers.forEach(function(t) { clearTimeout(t); clearInterval(t); });
+      _timers = [];
+    }
+
+    // ── Patch switchToDeepSpaceMode to start/stop dashboard ──────
+    var _origSwitch = window.switchToDeepSpaceMode;
+    window.switchToDeepSpaceMode = function() {
+      _origSwitch();
+      _start();
+    };
+
+    // Patch each "leave deepspace" path to stop timers
+    function _patchModeExit(fnName) {
+      var orig = window[fnName];
+      if (!orig || orig._dsModePatched) return;
+      window[fnName] = function() {
+        _stop();
+        return orig.apply(this, arguments);
+      };
+      window[fnName]._dsModePatched = true;
+    }
+
+    // Defer patching until after all mode-switch functions are defined
+    setTimeout(function() {
+      _patchModeExit('switchToOSMode');
+      _patchModeExit('switchToClassicMode');
+    }, 0);
+
+    // Public API — future modules attach here
+    window._deepspaceDashboard = {
+      start:        _start,
+      stop:         _stop,
+      appendLog:    _appendLog,
+      getTelemetry: function() { return Object.assign({}, _telem); },
+      // MODULE 4.91 hook: read-only snapshot of rolling log buffer (max 20)
+      getLogEntries: function() { return _logEntries.slice(); }
+    };
+
+    console.log('[AtulOS 4.90.1] DeepSpace Mission Dashboard installed.');
+  })();
+
+  // ═══════════════════════════════════════════════════════════════
+  // MODULE 4.90.2 — DEEPSPACE ORBITAL VISUALIZATION
+  // Canvas-based satellite orbit display.
+  // Hooks into _deepspaceDashboard start/stop lifecycle.
+  // Future modules: add satellites/missions to _orbitConfig.
+  // ═══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+
+    // ── Config (future-extensible) ────────────────────────────────
+    // Module 4.92 (Multi-Satellite Tracking Network) is the single
+    // source of truth for asset list/orbits when present. This static
+    // config is the fallback if 4.92 hasn't loaded (keeps V1 behavior
+    // working standalone).
+    var _FALLBACK_SATELLITES = [
+      { id: 'ATULSAT-1',    label: 'ATULSAT-1',    speed: 0.00045, phase: -Math.PI / 2, color: '#63a8ff', radiusFactor: 1.00, status: 'ACTIVE' },
+      { id: 'ATULSAT-2',    label: 'ATULSAT-2',    speed: 0.00032, phase: Math.PI / 3,  color: '#7ad6ff', radiusFactor: 1.35, status: 'ACTIVE' },
+      { id: 'VOYAGER-SIM',  label: 'VOYAGER-SIM',  speed: 0.00014, phase: Math.PI,      color: '#a78bfa', radiusFactor: 1.85, status: 'STANDBY' },
+      { id: 'MANGALYAAN-X', label: 'MANGALYAAN-X', speed: 0.00060, phase: Math.PI / 6,  color: '#ffb347', radiusFactor: 0.72, status: 'MAINTENANCE' },
+      { id: 'CHANDRA-1',    label: 'CHANDRA-1',    speed: 0.0,     phase: 2.3,          color: '#8a8f99', radiusFactor: 1.6,  status: 'OFFLINE' }
+    ];
+
+    function _buildSatelliteConfig() {
+      if (window._deepspaceAssets && typeof window._deepspaceAssets.list === 'function') {
+        try {
+          var assets = window._deepspaceAssets.list().filter(function(a) {
+            return a.type === 'satellite';
+          });
+          if (assets.length) {
+            return assets.map(function(a) {
+              return {
+                id:    a.name,
+                label: a.name,
+                speed: (a.status === 'OFFLINE') ? 0 : a.orbit.speed,
+                phase: a.orbit.phase,
+                color: a.orbit.color,
+                radiusFactor: a.orbit.radiusFactor,
+                status: a.status
+              };
+            });
+          }
+        } catch (e) { /* fall through to static config */ }
+      }
+      return _FALLBACK_SATELLITES;
+    }
+
+    var _orbitConfig = {
+      satellites: _buildSatelliteConfig(),
+      groundStations: [
+        {
+          id:     'GS-BLR-01',
+          label:  'ATUL GND STN',
+          // Angle on Earth surface (radians from top, clockwise)
+          angle:  1.1,
+          color:  '#28c840'
+        }
+      ]
+    };
+
+    // ── State ─────────────────────────────────────────────────────
+    var _raf    = null;
+    var _canvas = null;
+    var _ctx    = null;
+    var _running = false;
+    var _lastTs  = 0;
+    var _fpsTs   = 0;
+    var _fpsCount = 0;
+    var _fps     = 0;
+
+    // Satellite runtime state
+    var _sats = _orbitConfig.satellites.map(function(cfg) {
+      return { cfg: cfg, angle: cfg.phase };
+    });
+
+    // Rebuild satellite list from the centralized registry (Module 4.92)
+    // if it has loaded since _orbitConfig was first built (it loads after
+    // this module in document order, so it's generally available by the
+    // time _start() runs). Preserves in-progress angles for satellites
+    // that still exist; new/removed satellites get fresh state.
+    function _refreshSatellitesFromRegistry() {
+      var fresh = _buildSatelliteConfig();
+      if (fresh === _FALLBACK_SATELLITES) return; // registry not ready — keep current
+
+      var prevByLabel = {};
+      _sats.forEach(function(s) { prevByLabel[s.cfg.label] = s; });
+
+      _orbitConfig.satellites = fresh;
+      _sats = fresh.map(function(cfg) {
+        var prev = prevByLabel[cfg.label];
+        return { cfg: cfg, angle: (prev ? prev.angle : cfg.phase) };
+      });
+    }
+
+    // ── DOM helpers ───────────────────────────────────────────────
+    function _el(id) { return document.getElementById(id); }
+
+    // ── Resolve CSS variable ──────────────────────────────────────
+    function _cssVar(name, fallback) {
+      try {
+        var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+      } catch(e) { return fallback; }
+    }
+
+    // ── Canvas setup ──────────────────────────────────────────────
+    function _setup() {
+      _canvas = _el('ds-orbital-canvas');
+      if (!_canvas) return false;
+      _ctx = _canvas.getContext('2d');
+      return true;
+    }
+
+    function _resize() {
+      if (!_canvas) return;
+      var wrap = _canvas.parentElement;
+      if (!wrap) return;
+      var dpr  = window.devicePixelRatio || 1;
+      // getBoundingClientRect gives actual rendered size, reliable even on
+      // padding-bottom aspect-ratio containers where clientHeight can be 0
+      // if called before first paint.
+      var rect = wrap.getBoundingClientRect();
+      var w    = Math.floor(rect.width);
+      var h    = Math.floor(rect.height);
+      // Last-resort: derive height from padding-bottom ratio
+      if (h < 2 && w > 0) h = Math.floor(w * 0.375);
+      if (w < 2 || h < 2) return;
+      if (_canvas.width === w * dpr && _canvas.height === h * dpr) return; // no change
+      _canvas.width        = w * dpr;
+      _canvas.height       = h * dpr;
+      _canvas.style.width  = w + 'px';
+      _canvas.style.height = h + 'px';
+      if (_ctx) _ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // ── Draw ──────────────────────────────────────────────────────
+    function _draw(ts) {
+      if (!_ctx || !_canvas) return;
+
+      var W = _canvas.width  / (window.devicePixelRatio || 1);
+      var H = _canvas.height / (window.devicePixelRatio || 1);
+      var cx = W / 2;
+      var cy = H / 2;
+
+      // Radii — proportional to shorter axis
+      var minDim   = Math.min(W, H);
+      var earthR   = minDim * 0.12;
+      var orbitR   = minDim * 0.26; // base radius; satellites scale by radiusFactor
+      var maxOrbitR = minDim * 0.48; // cap so outermost orbit stays on-canvas
+      var satR     = 4;
+      var gsR      = 5;
+
+      function _satOrbitR(sat) {
+        var r = orbitR * (sat.cfg.radiusFactor || 1);
+        return Math.min(r, maxOrbitR);
+      }
+
+      // Colors from CSS vars
+      var accent   = _cssVar('--accent',  '#63a8ff');
+      var fg       = _cssVar('--fg',      '#dbe4ef');
+      var muted    = _cssVar('--muted',   '#9aa9bb');
+      var border   = _cssVar('--border',  'rgba(255,255,255,.1)');
+
+      // ── Clear ─────────────────────────────────────────────────
+      _ctx.clearRect(0, 0, W, H);
+
+      // ── Background grid — very subtle ─────────────────────────
+      _ctx.save();
+      _ctx.strokeStyle = 'rgba(99,168,255,0.04)';
+      _ctx.lineWidth   = 0.5;
+      var gridStep = 40;
+      for (var gx = 0; gx < W; gx += gridStep) {
+        _ctx.beginPath(); _ctx.moveTo(gx, 0); _ctx.lineTo(gx, H); _ctx.stroke();
+      }
+      for (var gy = 0; gy < H; gy += gridStep) {
+        _ctx.beginPath(); _ctx.moveTo(0, gy); _ctx.lineTo(W, gy); _ctx.stroke();
+      }
+      _ctx.restore();
+
+      // ── Orbit rings — one per unique satellite radius ─────────
+      var _drawnRadii = [];
+      _sats.forEach(function(sat) {
+        var r = _satOrbitR(sat);
+        // Skip near-duplicate radii to avoid overdraw clutter
+        if (_drawnRadii.some(function(d) { return Math.abs(d - r) < 2; })) return;
+        _drawnRadii.push(r);
+        _ctx.save();
+        _ctx.beginPath();
+        _ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        _ctx.strokeStyle = 'rgba(99,168,255,0.30)';
+        _ctx.lineWidth   = 1;
+        _ctx.setLineDash([5, 5]);
+        _ctx.stroke();
+        _ctx.setLineDash([]);
+        _ctx.restore();
+      });
+
+      // ── Earth ─────────────────────────────────────────────────
+      // Outer atmosphere halo
+      var halo = _ctx.createRadialGradient(cx, cy, earthR * 0.85, cx, cy, earthR * 1.3);
+      halo.addColorStop(0, 'rgba(99,168,255,0.12)');
+      halo.addColorStop(1, 'rgba(99,168,255,0)');
+      _ctx.save();
+      _ctx.beginPath();
+      _ctx.arc(cx, cy, earthR * 1.3, 0, Math.PI * 2);
+      _ctx.fillStyle = halo;
+      _ctx.fill();
+      _ctx.restore();
+
+      // Earth body
+      var earthGrad = _ctx.createRadialGradient(cx - earthR * 0.3, cy - earthR * 0.3, earthR * 0.05, cx, cy, earthR);
+      earthGrad.addColorStop(0, 'rgba(80,120,200,1)');
+      earthGrad.addColorStop(1, 'rgba(20,45,100,1)');
+      _ctx.save();
+      _ctx.beginPath();
+      _ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
+      _ctx.fillStyle = earthGrad;
+      _ctx.fill();
+      _ctx.strokeStyle = 'rgba(120,180,255,0.7)';
+      _ctx.lineWidth   = 1.5;
+      _ctx.stroke();
+      _ctx.restore();
+
+      // Equator line
+      _ctx.save();
+      _ctx.beginPath();
+      _ctx.moveTo(cx - earthR, cy);
+      _ctx.lineTo(cx + earthR, cy);
+      _ctx.strokeStyle = 'rgba(150,200,255,0.25)';
+      _ctx.lineWidth   = 0.5;
+      _ctx.stroke();
+      _ctx.restore();
+
+      // Earth label
+      _ctx.save();
+      _ctx.font      = 'bold 8px ui-monospace,monospace';
+      _ctx.fillStyle = 'rgba(180,210,255,0.7)';
+      _ctx.textAlign = 'center';
+      _ctx.textBaseline = 'middle';
+      _ctx.fillText('EARTH', cx, cy);
+      _ctx.restore();
+
+      // ── Ground Stations ───────────────────────────────────────
+      _orbitConfig.groundStations.forEach(function(gs) {
+        var gx = cx + Math.sin(gs.angle) * earthR;
+        var gy = cy - Math.cos(gs.angle) * earthR;
+
+        var outAngle = gs.angle;
+        var nx = Math.sin(outAngle);
+        var ny = -Math.cos(outAngle);
+        var tx = gx + nx * (gsR + 2);
+        var ty = gy + ny * (gsR + 2);
+        var px1 = gx + (-ny) * gsR * 0.6;
+        var py1 = gy + nx  * gsR * 0.6;
+        var px2 = gx - (-ny) * gsR * 0.6;
+        var py2 = gy - nx  * gsR * 0.6;
+
+        // Triangle marker
+        _ctx.save();
+        _ctx.beginPath();
+        _ctx.moveTo(tx, ty);
+        _ctx.lineTo(px1, py1);
+        _ctx.lineTo(px2, py2);
+        _ctx.closePath();
+        _ctx.fillStyle   = '#28c840';
+        _ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        _ctx.lineWidth   = 0.5;
+        _ctx.fill();
+        _ctx.stroke();
+        _ctx.restore();
+
+        // Beacon pulse ring
+        _ctx.save();
+        _ctx.beginPath();
+        _ctx.arc(gx, gy, gsR * 2, 0, Math.PI * 2);
+        _ctx.strokeStyle = 'rgba(40,200,64,0.45)';
+        _ctx.lineWidth   = 1;
+        _ctx.stroke();
+        _ctx.restore();
+
+        // Label
+        var labelX = gx + nx * (gsR + 12);
+        var labelY = gy + ny * (gsR + 12);
+        _ctx.save();
+        _ctx.font      = 'bold 8px ui-monospace,monospace';
+        _ctx.fillStyle = '#28c840';
+        _ctx.textAlign = nx > 0.2 ? 'left' : (nx < -0.2 ? 'right' : 'center');
+        _ctx.textBaseline = 'middle';
+        _ctx.fillText(gs.label, labelX, labelY);
+        _ctx.restore();
+      });
+
+      // ── Satellite trail & marker (multi-satellite) ─────────────
+      _sats.forEach(function(sat, idx) {
+        var r  = _satOrbitR(sat);
+        var sx = cx + Math.cos(sat.angle) * r;
+        var sy = cy + Math.sin(sat.angle) * r;
+
+        var color   = sat.cfg.color || '#63a8ff';
+        var offline = sat.cfg.status === 'OFFLINE';
+        var alpha   = offline ? 0.35 : 1;
+
+        // Trail arc (skip for stationary/offline assets)
+        if (!offline) {
+          var trailLen = Math.PI * 0.2;
+          _ctx.save();
+          _ctx.beginPath();
+          _ctx.arc(cx, cy, r, sat.angle - trailLen, sat.angle);
+          _ctx.strokeStyle = color;
+          _ctx.globalAlpha = 0.55;
+          _ctx.lineWidth   = 2;
+          _ctx.stroke();
+          _ctx.restore();
+        }
+
+        // Satellite body — bright filled square, rotated 45° = diamond
+        _ctx.save();
+        _ctx.translate(sx, sy);
+        _ctx.rotate(Math.PI / 4);
+        _ctx.globalAlpha = alpha;
+        _ctx.fillStyle   = offline ? color : '#ffffff';
+        _ctx.strokeStyle = color;
+        _ctx.lineWidth   = 1.5;
+        _ctx.fillRect(-satR / 2, -satR / 2, satR, satR);
+        _ctx.strokeRect(-satR / 2, -satR / 2, satR, satR);
+        _ctx.restore();
+
+        // Satellite label — offset outward from orbit center, with a
+        // small per-satellite vertical stagger to reduce label
+        // overlap when multiple satellites pass near the same angle.
+        var stagger = (idx % 2 === 0) ? 0 : 12;
+        var lx = cx + Math.cos(sat.angle) * (r + satR + 12);
+        var ly = cy + Math.sin(sat.angle) * (r + satR + 12) + stagger;
+        _ctx.save();
+        _ctx.globalAlpha = Math.max(alpha, 0.6);
+        _ctx.font         = 'bold 9px ui-monospace,monospace';
+        _ctx.textAlign    = 'center';
+        _ctx.textBaseline = 'middle';
+        // Background pill for legibility
+        var labelW = _ctx.measureText(sat.cfg.label).width + 8;
+        _ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        _ctx.fillRect(lx - labelW / 2, ly - 7, labelW, 14);
+        _ctx.fillStyle = color;
+        _ctx.fillText(sat.cfg.label, lx, ly);
+        _ctx.restore();
+
+        // Signal line to ground station when in range (skip offline)
+        if (!offline) {
+          _orbitConfig.groundStations.forEach(function(gs) {
+            var gsx    = cx + Math.sin(gs.angle) * earthR;
+            var gsy    = cy - Math.cos(gs.angle) * earthR;
+            var gAngle = gs.angle - Math.PI / 2;
+            var diff   = Math.abs(((sat.angle - gAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2));
+            if (diff > Math.PI) diff = Math.PI * 2 - diff;
+            if (diff < Math.PI * 0.67) {
+              _ctx.save();
+              _ctx.beginPath();
+              _ctx.moveTo(sx, sy);
+              _ctx.lineTo(gsx, gsy);
+              _ctx.strokeStyle = 'rgba(40,200,64,0.45)';
+              _ctx.lineWidth   = 1;
+              _ctx.setLineDash([3, 4]);
+              _ctx.stroke();
+              _ctx.setLineDash([]);
+              _ctx.restore();
+            }
+          });
+        }
+      });
+
+      // ── FPS counter (top-right) ───────────────────────────────
+      _fpsCount++;
+      if (ts - _fpsTs >= 1000) {
+        _fps    = _fpsCount;
+        _fpsCount = 0;
+        _fpsTs  = ts;
+        var fpsEl = _el('ds-orbit-fps');
+        if (fpsEl) fpsEl.textContent = _fps + ' FPS';
+      }
+    }
+
+    // ── Animation loop ────────────────────────────────────────────
+    function _tick(ts) {
+      if (!_running) return;
+
+      var dt = _lastTs ? Math.min(ts - _lastTs, 50) : 16; // cap at 50 ms
+      _lastTs = ts;
+
+      // Advance satellites
+      _sats.forEach(function(sat) {
+        sat.angle += sat.cfg.speed * dt;
+        if (sat.angle > Math.PI * 2) sat.angle -= Math.PI * 2;
+      });
+
+      _draw(ts);
+      _syncOverlay();
+
+      _raf = requestAnimationFrame(_tick);
+    }
+
+    // ── Overlay sync — reads from dashboard telemetry if available ─
+    function _syncOverlay() {
+      var alt, vel, sig;
+      try {
+        if (window._deepspaceDashboard) {
+          var t = window._deepspaceDashboard.getTelemetry();
+          alt = t.altitude.toFixed(1)  + ' KM';
+          vel = t.velocity.toFixed(2)  + ' KM/S';
+          sig = _el('ds-signal') ? (_el('ds-signal').textContent || 'STRONG') : 'STRONG';
+        }
+      } catch(e) {}
+      if (!alt) alt = '412.0 KM';
+      if (!vel) vel = '7.68 KM/S';
+      if (!sig) sig = 'STRONG';
+
+      var altEl = _el('ds-orb-alt');
+      var velEl = _el('ds-orb-vel');
+      var sigEl = _el('ds-orb-sig');
+      if (altEl) altEl.textContent = alt;
+      if (velEl) velEl.textContent = vel;
+      if (sigEl) sigEl.textContent = sig;
+    }
+
+    // ── Start / Stop ──────────────────────────────────────────────
+    function _start() {
+      if (_running) return;
+      if (!_setup()) return;
+      _refreshSatellitesFromRegistry();
+      _running = true;
+      _lastTs  = 0;
+      _fpsTs   = 0;
+      _fpsCount = 0;
+
+      // Defer resize until container is painted and has real dimensions.
+      // Retry up to 10 frames in case the panel is still layout-pending.
+      var _retries = 0;
+      function _tryResize() {
+        _resize();
+        var w = _canvas ? _canvas.width : 0;
+        var h = _canvas ? _canvas.height : 0;
+        if ((w < 2 || h < 2) && _retries++ < 10) {
+          requestAnimationFrame(_tryResize);
+        } else {
+          // Canvas has real size — kick off the animation loop
+          _raf = requestAnimationFrame(_tick);
+        }
+      }
+      requestAnimationFrame(_tryResize);
+    }
+
+    function _stop() {
+      _running = false;
+      if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+    }
+
+    // ── Resize observer ───────────────────────────────────────────
+    var _ro = null;
+    function _watchResize() {
+      var wrap = _el('ds-orbital-canvas') && _el('ds-orbital-canvas').parentElement;
+      if (!wrap) return;
+      if (window.ResizeObserver) {
+        _ro = new ResizeObserver(function() { _resize(); });
+        _ro.observe(wrap);
+      } else {
+        window.addEventListener('resize', _resize);
+      }
+    }
+
+    // ── Hook into Dashboard lifecycle ─────────────────────────────
+    // Direct patch on switchToDeepSpaceMode — bypasses the fragile
+    // dash.start wrapper chain that never fires orbit._start().
+    function _hookModeSwitch() {
+      // Patch the current switchToDeepSpaceMode (which may already be
+      // the 4.90.1 wrapper — we wrap it again safely).
+      var _prevEnter = window.switchToDeepSpaceMode;
+      window.switchToDeepSpaceMode = function() {
+        _prevEnter.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._orbitPatched = true;
+
+      // Stop orbit on any mode exit
+      function _patchExit(fnName) {
+        var orig = window[fnName];
+        if (!orig || orig._orbitExitPatched) return;
+        window[fnName] = function() {
+          _stop();
+          return orig.apply(this, arguments);
+        };
+        window[fnName]._orbitExitPatched = true;
+      }
+      _patchExit('switchToOSMode');
+      _patchExit('switchToClassicMode');
+    }
+
+    // Also keep dash hook as secondary signal (belt-and-suspenders)
+    function _hookDashboard() {
+      var dash = window._deepspaceDashboard;
+      if (!dash || dash._orbitHooked) return;
+      var _origStop = dash.stop;
+      dash.stop = function() {
+        _origStop.apply(this, arguments);
+        _stop();
+      };
+      dash._orbitHooked = true;
+    }
+
+    // Defer until all mode-switch functions exist on window
+    setTimeout(function() {
+      _hookModeSwitch();
+      _hookDashboard();
+      _watchResize();
+    }, 0);
+
+    // ── Public API ────────────────────────────────────────────────
+    window._deepspaceOrbit = {
+      // Current satellite positions (future: array for multi-sat)
+      get position() {
+        return _sats.map(function(s) {
+          return { id: s.cfg.id, angle: s.angle };
+        });
+      },
+      get velocity() {
+        try { return window._deepspaceDashboard.getTelemetry().velocity; } catch(e) { return 7.68; }
+      },
+      get altitude() {
+        try { return window._deepspaceDashboard.getTelemetry().altitude; } catch(e) { return 412; }
+      },
+      get signal() {
+        var el = _el('ds-signal'); return el ? el.textContent : 'STRONG';
+      },
+      // Future: addSatellite(cfg), addGroundStation(cfg)
+      addSatellite: function(cfg) {
+        _orbitConfig.satellites.push(cfg);
+        _sats.push({ cfg: cfg, angle: cfg.phase || 0 });
+      },
+      addGroundStation: function(cfg) {
+        _orbitConfig.groundStations.push(cfg);
+      },
+      start: _start,
+      stop:  _stop
+    };
+
+    console.log('[AtulOS 4.90.2] DeepSpace Orbital Visualization installed.');
+  })();
 
   // ═══════════════════════════════════════════════════════════════
   // 14. VOICE TOGGLE SYNC (eDEX topbar button)
@@ -19331,6 +21235,1533 @@ window.safeAppend = function safeAppend(parent, child) {
 </script>
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.89.1 — ATULOS OLED / AI ORB FIREBASE SYNC
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.92 — DEEPSPACE MULTI-SATELLITE TRACKING NETWORK
+     Centralized spacecraft registry — single source of truth.
+     Exposes: window._deepspaceAssets
+     Drives: "Active Assets" panel (#ds-assets-tbody)
+             Orbital Visualization (multi-satellite, via _deepspaceOrbit)
+             Mission Terminal commands (mission satellites|asset|network)
+     NO new telemetry engine — extends existing simulation pattern
+     from Module 4.90.1. One shared update loop, started/stopped
+     alongside the DeepSpace dashboard lifecycle (no duplicate loops).
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  function _jitter(val, range, min, max) {
+    var delta = (Math.random() - 0.5) * range;
+    var next  = val + delta;
+    if (min !== undefined) next = Math.max(min, next);
+    if (max !== undefined) next = Math.min(max, next);
+    return next;
+  }
+
+  // ── Centralized Asset Registry — single source of truth ─────────
+  // Shape: { name, status, telemetry:{altitude,velocity,temperature,signal},
+  //          orbit:{radiusFactor,speed,phase,color}, health }
+  // Future asset types (probes, rovers, ground stations) extend this
+  // same shape without restructuring — add a `type` field and read it
+  // accordingly in consumers.
+  var _assets = [
+    {
+      name:   'ATULSAT-1',
+      type:   'satellite',
+      status: 'ACTIVE',
+      health: 'NOMINAL',
+      telemetry: { altitude: 412.0, velocity: 7.68, temperature: 24, signal: 98 },
+      orbit:  { radiusFactor: 1.00, speed: 0.00045, phase: -Math.PI / 2, color: '#63a8ff' }
+    },
+    {
+      name:   'ATULSAT-2',
+      type:   'satellite',
+      status: 'ACTIVE',
+      health: 'NOMINAL',
+      telemetry: { altitude: 561.0, velocity: 7.42, temperature: 19, signal: 94 },
+      orbit:  { radiusFactor: 1.35, speed: 0.00032, phase: Math.PI / 3, color: '#7ad6ff' }
+    },
+    {
+      name:   'VOYAGER-SIM',
+      type:   'satellite',
+      status: 'STANDBY',
+      health: 'NOMINAL',
+      telemetry: { altitude: 1840.0, velocity: 5.10, temperature: -12, signal: 61 },
+      orbit:  { radiusFactor: 1.85, speed: 0.00014, phase: Math.PI, color: '#a78bfa' }
+    },
+    {
+      name:   'MANGALYAAN-X',
+      type:   'satellite',
+      status: 'MAINTENANCE',
+      health: 'DEGRADED',
+      telemetry: { altitude: 327.0, velocity: 7.91, temperature: 31, signal: 47 },
+      orbit:  { radiusFactor: 0.72, speed: 0.00060, phase: Math.PI / 6, color: '#ffb347' }
+    },
+    {
+      name:   'CHANDRA-1',
+      type:   'satellite',
+      status: 'OFFLINE',
+      health: 'CRITICAL',
+      telemetry: { altitude: 0.0, velocity: 0.0, temperature: -40, signal: 0 },
+      orbit:  { radiusFactor: 1.6, speed: 0.0, phase: 2.3, color: '#8a8f99' }
+    }
+  ];
+
+  var _STATUS_CLASS = {
+    ACTIVE:      'active',
+    STANDBY:     'standby',
+    MAINTENANCE: 'maintenance',
+    OFFLINE:     'offline'
+  };
+
+  function _el(id) { return document.getElementById(id); }
+
+  function _signalBars(signal) {
+    var bars = Math.round((signal || 0) / 25); // 0-4 bars
+    var html = '<span class="ds-asset-signal-bar">';
+    for (var i = 1; i <= 4; i++) {
+      html += '<span class="' + (i <= bars ? 'on' : '') + '"></span>';
+    }
+    html += '</span> ' + Math.round(signal || 0) + '%';
+    return html;
+  }
+
+  // ── Render Active Assets table ──────────────────────────────────
+  function _render() {
+    var tbody = _el('ds-assets-tbody');
+    if (!tbody) return;
+
+    var rows = _assets.map(function(a) {
+      var t = a.telemetry;
+      var statusClass = _STATUS_CLASS[a.status] || 'standby';
+      return '<tr>' +
+        '<td class="ds-asset-name">' + a.name + '</td>' +
+        '<td><span class="ds-asset-status ' + statusClass + '">' + a.status + '</span></td>' +
+        '<td>' + t.altitude.toFixed(1) + ' KM</td>' +
+        '<td>' + t.velocity.toFixed(2) + ' KM/S</td>' +
+        '<td>' + _signalBars(t.signal) + '</td>' +
+        '<td>' + a.health + '</td>' +
+        '</tr>';
+    });
+    tbody.innerHTML = rows.join('');
+
+    var countEl = _el('ds-assets-count');
+    if (countEl) {
+      var activeCount = _assets.filter(function(a) { return a.status === 'ACTIVE'; }).length;
+      countEl.textContent = _assets.length + ' TRACKED · ' + activeCount + ' ACTIVE';
+    }
+  }
+
+  // ── Simulation tick — jitter telemetry for non-offline assets ────
+  function _simTick() {
+    _assets.forEach(function(a) {
+      if (a.status === 'OFFLINE') return; // offline assets stay flat
+      var t = a.telemetry;
+      var baseSpeed = (t.velocity > 6) ? 7.68 : (t.velocity > 4 ? 5.10 : t.velocity);
+      t.altitude = _jitter(t.altitude, 1.2, 0, 5000);
+      t.velocity = _jitter(t.velocity, 0.02, 0, 12);
+      t.signal   = _jitter(t.signal, 1.5, a.status === 'MAINTENANCE' ? 30 : 70, 100);
+      void baseSpeed;
+    });
+    _render();
+  }
+
+  // ── Lifecycle: single shared interval, tied to DeepSpace dashboard ─
+  var _timer = null;
+
+  function _start() {
+    if (_timer) return; // guard against duplicate loops
+    _render(); // initial paint
+    _timer = setInterval(_simTick, 5000); // same cadence as Module 4.90.1 telemetry
+  }
+
+  function _stop() {
+    if (_timer) { clearInterval(_timer); _timer = null; }
+  }
+
+  function _hookLifecycle() {
+    // Primary: piggyback on the existing DeepSpace dashboard start/stop
+    var dash = window._deepspaceDashboard;
+    if (dash && !dash._assetsHooked) {
+      var _origStart = dash.start;
+      var _origStop  = dash.stop;
+      dash.start = function() { _origStart.apply(this, arguments); _start(); };
+      dash.stop  = function() { _origStop.apply(this, arguments);  _stop();  };
+      dash._assetsHooked = true;
+    }
+
+    // Secondary (belt-and-suspenders): hook mode switch directly,
+    // same pattern as 4.90.2, in case dashboard hook above is bypassed.
+    var _prevEnter = window.switchToDeepSpaceMode;
+    if (_prevEnter && !_prevEnter._assetsPatched) {
+      window.switchToDeepSpaceMode = function() {
+        _prevEnter.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._assetsPatched = true;
+    }
+    ['switchToOSMode', 'switchToClassicMode'].forEach(function(fnName) {
+      var orig = window[fnName];
+      if (!orig || orig._assetsExitPatched) return;
+      window[fnName] = function() {
+        _stop();
+        return orig.apply(this, arguments);
+      };
+      window[fnName]._assetsExitPatched = true;
+    });
+  }
+
+  setTimeout(_hookLifecycle, 0);
+
+  // If DeepSpace is already active when this module loads (e.g. hot
+  // patch applied while in DeepSpace), start immediately.
+  setTimeout(function() {
+    var ds = document.getElementById('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) _start();
+  }, 50);
+
+  // ── Public API — single source of truth for future modules ──────
+  window._deepspaceAssets = {
+    list: function() {
+      // Deep-ish copy: shallow-clone each asset + nested objects
+      return _assets.map(function(a) {
+        return {
+          name: a.name, type: a.type, status: a.status, health: a.health,
+          telemetry: Object.assign({}, a.telemetry),
+          orbit: Object.assign({}, a.orbit)
+        };
+      });
+    },
+    get: function(name) {
+      var n = (name || '').trim().toUpperCase();
+      var found = _assets.find(function(a) { return a.name.toUpperCase() === n; });
+      if (!found) return null;
+      return {
+        name: found.name, type: found.type, status: found.status, health: found.health,
+        telemetry: Object.assign({}, found.telemetry),
+        orbit: Object.assign({}, found.orbit)
+      };
+    },
+    setStatus: function(name, status) {
+      var n = (name || '').trim().toUpperCase();
+      var found = _assets.find(function(a) { return a.name.toUpperCase() === n; });
+      if (!found) return false;
+      if (!_STATUS_CLASS.hasOwnProperty(status)) return false;
+      found.status = status;
+      _render();
+      return true;
+    },
+    // Future: register new spacecraft/rovers/ground stations without
+    // restructuring this module — same shape, new `type` value.
+    register: function(asset) {
+      if (!asset || !asset.name) return false;
+      _assets.push(asset);
+      _render();
+      return true;
+    },
+    start:  _start,
+    stop:   _stop,
+    render: _render
+  };
+
+  console.log('[AtulOS 4.92] Multi-Satellite Tracking Network installed. Assets: ' + _assets.map(function(a){return a.name;}).join(', '));
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.92 — DEEPSPACE MULTI-SATELLITE TRACKING NETWORK
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.93 — DEEPSPACE MISSION OPERATIONS CENTER
+     Centralized mission registry — single source of truth.
+     Exposes: window._deepspaceMissions
+     Drives: "Mission Operations" panel (#ds-missions-grid)
+             "Mission Timeline" panel (#ds-mission-timeline)
+             Mission Terminal commands
+             (mission ops|list|details <m>|timeline <m>)
+     Each mission references a tracked asset by name and reads its
+     telemetry/health from window._deepspaceAssets (Module 4.92) —
+     NO duplicate telemetry system. Rendering is event-driven (on
+     registry change / selection), not interval-polled — no new
+     timers, no memory leaks.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  function _el(id) { return document.getElementById(id); }
+
+  // ── Centralized Mission Registry — single source of truth ───────
+  // Shape: { name, type, status, priority, launchDate, vehicle,
+  //          objective, asset (tracked asset name, cross-referenced
+  //          into window._deepspaceAssets), timeline: [ {label, status,
+  //          time} ] }
+  // Future mission types (rover ops, ground-station ops, launch ops)
+  // extend this same shape — add fields, don't restructure.
+  var _missions = [
+    {
+      name:       'ATULSAT-1',
+      type:       'EARTH OBSERVATION',
+      status:     'ACTIVE',
+      priority:   'HIGH',
+      launchDate: '2025-03-14',
+      vehicle:    'ATULSAT-1',
+      asset:      'ATULSAT-1',
+      objective:  'Continuous Earth imaging and ground station relay.',
+      timeline: [
+        { label: 'Orbit Achieved',             status: 'done', time: '2025-03-14' },
+        { label: 'Telemetry Stable',           status: 'done', time: '2025-03-15' },
+        { label: 'Payload Active',             status: 'done', time: '2025-03-18' },
+        { label: 'Signal Verified',            status: 'done', time: '2025-03-20' },
+        { label: 'Science Operations Running', status: 'done', time: '2025-03-22' }
+      ]
+    },
+    {
+      name:       'ATULSAT-2',
+      type:       'COMMUNICATIONS',
+      status:     'ACTIVE',
+      priority:   'NORMAL',
+      launchDate: '2025-07-02',
+      vehicle:    'ATULSAT-2',
+      asset:      'ATULSAT-2',
+      objective:  'Relay communications array — secondary ground link.',
+      timeline: [
+        { label: 'Orbit Achieved',   status: 'done',    time: '2025-07-02' },
+        { label: 'Telemetry Stable', status: 'done',    time: '2025-07-03' },
+        { label: 'Payload Active',   status: 'done',    time: '2025-07-05' },
+        { label: 'Signal Verified',  status: 'pending', time: '—' }
+      ]
+    },
+    {
+      name:       'CHANDRA-1',
+      type:       'LUNAR RESEARCH',
+      status:     'COMPLETED',
+      priority:   'LOW',
+      launchDate: '2023-11-09',
+      vehicle:    'CHANDRA-1',
+      asset:      'CHANDRA-1',
+      objective:  'Lunar surface mapping mission — archived.',
+      timeline: [
+        { label: 'Orbit Achieved',             status: 'done', time: '2023-11-09' },
+        { label: 'Telemetry Stable',           status: 'done', time: '2023-11-12' },
+        { label: 'Payload Active',             status: 'done', time: '2023-11-20' },
+        { label: 'Signal Verified',            status: 'done', time: '2023-12-01' },
+        { label: 'Science Operations Running', status: 'done', time: '2024-02-15' },
+        { label: 'Mission Complete',           status: 'done', time: '2024-09-30' }
+      ]
+    },
+    {
+      name:       'MANGALYAAN-X',
+      type:       'MARS EXPLORATION',
+      status:     'ANALYZING',
+      priority:   'CRITICAL',
+      launchDate: '2026-01-20',
+      vehicle:    'MANGALYAAN-X',
+      asset:      'MANGALYAAN-X',
+      objective:  'Mars atmospheric analysis — instrument recalibration.',
+      timeline: [
+        { label: 'Orbit Achieved',   status: 'done',    time: '2026-01-20' },
+        { label: 'Telemetry Stable', status: 'done',    time: '2026-01-22' },
+        { label: 'Payload Active',   status: 'pending', time: '—' },
+        { label: 'Signal Verified',  status: 'pending', time: '—' }
+      ]
+    },
+    {
+      name:       'VOYAGER-SIM',
+      type:       'DEEP SPACE PROBE',
+      status:     'PLANNED',
+      priority:   'NORMAL',
+      launchDate: '2026-09-01',
+      vehicle:    'VOYAGER-SIM',
+      asset:      'VOYAGER-SIM',
+      objective:  'Outer-system trajectory simulation — pre-launch checks.',
+      timeline: [
+        { label: 'Orbit Achieved',   status: 'pending', time: '—' },
+        { label: 'Telemetry Stable', status: 'pending', time: '—' },
+        { label: 'Payload Active',   status: 'pending', time: '—' }
+      ]
+    }
+  ];
+
+  var _STATUS_CLASS = {
+    ACTIVE:    'active',
+    PLANNED:   'planned',
+    ANALYZING: 'analyzing',
+    COMPLETED: 'completed'
+  };
+
+  var _selectedMission = null; // mission name currently shown in timeline panel
+
+  // ── Cross-reference tracked asset (Module 4.92) — no duplicate telemetry
+  function _assetFor(mission) {
+    if (window._deepspaceAssets && typeof window._deepspaceAssets.get === 'function') {
+      try { return window._deepspaceAssets.get(mission.asset); } catch (e) {}
+    }
+    return null;
+  }
+
+  function _findMission(name) {
+    var n = (name || '').trim().toUpperCase();
+    return _missions.find(function(m) { return m.name.toUpperCase() === n; }) || null;
+  }
+
+  // ── Render Mission Operations grid ───────────────────────────────
+  function _renderMissions() {
+    var grid = _el('ds-missions-grid');
+    if (!grid) return;
+
+    grid.innerHTML = _missions.map(function(m) {
+      var statusClass = _STATUS_CLASS[m.status] || 'planned';
+      var priorityClass = (m.priority || 'normal').toLowerCase();
+      var selected = (m.name === _selectedMission) ? ' selected' : '';
+      return '<div class="ds-mission-card' + selected + '" data-priority="' + priorityClass + '" ' +
+               'data-mission="' + m.name + '" role="listitem" tabindex="0" ' +
+               'aria-label="' + m.name + ' — ' + m.type + ' — ' + m.status + '">' +
+        '<div class="ds-mission-card-head">' +
+          '<span class="ds-mission-name">' + m.name + '</span>' +
+          '<span class="ds-mission-status ' + statusClass + '">' + m.status + '</span>' +
+        '</div>' +
+        '<span class="ds-mission-type">' + m.type + '</span>' +
+        '<span class="ds-mission-objective">' + m.objective + '</span>' +
+        '<div class="ds-mission-meta">' +
+          '<span>Vehicle: ' + m.vehicle + '</span>' +
+          '<span class="ds-mission-priority">' + m.priority + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // Click/keyboard → show timeline (event-driven, no polling)
+    Array.prototype.forEach.call(grid.querySelectorAll('.ds-mission-card'), function(card) {
+      card.addEventListener('click', function() {
+        _selectMission(card.getAttribute('data-mission'));
+      });
+      card.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          _selectMission(card.getAttribute('data-mission'));
+        }
+      });
+    });
+
+    var countEl = _el('ds-missions-count');
+    if (countEl) {
+      var activeCount = _missions.filter(function(m) { return m.status === 'ACTIVE'; }).length;
+      countEl.textContent = _missions.length + ' MISSIONS · ' + activeCount + ' ACTIVE';
+    }
+  }
+
+  // ── Render Mission Timeline panel ────────────────────────────────
+  function _renderTimeline() {
+    var list  = _el('ds-mission-timeline');
+    var title = _el('ds-mission-timeline-title');
+    if (!list) return;
+
+    var mission = _findMission(_selectedMission);
+    if (!mission) {
+      if (title) title.textContent = 'SELECT A MISSION';
+      list.innerHTML = '<div class="ds-timeline-item"><div class="ds-timeline-body">' +
+        '<span class="ds-timeline-label" style="color:var(--muted);">' +
+        'Click a mission above to view its timeline.</span></div></div>';
+      return;
+    }
+
+    if (title) title.textContent = mission.name + ' — ' + mission.type;
+
+    list.innerHTML = mission.timeline.map(function(ev) {
+      var dotClass = (ev.status === 'pending') ? 'pending' : '';
+      return '<div class="ds-timeline-item">' +
+        '<div class="ds-timeline-dot ' + dotClass + '"></div>' +
+        '<div class="ds-timeline-body">' +
+          '<span class="ds-timeline-label">' + ev.label + '</span>' +
+          '<span class="ds-timeline-meta">' + (ev.status === 'pending' ? 'PENDING' : ev.time) + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // Re-render grid to update .selected highlight
+    _renderMissions();
+  }
+
+  function _selectMission(name) {
+    _selectedMission = name;
+    _renderTimeline();
+  }
+
+  // ── Initial render — event-driven, no interval timer ────────────
+  function _init() {
+    _renderMissions();
+    _renderTimeline();
+  }
+  setTimeout(_init, 0);
+
+  // ── Public API — single source of truth for future modules ──────
+  window._deepspaceMissions = {
+    list: function() {
+      return _missions.map(function(m) {
+        return {
+          name: m.name, type: m.type, status: m.status, priority: m.priority,
+          launchDate: m.launchDate, vehicle: m.vehicle, objective: m.objective,
+          asset: m.asset, timeline: m.timeline.map(function(ev) { return Object.assign({}, ev); })
+        };
+      });
+    },
+    get: function(name) {
+      var m = _findMission(name);
+      if (!m) return null;
+      return {
+        name: m.name, type: m.type, status: m.status, priority: m.priority,
+        launchDate: m.launchDate, vehicle: m.vehicle, objective: m.objective,
+        asset: m.asset, timeline: m.timeline.map(function(ev) { return Object.assign({}, ev); })
+      };
+    },
+    // Cross-referenced live telemetry/health from the asset registry
+    // (Module 4.92) — single source of truth, no duplication.
+    getAssetData: function(name) {
+      var m = _findMission(name);
+      if (!m) return null;
+      return _assetFor(m);
+    },
+    setStatus: function(name, status) {
+      var m = _findMission(name);
+      if (!m || !_STATUS_CLASS.hasOwnProperty(status)) return false;
+      m.status = status;
+      _renderMissions();
+      return true;
+    },
+    // Future: register new missions (rover ops, ground stations, etc.)
+    // without restructuring this module — same shape, new fields ok.
+    register: function(mission) {
+      if (!mission || !mission.name) return false;
+      if (!mission.timeline) mission.timeline = [];
+      _missions.push(mission);
+      _renderMissions();
+      return true;
+    },
+    select: _selectMission,
+    render: _init
+  };
+
+  console.log('[AtulOS 4.93] Mission Operations Center installed. Missions: ' + _missions.map(function(m){return m.name;}).join(', '));
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.93 — DEEPSPACE MISSION OPERATIONS CENTER
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.94 — DEEPSPACE LAUNCH CONTROL CENTER
+     Centralized launch registry — single source of truth.
+     Exposes: window._deepspaceLaunch
+     Drives: "Launch Control" panel
+             (#ds-launch-queue, #ds-launch-readiness,
+              #ds-launch-countdown-value, #ds-launchlog)
+             Mission Terminal commands
+             (mission launch|readiness|countdown|launchlog)
+     Each launch references a mission name (cross-referenced into
+     window._deepspaceMissions / window._deepspaceAssets where
+     applicable) — NO duplicate telemetry/mission systems.
+     Countdown engine: ONE shared setInterval, started/stopped via
+     the same DeepSpace lifecycle hooks as Modules 4.92/4.93 — no
+     duplicate timers, cleaned up on mode exit.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  function _el(id) { return document.getElementById(id); }
+
+  // ── Centralized Launch Registry — single source of truth ────────
+  // Shape: { name, vehicle, mission (cross-ref name), status,
+  //          readiness: { Fuel Systems, Communications, Guidance,
+  //                        Navigation, Telemetry, Payload } -> READY|
+  //                        CHECKING|WARNING|OFFLINE,
+  //          countdown: seconds remaining (T-minus) or null,
+  //          countdownLabel: display string ('T-120', 'LIFTOFF', ...) }
+  // Future launch types (rover deployment, ground-station activation)
+  // extend this same shape — add fields, don't restructure.
+  var _COUNTDOWN_STEPS = [120, 60, 30, 10, 5, 0]; // T-120 ... T-0 -> LIFTOFF
+
+  var _launches = [
+    {
+      name:      'ATULSAT-3',
+      vehicle:   'ATULSAT-3',
+      mission:   'ATULSAT-3',
+      status:    'COUNTDOWN',
+      readiness: {
+        'Fuel Systems':   'READY',
+        'Communications': 'READY',
+        'Guidance':       'CHECKING',
+        'Navigation':     'READY',
+        'Telemetry':      'READY',
+        'Payload':        'WARNING'
+      },
+      countdownIdx: 0, // index into _COUNTDOWN_STEPS
+      countdownLabel: 'T-120'
+    },
+    {
+      name:      'LUNAR-PROBE-1',
+      vehicle:   'LUNAR-PROBE-1',
+      mission:   'LUNAR-PROBE-1',
+      status:    'QUEUED',
+      readiness: {
+        'Fuel Systems':   'CHECKING',
+        'Communications': 'READY',
+        'Guidance':       'CHECKING',
+        'Navigation':     'CHECKING',
+        'Telemetry':      'READY',
+        'Payload':        'CHECKING'
+      },
+      countdownIdx: null,
+      countdownLabel: '—'
+    },
+    {
+      name:      'MARS-SCOUT-A',
+      vehicle:   'MARS-SCOUT-A',
+      mission:   'MARS-SCOUT-A',
+      status:    'HOLD',
+      readiness: {
+        'Fuel Systems':   'READY',
+        'Communications': 'WARNING',
+        'Guidance':       'OFFLINE',
+        'Navigation':     'CHECKING',
+        'Telemetry':      'WARNING',
+        'Payload':        'READY'
+      },
+      countdownIdx: null,
+      countdownLabel: '—'
+    }
+  ];
+
+  var _STATUS_CLASS = {
+    QUEUED:    'queued',
+    COUNTDOWN: 'countdown',
+    LAUNCHED:  'launched',
+    HOLD:      'hold'
+  };
+
+  var _READINESS_CLASS = {
+    READY:    'ready',
+    CHECKING: 'checking',
+    WARNING:  'warning',
+    OFFLINE:  'offline'
+  };
+
+  var _log = []; // { time, msg }
+  var _MAX_LOG = 30;
+  var _selectedLaunch = _launches[0] ? _launches[0].name : null;
+
+  function _nowTime() {
+    var d = new Date();
+    return d.toLocaleTimeString('en-US', { hour12: false });
+  }
+
+  function _appendLog(msg) {
+    _log.unshift({ time: _nowTime(), msg: msg });
+    if (_log.length > _MAX_LOG) _log.length = _MAX_LOG;
+    _renderLog();
+  }
+
+  function _findLaunch(name) {
+    var n = (name || '').trim().toUpperCase();
+    return _launches.find(function(l) { return l.name.toUpperCase() === n; }) || null;
+  }
+
+  // ── Render Launch Queue ───────────────────────────────────────
+  function _renderQueue() {
+    var queue = _el('ds-launch-queue');
+    if (!queue) return;
+
+    queue.innerHTML = _launches.map(function(l) {
+      var statusClass = _STATUS_CLASS[l.status] || 'queued';
+      var selected = (l.name === _selectedLaunch) ? ' selected' : '';
+      return '<div class="ds-launch-card' + selected + '" data-launch="' + l.name + '" ' +
+               'role="listitem" tabindex="0" aria-label="' + l.name + ' — ' + l.status + '">' +
+        '<div class="ds-launch-card-head">' +
+          '<span class="ds-launch-name">' + l.name + '</span>' +
+          '<span class="ds-launch-status ' + statusClass + '">' + l.status + '</span>' +
+        '</div>' +
+        '<span class="ds-launch-vehicle">Vehicle: ' + l.vehicle + '</span>' +
+      '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(queue.querySelectorAll('.ds-launch-card'), function(card) {
+      card.addEventListener('click', function() {
+        _selectLaunch(card.getAttribute('data-launch'));
+      });
+      card.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          _selectLaunch(card.getAttribute('data-launch'));
+        }
+      });
+    });
+
+    var countEl = _el('ds-launch-count');
+    if (countEl) {
+      var queuedCount = _launches.filter(function(l) { return l.status === 'QUEUED' || l.status === 'COUNTDOWN'; }).length;
+      countEl.textContent = _launches.length + ' TOTAL · ' + queuedCount + ' QUEUED';
+    }
+  }
+
+  // ── Render Mission Readiness grid ────────────────────────────
+  function _renderReadiness() {
+    var grid = _el('ds-launch-readiness');
+    if (!grid) return;
+
+    var launch = _findLaunch(_selectedLaunch);
+    if (!launch) {
+      grid.innerHTML = '<div class="ds-readiness-item"><span class="ds-readiness-label" style="color:var(--muted);">Select a launch to view readiness.</span></div>';
+      return;
+    }
+
+    grid.innerHTML = Object.keys(launch.readiness).map(function(sys) {
+      var status = launch.readiness[sys];
+      var cls = _READINESS_CLASS[status] || 'checking';
+      return '<div class="ds-readiness-item">' +
+        '<span class="ds-readiness-label">' + sys + '</span>' +
+        '<span class="ds-readiness-badge ' + cls + '">' + status + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Render Countdown display ─────────────────────────────────
+  function _renderCountdown() {
+    var valEl = _el('ds-launch-countdown-value');
+    var missEl = _el('ds-launch-countdown-mission');
+    if (!valEl || !missEl) return;
+
+    var launch = _findLaunch(_selectedLaunch);
+    if (!launch || launch.countdownIdx === null) {
+      valEl.textContent = '—';
+      missEl.textContent = launch ? (launch.name + ' (' + launch.status + ')') : 'No launch selected';
+      return;
+    }
+
+    valEl.textContent = launch.countdownLabel;
+    missEl.textContent = launch.name + ' — ' + launch.vehicle;
+  }
+
+  // ── Render Launch Event Log ──────────────────────────────────
+  function _renderLog() {
+    var list = _el('ds-launchlog');
+    if (!list) return;
+    list.innerHTML = _log.map(function(e) {
+      return '<div class="ds-launchlog-item">' +
+        '<span class="ds-launchlog-time">[' + e.time + ']</span>' +
+        '<span class="ds-launchlog-msg">' + e.msg + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderAll() {
+    _renderQueue();
+    _renderReadiness();
+    _renderCountdown();
+    _renderLog();
+  }
+
+  function _selectLaunch(name) {
+    _selectedLaunch = name;
+    _renderQueue();
+    _renderReadiness();
+    _renderCountdown();
+  }
+
+  // ── Countdown tick — advances the active COUNTDOWN launch ───────
+  function _tick() {
+    _launches.forEach(function(l) {
+      if (l.status !== 'COUNTDOWN' || l.countdownIdx === null) return;
+
+      if (l.countdownIdx < _COUNTDOWN_STEPS.length - 1) {
+        l.countdownIdx++;
+        var step = _COUNTDOWN_STEPS[l.countdownIdx];
+        if (step === 0) {
+          l.countdownLabel = 'LIFTOFF';
+          l.status = 'LAUNCHED';
+          _appendLog(l.name + ': Ignition Sequence Started');
+          _appendLog(l.name + ': Liftoff Confirmed');
+        } else {
+          l.countdownLabel = 'T-' + step;
+          if (step === 60) _appendLog(l.name + ': Fuel Check Complete');
+          if (step === 30) _appendLog(l.name + ': Telemetry Online');
+          if (step === 10) _appendLog(l.name + ': Guidance Locked');
+          if (step === 5)  _appendLog(l.name + ': Launch Authorized');
+        }
+      }
+    });
+    _renderQueue();
+    if (_selectedLaunch) { _renderCountdown(); }
+  }
+
+  // ── Lifecycle: single shared interval (5s tick, matches 4.92/4.93
+  // simulation cadence), tied to DeepSpace dashboard start/stop ───
+  var _timer = null;
+
+  function _start() {
+    if (_timer) return; // guard against duplicate loops
+    _renderAll();
+    _timer = setInterval(_tick, 5000);
+  }
+
+  function _stop() {
+    if (_timer) { clearInterval(_timer); _timer = null; }
+  }
+
+  function _hookLifecycle() {
+    // Primary: piggyback on the existing DeepSpace dashboard start/stop
+    var dash = window._deepspaceDashboard;
+    if (dash && !dash._launchHooked) {
+      var _origStart = dash.start;
+      var _origStop  = dash.stop;
+      dash.start = function() { _origStart.apply(this, arguments); _start(); };
+      dash.stop  = function() { _origStop.apply(this, arguments);  _stop();  };
+      dash._launchHooked = true;
+    }
+
+    // Secondary (belt-and-suspenders): hook mode switch directly,
+    // same idempotent-flag pattern as 4.92/4.93.
+    var _prevEnter = window.switchToDeepSpaceMode;
+    if (_prevEnter && !_prevEnter._launchPatched) {
+      window.switchToDeepSpaceMode = function() {
+        _prevEnter.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._launchPatched = true;
+    }
+    ['switchToOSMode', 'switchToClassicMode'].forEach(function(fnName) {
+      var orig = window[fnName];
+      if (!orig || orig._launchExitPatched) return;
+      window[fnName] = function() {
+        _stop();
+        return orig.apply(this, arguments);
+      };
+      window[fnName]._launchExitPatched = true;
+    });
+  }
+
+  setTimeout(_hookLifecycle, 0);
+
+  // If DeepSpace is already active when this module loads, start now.
+  setTimeout(function() {
+    var ds = document.getElementById('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) _start();
+  }, 50);
+
+  // Seed initial log entries
+  _appendLog('Launch Control Center online.');
+  _appendLog('ATULSAT-3: Countdown sequence initiated.');
+
+  // ── Public API — single source of truth for future modules ──────
+  window._deepspaceLaunch = {
+    list: function() {
+      return _launches.map(function(l) {
+        return {
+          name: l.name, vehicle: l.vehicle, mission: l.mission, status: l.status,
+          readiness: Object.assign({}, l.readiness),
+          countdownLabel: l.countdownLabel
+        };
+      });
+    },
+    get: function(name) {
+      var l = _findLaunch(name);
+      if (!l) return null;
+      return {
+        name: l.name, vehicle: l.vehicle, mission: l.mission, status: l.status,
+        readiness: Object.assign({}, l.readiness),
+        countdownLabel: l.countdownLabel
+      };
+    },
+    getLog: function() {
+      return _log.map(function(e) { return Object.assign({}, e); });
+    },
+    getActiveCountdown: function() {
+      var active = _launches.find(function(l) { return l.status === 'COUNTDOWN'; });
+      if (!active) return null;
+      return { name: active.name, vehicle: active.vehicle, countdownLabel: active.countdownLabel };
+    },
+    setReadiness: function(name, system, status) {
+      var l = _findLaunch(name);
+      if (!l || !l.readiness.hasOwnProperty(system) || !_READINESS_CLASS.hasOwnProperty(status)) return false;
+      l.readiness[system] = status;
+      _renderReadiness();
+      return true;
+    },
+    setStatus: function(name, status) {
+      var l = _findLaunch(name);
+      if (!l || !_STATUS_CLASS.hasOwnProperty(status)) return false;
+      l.status = status;
+      _renderQueue();
+      return true;
+    },
+    // Future: register new launches (rover deployment, ground-station
+    // activation) without restructuring this module — same shape.
+    register: function(launch) {
+      if (!launch || !launch.name) return false;
+      if (!launch.readiness) launch.readiness = {};
+      if (launch.countdownIdx === undefined) launch.countdownIdx = null;
+      if (!launch.countdownLabel) launch.countdownLabel = '—';
+      if (!launch.status) launch.status = 'QUEUED';
+      _launches.push(launch);
+      _renderQueue();
+      return true;
+    },
+    select: _selectLaunch,
+    log:    _appendLog,
+    start:  _start,
+    stop:   _stop,
+    render: _renderAll
+  };
+
+  console.log('[AtulOS 4.94] Launch Control Center installed. Launches: ' + _launches.map(function(l){return l.name;}).join(', '));
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.94 — DEEPSPACE LAUNCH CONTROL CENTER
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.91 — DEEPSPACE MISSION COMMAND TERMINAL
+     Adds: mission status | telemetry | orbit | comms | log | help
+     Reads: window._deepspaceDashboard, window._deepspaceOrbit
+
+     NO new data sources. NO new renderers. NO UI changes.
+     Future: mission satellites | rover | launch | track | groundstation
+     Patch type: additive IIFE wrapping _jarvisProcessInternal + executeCommand
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── DeepSpace Terminal Access — reuses EXISTING #terminal window ──
+  // DeepSpace Mode hides #desktop/#statusbar/#taskbar (opacity:0,
+  // pointer-events:none), which removes the normal terminal launcher
+  // icons from view/interaction. This does NOT create a new terminal —
+  // it calls the existing openWindow('terminal') and temporarily raises
+  // #terminal's z-index above #deepspace-container (z-index:200) via
+  // the .ds-terminal-active class so the existing window is reachable.
+  function openDeepSpaceTerminal() {
+    var term = document.getElementById('terminal');
+    if (typeof window.openWindow === 'function') {
+      window.openWindow('terminal');
+    }
+    if (term) {
+      term.classList.add('ds-terminal-active');
+      term.focus();
+    }
+  }
+
+  // Clear the elevated z-index when the terminal window is closed,
+  // restoring normal stacking for OS/Classic mode.
+  function _patchCloseForDeepSpaceTerminal() {
+    var _origClose = window.closeWindow;
+    if (typeof _origClose !== 'function' || _origClose._dsTerminalPatched) return;
+    window.closeWindow = function(id) {
+      if (id === 'terminal') {
+        var term = document.getElementById('terminal');
+        if (term) term.classList.remove('ds-terminal-active');
+      }
+      return _origClose.apply(this, arguments);
+    };
+    window.closeWindow._dsTerminalPatched = true;
+  }
+  setTimeout(_patchCloseForDeepSpaceTerminal, 100);
+
+  window.openDeepSpaceTerminal = openDeepSpaceTerminal;
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function _el(id) { return document.getElementById(id); }
+  function _txt(id, fallback) {
+    var el = _el(id);
+    return el ? (el.textContent || '').trim() : fallback;
+  }
+  function _out(msg) {
+    if (typeof window.dispatchOutput === 'function') window.dispatchOutput(msg);
+  }
+
+  // ── Data readers — always pull from existing APIs ─────────────
+  function _getTelemetry() {
+    if (window._deepspaceDashboard && typeof window._deepspaceDashboard.getTelemetry === 'function') {
+      return window._deepspaceDashboard.getTelemetry();
+    }
+    // Fallback: read live DOM values (always current)
+    return {
+      altitude:    parseFloat(_txt('ds-altitude',    '412')) || 412,
+      velocity:    parseFloat(_txt('ds-velocity',    '7.68')) || 7.68,
+      temperature: parseInt(_txt('ds-temperature',   '24'), 10) || 24,
+      battery:     parseInt(_txt('ds-battery',       '91'), 10) || 91,
+      orientation: parseInt(_txt('ds-orientation',   '137'), 10) || 137
+    };
+  }
+
+  function _getOrbit() {
+    var alt = 412, vel = 7.68, posAngle = 0;
+    if (window._deepspaceOrbit) {
+      try { alt = window._deepspaceOrbit.altitude || alt; } catch(e) {}
+      try { vel = window._deepspaceOrbit.velocity || vel; } catch(e) {}
+      try {
+        var pos = window._deepspaceOrbit.position;
+        if (pos && typeof pos.angle === 'number') {
+          posAngle = pos.angle;
+        } else if (pos && pos[0] && typeof pos[0].angle === 'number') {
+          posAngle = pos[0].angle; // future multi-body shape
+        }
+      } catch(e) {}
+    }
+    return { altitude: alt, velocity: vel, posAngle: posAngle };
+  }
+
+  function _getComms() {
+    return {
+      uplink:   _txt('ds-uplink',    'ACTIVE'),
+      downlink: _txt('ds-downlink',  'ACTIVE'),
+      latency:  _txt('ds-latency',   '1.4 SEC'),
+      packet:   _txt('ds-packet',    '98.7%'),
+      signal:   _txt('ds-signal',    'STRONG')
+    };
+  }
+
+  function _getHealth() {
+    return {
+      state:  _txt('ds-topbar-mission', 'ATULSAT-1').indexOf('ATULSAT') !== -1 ? 'ACTIVE' : 'STANDBY',
+      health: _txt('ds-health-badge', 'NOMINAL'),
+      power:  _txt('ds-power',         '91%'),
+      signal: _txt('ds-signal',        'STRONG')
+    };
+  }
+
+  function _getLog() {
+    if (window._deepspaceDashboard && typeof window._deepspaceDashboard.getLogEntries === 'function') {
+      return window._deepspaceDashboard.getLogEntries();
+    }
+    // Fallback: scrape DOM log entries
+    var body = _el('ds-log-body');
+    if (!body) return [];
+    var entries = [];
+    Array.prototype.forEach.call(body.children, function(el) {
+      var timeEl = el.querySelector('.ds-log-time');
+      var time   = timeEl ? timeEl.textContent : '';
+      var msg    = el.textContent.replace(time, '').trim();
+      entries.push({ time: time.replace(/[\[\]]/g, ''), msg: msg });
+    });
+    return entries;
+  }
+
+  // ── Multi-Satellite Tracking Network (Module 4.92) readers ─────
+  function _getAssets() {
+    if (window._deepspaceAssets && typeof window._deepspaceAssets.list === 'function') {
+      try { return window._deepspaceAssets.list(); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getAsset(name) {
+    if (window._deepspaceAssets && typeof window._deepspaceAssets.get === 'function') {
+      try { return window._deepspaceAssets.get(name); } catch (e) {}
+    }
+    return null;
+  }
+
+  // ── Mission Operations Center (Module 4.93) readers ────────────
+  function _getMissions() {
+    if (window._deepspaceMissions && typeof window._deepspaceMissions.list === 'function') {
+      try { return window._deepspaceMissions.list(); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getMission(name) {
+    if (window._deepspaceMissions && typeof window._deepspaceMissions.get === 'function') {
+      try { return window._deepspaceMissions.get(name); } catch (e) {}
+    }
+    return null;
+  }
+
+  // ── Launch Control Center (Module 4.94) readers ────────────────
+  function _getLaunches() {
+    if (window._deepspaceLaunch && typeof window._deepspaceLaunch.list === 'function') {
+      try { return window._deepspaceLaunch.list(); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getLaunchLog() {
+    if (window._deepspaceLaunch && typeof window._deepspaceLaunch.getLog === 'function') {
+      try { return window._deepspaceLaunch.getLog(); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getActiveCountdown() {
+    if (window._deepspaceLaunch && typeof window._deepspaceLaunch.getActiveCountdown === 'function') {
+      try { return window._deepspaceLaunch.getActiveCountdown(); } catch (e) {}
+    }
+    return null;
+  }
+
+  // ── Orbital position description ─────────────────────────────
+  function _describePosition(angleRad) {
+    // Map radian angle to orbital quadrant label (0 = top, clockwise)
+    var deg = ((angleRad * 180 / Math.PI) % 360 + 360) % 360;
+    if (deg < 45)  return 'ASCENDING — NORTH PASS';
+    if (deg < 90)  return 'ASCENDING — EAST QUADRANT';
+    if (deg < 135) return 'DESCENDING — SOUTH APPROACH';
+    if (deg < 180) return 'DESCENDING — SOUTH PASS';
+    if (deg < 225) return 'ASCENDING — SOUTH QUADRANT';
+    if (deg < 270) return 'ASCENDING — WEST QUADRANT';
+    if (deg < 315) return 'DESCENDING — NORTH APPROACH';
+    return 'DESCENDING — NORTH PASS';
+  }
+
+  // ── Command handlers ─────────────────────────────────────────
+  var _HANDLERS = {
+
+    'mission status': function() {
+      var h = _getHealth(), t = _getTelemetry();
+      return [
+        '─── MISSION STATUS ───────────────────────',
+        'Mission   : ATULSAT-1',
+        'State     : ' + h.state,
+        'Health    : ' + h.health,
+        'Power     : ' + (t.battery ? Math.round(t.battery) + '%' : h.power),
+        'Signal    : ' + h.signal,
+        '──────────────────────────────────────────'
+      ].join('\n');
+    },
+
+    'mission telemetry': function() {
+      var t = _getTelemetry();
+      return [
+        '─── TELEMETRY ────────────────────────────',
+        'Altitude    : ' + t.altitude.toFixed(1)    + ' KM',
+        'Velocity    : ' + t.velocity.toFixed(2)    + ' KM/S',
+        'Temperature : ' + Math.round(t.temperature) + ' °C',
+        'Battery     : ' + Math.round(t.battery)     + '%',
+        'Orientation : ' + Math.round(t.orientation) + '°',
+        '──────────────────────────────────────────'
+      ].join('\n');
+    },
+
+    'mission orbit': function() {
+      var o = _getOrbit();
+      return [
+        '─── ORBITAL DATA ─────────────────────────',
+        'Satellite : ATULSAT-1',
+        'Orbit     : LOW EARTH ORBIT',
+        'Altitude  : ' + o.altitude.toFixed(1) + ' KM',
+        'Velocity  : ' + o.velocity.toFixed(2) + ' KM/S',
+        'Position  : ' + _describePosition(o.posAngle),
+        '──────────────────────────────────────────'
+      ].join('\n');
+    },
+
+    'mission comms': function() {
+      var c = _getComms();
+      return [
+        '─── COMMUNICATIONS ───────────────────────',
+        'Uplink         : ' + c.uplink,
+        'Downlink       : ' + c.downlink,
+        'Signal         : ' + c.signal,
+        'Latency        : ' + c.latency,
+        'Packet Success : ' + c.packet,
+        '──────────────────────────────────────────'
+      ].join('\n');
+    },
+
+    'mission log': function() {
+      var entries = _getLog();
+      var lines   = ['─── MISSION LOG (LAST 10) ────────────────'];
+      if (!entries.length) {
+        lines.push('No log entries yet. Dashboard may be offline.');
+      } else {
+        var slice = entries.slice(-10);
+        slice.forEach(function(e) {
+          lines.push('[' + (e.time || '--:--:--') + '] ' + e.msg);
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission help': function() {
+      return [
+        '─── DEEPSPACE COMMANDS ───────────────────',
+        'mission status     — Mission health overview',
+        'mission telemetry  — Live sensor readings',
+        'mission orbit      — Orbital parameters',
+        'mission comms      — Communications status',
+        'mission log        — Recent mission events',
+        'mission satellites — List all tracked assets',
+        'mission asset <id> — Detailed asset readout',
+        'mission network    — Network summary',
+        'mission ops        — Mission operations summary',
+        'mission list       — List all missions',
+        'mission details <m> — Full mission information',
+        'mission timeline <m> — Mission timeline events',
+        'mission launch     — Launch queue',
+        'mission readiness  — Mission readiness status',
+        'mission countdown  — Active countdown',
+        'mission launchlog  — Launch event log',
+        'mission help       — This menu',
+        '',
+        'Coming soon:',
+        '  mission rover      | mission track',
+        '  mission groundstation',
+        '──────────────────────────────────────────'
+      ].join('\n');
+    },
+
+    'mission ops': function() {
+      var missions = _getMissions();
+      var lines = ['─── MISSION OPERATIONS SUMMARY ───────────'];
+      if (!missions.length) {
+        lines.push('Mission Operations Center offline.');
+      } else {
+        var counts = { ACTIVE: 0, PLANNED: 0, ANALYZING: 0, COMPLETED: 0 };
+        var priorities = { LOW: 0, NORMAL: 0, HIGH: 0, CRITICAL: 0 };
+        missions.forEach(function(m) {
+          if (counts.hasOwnProperty(m.status)) counts[m.status]++;
+          if (priorities.hasOwnProperty(m.priority)) priorities[m.priority]++;
+        });
+        lines.push('Total Missions : ' + missions.length);
+        lines.push('Active         : ' + counts.ACTIVE);
+        lines.push('Planned        : ' + counts.PLANNED);
+        lines.push('Analyzing      : ' + counts.ANALYZING);
+        lines.push('Completed      : ' + counts.COMPLETED);
+        lines.push('');
+        lines.push('Priority Breakdown:');
+        lines.push('  Critical : ' + priorities.CRITICAL);
+        lines.push('  High     : ' + priorities.HIGH);
+        lines.push('  Normal   : ' + priorities.NORMAL);
+        lines.push('  Low      : ' + priorities.LOW);
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission list': function() {
+      var missions = _getMissions();
+      var lines = ['─── MISSION LIST ─────────────────────────'];
+      if (!missions.length) {
+        lines.push('No missions registered.');
+      } else {
+        missions.forEach(function(m) {
+          lines.push(
+            m.name.padEnd(14, ' ') + ' ' +
+            m.type.padEnd(18, ' ') + ' ' +
+            m.status.padEnd(11, ' ') + ' ' +
+            m.priority
+          );
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission satellites': function() {
+      var assets = _getAssets();
+      var lines  = ['─── ACTIVE ASSETS ────────────────────────'];
+      if (!assets.length) {
+        lines.push('No tracked assets. Satellite network offline.');
+      } else {
+        assets.forEach(function(a) {
+          var t = a.telemetry;
+          lines.push(
+            a.name.padEnd(14, ' ') + ' ' +
+            a.status.padEnd(12, ' ') + ' ' +
+            t.altitude.toFixed(1).padStart(8, ' ') + ' KM  ' +
+            t.velocity.toFixed(2).padStart(5, ' ') + ' KM/S  ' +
+            Math.round(t.signal) + '% SIG'
+          );
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission network': function() {
+      var assets = _getAssets();
+      var lines  = ['─── NETWORK SUMMARY ──────────────────────'];
+      if (!assets.length) {
+        lines.push('Satellite network offline.');
+      } else {
+        var counts = { ACTIVE: 0, STANDBY: 0, MAINTENANCE: 0, OFFLINE: 0 };
+        var totalSignal = 0, signalCount = 0;
+        assets.forEach(function(a) {
+          if (counts.hasOwnProperty(a.status)) counts[a.status]++;
+          if (a.status !== 'OFFLINE') { totalSignal += a.telemetry.signal; signalCount++; }
+        });
+        var avgSignal = signalCount ? Math.round(totalSignal / signalCount) : 0;
+        lines.push('Tracked Assets : ' + assets.length);
+        lines.push('Active         : ' + counts.ACTIVE);
+        lines.push('Standby        : ' + counts.STANDBY);
+        lines.push('Maintenance    : ' + counts.MAINTENANCE);
+        lines.push('Offline        : ' + counts.OFFLINE);
+        lines.push('Avg Signal     : ' + avgSignal + '%');
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission launch': function() {
+      var launches = _getLaunches();
+      var lines = ['─── LAUNCH QUEUE ─────────────────────────'];
+      if (!launches.length) {
+        lines.push('Launch Control Center offline.');
+      } else {
+        launches.forEach(function(l) {
+          lines.push(
+            l.name.padEnd(16, ' ') + ' ' +
+            l.vehicle.padEnd(16, ' ') + ' ' +
+            l.status.padEnd(11, ' ') + ' ' +
+            l.countdownLabel
+          );
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission readiness': function() {
+      var launches = _getLaunches();
+      var lines = ['─── MISSION READINESS ────────────────────'];
+      if (!launches.length) {
+        lines.push('Launch Control Center offline.');
+      } else {
+        launches.forEach(function(l, idx) {
+          if (idx > 0) lines.push('');
+          lines.push(l.name + ' (' + l.status + ')');
+          Object.keys(l.readiness).forEach(function(sys) {
+            lines.push('  ' + sys.padEnd(16, ' ') + ' ' + l.readiness[sys]);
+          });
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission countdown': function() {
+      var active = _getActiveCountdown();
+      var lines = ['─── COUNTDOWN ────────────────────────────'];
+      if (!active) {
+        lines.push('No active countdown.');
+      } else {
+        lines.push('Mission  : ' + active.name);
+        lines.push('Vehicle  : ' + active.vehicle);
+        lines.push('Status   : ' + active.countdownLabel);
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission launchlog': function() {
+      var log = _getLaunchLog();
+      var lines = ['─── LAUNCH EVENT LOG ─────────────────────'];
+      if (!log.length) {
+        lines.push('No launch events recorded.');
+      } else {
+        log.forEach(function(e) {
+          lines.push('[' + e.time + '] ' + e.msg);
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    }
+
+    // ── FUTURE COMMAND STUBS — add here without modifying above ──
+    // 'mission rover':      function() { ... },
+    // 'mission track':      function() { ... },
+    // 'mission groundstation': function() { ... },
+  };
+
+  // ── Command router ───────────────────────────────────────────
+  function _route(raw) {
+    var cmd = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    // Exact match
+    if (_HANDLERS[cmd]) return _HANDLERS[cmd]();
+
+    // "mission asset <id>" — parameterized lookup against the
+    // centralized spacecraft registry (Module 4.92)
+    var assetMatch = cmd.match(/^mission asset\s+(.+)$/);
+    if (assetMatch) {
+      var assetId = assetMatch[1].trim().toUpperCase();
+      var asset   = _getAsset(assetId);
+      if (!asset) {
+        return [
+          '⚠ Unknown asset: "' + assetMatch[1].trim() + '"',
+          'Type "mission satellites" for tracked assets.'
+        ].join('\n');
+      }
+      var t = asset.telemetry;
+      return [
+        '─── ASSET DETAIL ─────────────────────────',
+        'Name      : ' + asset.name,
+        'Type      : ' + asset.type,
+        'Status    : ' + asset.status,
+        'Health    : ' + asset.health,
+        'Altitude  : ' + t.altitude.toFixed(1) + ' KM',
+        'Velocity  : ' + t.velocity.toFixed(2) + ' KM/S',
+        'Signal    : ' + Math.round(t.signal) + '%',
+        '──────────────────────────────────────────'
+      ].join('\n');
+    }
+
+    // "mission details <mission>" — full mission info, cross-referenced
+    // with live asset telemetry/health (Module 4.92)
+    var detailsMatch = cmd.match(/^mission details\s+(.+)$/);
+    if (detailsMatch) {
+      var detailsId = detailsMatch[1].trim().toUpperCase();
+      var mission   = _getMission(detailsId);
+      if (!mission) {
+        return [
+          '⚠ Unknown mission: "' + detailsMatch[1].trim() + '"',
+          'Type "mission list" for registered missions.'
+        ].join('\n');
+      }
+      var lines = [
+        '─── MISSION DETAILS ──────────────────────',
+        'Mission   : ' + mission.name,
+        'Type      : ' + mission.type,
+        'Status    : ' + mission.status,
+        'Priority  : ' + mission.priority,
+        'Launch    : ' + mission.launchDate,
+        'Vehicle   : ' + mission.vehicle,
+        'Objective : ' + mission.objective
+      ];
+      var liveAsset = (window._deepspaceMissions && typeof window._deepspaceMissions.getAssetData === 'function')
+        ? window._deepspaceMissions.getAssetData(mission.name)
+        : null;
+      if (liveAsset) {
+        var lt = liveAsset.telemetry;
+        lines.push('');
+        lines.push('Live Telemetry:');
+        lines.push('  Altitude : ' + lt.altitude.toFixed(1) + ' KM');
+        lines.push('  Velocity : ' + lt.velocity.toFixed(2) + ' KM/S');
+        lines.push('  Signal   : ' + Math.round(lt.signal) + '%');
+        lines.push('  Health   : ' + liveAsset.health);
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    }
+
+    // "mission timeline <mission>" — chronological mission events
+    var timelineMatch = cmd.match(/^mission timeline\s+(.+)$/);
+    if (timelineMatch) {
+      var timelineId = timelineMatch[1].trim().toUpperCase();
+      var tMission   = _getMission(timelineId);
+      if (!tMission) {
+        return [
+          '⚠ Unknown mission: "' + timelineMatch[1].trim() + '"',
+          'Type "mission list" for registered missions.'
+        ].join('\n');
+      }
+      var tLines = ['─── ' + tMission.name + ' TIMELINE ───────────────'];
+      tMission.timeline.forEach(function(ev) {
+        var marker = (ev.status === 'pending') ? '○' : '●';
+        var time   = (ev.status === 'pending') ? 'PENDING' : ev.time;
+        tLines.push(marker + ' ' + ev.label.padEnd(28, ' ') + time);
+      });
+      tLines.push('──────────────────────────────────────────');
+      return tLines.join('\n');
+    }
+
+    // Prefix "mission" with unrecognised subcommand
+    if (/^mission\b/.test(cmd)) {
+      var sub = cmd.replace(/^mission\s*/, '') || '(none)';
+      return [
+        '⚠ Unknown mission command: "' + sub + '"',
+        'Type "mission help" for available commands.'
+      ].join('\n');
+    }
+
+    return null; // not a mission command — pass through
+  }
+
+  // ── Patch _jarvisProcessInternal ─────────────────────────────
+  function _installPatch() {
+    var _origJarvis = window._jarvisProcessInternal;
+    if (typeof _origJarvis !== 'function') return false;
+
+    // Re-entrant guard: if we already wrapped THIS exact function, skip
+    if (_origJarvis._missionCommandPatched) return true;
+
+    window._jarvisProcessInternal = function missionAwareJarvis(rawInput) {
+      var result = _route(rawInput);
+      if (result !== null) {
+        _out(result);
+        return result;
+      }
+      return _origJarvis(rawInput);
+    };
+    window._jarvisProcessInternal._missionCommandPatched = true;
+
+    // Mirror on executeCommand for terminal input path
+    var _origExec = window.executeCommand;
+    if (typeof _origExec === 'function' && !_origExec._missionCommandPatched) {
+      window.executeCommand = function missionAwareExecuteCommand(rawInput) {
+        if (!rawInput) return _origExec(rawInput);
+        var result = _route(rawInput);
+        if (result !== null) {
+          _out(result);
+          return result;
+        }
+        return _origExec(rawInput);
+      };
+      // Carry forward all existing patch flags
+      window.executeCommand._missionCommandPatched = true;
+      window.executeCommand._personalityPatched    = typeof _origExec._personalityPatched    !== 'undefined' ? _origExec._personalityPatched    : true;
+      window.executeCommand._sessionPatched        = typeof _origExec._sessionPatched        !== 'undefined' ? _origExec._sessionPatched        : true;
+      window.executeCommand._helpPatched           = typeof _origExec._helpPatched           !== 'undefined' ? _origExec._helpPatched           : true;
+      window.executeCommand._confidencePatched     = typeof _origExec._confidencePatched     !== 'undefined' ? _origExec._confidencePatched     : true;
+    }
+
+    // ── FIX: also patch window.jarvisProcess directly. Module U8's
+    // pipeline redefines window.jarvisProcess to call
+    // window._jarvisProcessInternal — but if U8's boot runs AFTER this
+    // patch, it overwrites _jarvisProcessInternal again, silently
+    // dropping mission-command routing. Wrapping jarvisProcess too
+    // gives a second, race-proof entry point for the terminal's
+    // Enter-key handler (which calls window.jarvisProcess directly).
+    var _origJP = window.jarvisProcess;
+    if (typeof _origJP === 'function' && !_origJP._missionCommandPatched) {
+      window.jarvisProcess = function missionAwareJarvisProcess(rawInput) {
+        if (!rawInput || !rawInput.trim()) return _origJP(rawInput);
+        var result = _route(rawInput);
+        if (result !== null) {
+          _out(result);
+          return result;
+        }
+        return _origJP(rawInput);
+      };
+      window.jarvisProcess._missionCommandPatched = true;
+    }
+
+    console.log('[AtulOS 4.91] Mission Command Terminal installed. Commands: mission status|telemetry|orbit|comms|log|satellites|asset|network|ops|list|details|timeline|launch|readiness|countdown|launchlog|help');
+    return true;
+  }
+
+  // ── Deferred install — wait for all prior IIFEs to patch chain ─
+  // FIX: retry on a recurring schedule (not just once). If a
+  // later-booting module (e.g. the U8 Advanced Intent Pipeline, which
+  // boots on DOMContentLoaded+50ms) replaces window._jarvisProcessInternal
+  // / window.jarvisProcess AFTER our first install, this re-wraps the
+  // new versions. _installPatch is idempotent per-function reference
+  // via the _missionCommandPatched flag, so re-running on an
+  // already-wrapped chain is a safe no-op.
+  function _installWithRetries(attemptsLeft) {
+    _installPatch();
+    if (attemptsLeft > 0) {
+      setTimeout(function() { _installWithRetries(attemptsLeft - 1); }, 150);
+    }
+  }
+  setTimeout(function() { _installWithRetries(6); }, 100);
+
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.91 — DEEPSPACE MISSION COMMAND TERMINAL
 ════════════════════════════════════════════════════════════════ -->
 </body>
 </html>
