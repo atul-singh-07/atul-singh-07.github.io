@@ -3303,6 +3303,344 @@ body {
   .ds-readiness-grid { grid-template-columns: 1fr; }
 }
 
+/* ── Rover Operations Console — Module 4.95 ── */
+.ds-rover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .ds-rover-grid { grid-template-columns: 1fr; }
+}
+
+/* Rover selector list */
+.ds-rover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ds-rover-card {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ds-rover-card:hover {
+  border-color: var(--accent);
+  background: rgba(99,168,255,0.04);
+}
+.ds-rover-card.selected {
+  border-color: var(--accent);
+  background: rgba(99,168,255,0.06);
+}
+.ds-rover-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ds-rover-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+.ds-rover-location {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-rover-mstatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.ds-rover-mstatus.active    { color: #28c840; border: 1px solid rgba(40,200,64,0.3);  background: rgba(40,200,64,0.08); }
+.ds-rover-mstatus.standby   { color: #ffb347; border: 1px solid rgba(255,179,71,0.3); background: rgba(255,179,71,0.08); }
+.ds-rover-mstatus.traverse  { color: #63a8ff; border: 1px solid rgba(99,168,255,0.3); background: rgba(99,168,255,0.08); }
+.ds-rover-mstatus.offline   { color: #8a8f99; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+
+/* Rover detail */
+.ds-rover-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ds-rover-section-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.ds-rover-status-grid,
+.ds-rover-sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.ds-rover-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+}
+.ds-rover-stat-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-rover-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.ds-rover-stat-value.health-nominal  { color: #28c840; }
+.ds-rover-stat-value.health-degraded { color: #ffb347; }
+.ds-rover-stat-value.health-critical { color: #ff5f57; }
+
+/* Movement readout */
+.ds-rover-movement {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ds-rover-movement-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 5px;
+  background: rgba(255,255,255,0.02);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--fg);
+}
+.ds-rover-movement-item .lbl {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Objective */
+.ds-rover-objective {
+  padding: 8px 10px;
+  border: 1px solid rgba(99,168,255,0.15);
+  border-radius: 6px;
+  background: rgba(99,168,255,0.04);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--fg);
+}
+
+/* Event log */
+.ds-roverlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.ds-roverlog-item {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.ds-roverlog-item:last-child { border-bottom: none; }
+.ds-roverlog-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ds-roverlog-msg { color: var(--fg); }
+@media (max-width: 700px) {
+  .ds-rover-status-grid,
+  .ds-rover-sensor-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Ground Station Network — Module 4.96 ── */
+.ds-gsn-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .ds-gsn-grid { grid-template-columns: 1fr; }
+}
+
+/* Station cards */
+.ds-gsn-stations {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+}
+.ds-gsn-card {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ds-gsn-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ds-gsn-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+.ds-gsn-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.ds-gsn-status.online      { color: #28c840; border: 1px solid rgba(40,200,64,0.3);  background: rgba(40,200,64,0.08); }
+.ds-gsn-status.tracking    { color: #63a8ff; border: 1px solid rgba(99,168,255,0.3); background: rgba(99,168,255,0.08); }
+.ds-gsn-status.maintenance { color: #ffb347; border: 1px solid rgba(255,179,71,0.3); background: rgba(255,179,71,0.08); }
+.ds-gsn-status.offline     { color: #8a8f99; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+.ds-gsn-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.ds-gsn-meta-label {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.ds-gsn-meta-value {
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.ds-gsn-assets {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* Network health */
+.ds-gsn-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ds-gsn-health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.ds-gsn-health-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+}
+.ds-gsn-health-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-gsn-health-value {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Asset links */
+.ds-gsn-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ds-gsn-link-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(99,168,255,0.12);
+  border-radius: 5px;
+  background: rgba(99,168,255,0.03);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--fg);
+  text-align: center;
+}
+.ds-gsn-link-item .arrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Comm event log */
+.ds-gsnlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.ds-gsnlog-item {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.ds-gsnlog-item:last-child { border-bottom: none; }
+.ds-gsnlog-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ds-gsnlog-msg { color: var(--fg); }
+@media (max-width: 700px) {
+  .ds-gsn-health-grid { grid-template-columns: 1fr; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 700px) {
   .ds-row-2 { grid-template-columns: 1fr; }
@@ -3310,6 +3648,389 @@ body {
   .ds-clock-value { font-size: 18px; }
   #ds-log-body { max-height: 140px; }
   .ds-orbital-wrap { padding-bottom: 60%; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DEEPSPACE COMMAND CENTER EXPERIENCE — VISUAL ARCHITECTURE UPGRADE
+   Phases 1-7: Ribbon · Orbital Core · Live Links · Ticker · Depth · Focus
+════════════════════════════════════════════════════════════════ */
+
+/* ── PHASE 1: Mission Status Ribbon ── */
+#ds-command-ribbon {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 18px;
+  background: rgba(0,0,0,0.45);
+  border-bottom: 1px solid rgba(99,168,255,0.12);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#ds-command-ribbon::-webkit-scrollbar { display: none; }
+
+.ds-ribbon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 20px 8px 0;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  margin-right: 20px;
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.ds-ribbon-cell:last-child {
+  border-right: none;
+  margin-right: 0;
+}
+.ds-ribbon-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.7);
+  white-space: nowrap;
+}
+.ds-ribbon-value {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: color 0.4s ease;
+}
+.ds-ribbon-value.nominal  { color: #28c840; }
+.ds-ribbon-value.warning  { color: #ffb347; }
+.ds-ribbon-value.critical { color: #ff5f57; }
+.ds-ribbon-value.accent   { color: var(--accent); }
+
+/* Heartbeat dot on MISSION HEALTH */
+.ds-ribbon-heartbeat {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #28c840;
+  margin-right: 5px;
+  vertical-align: middle;
+  animation: ds-hb 2.4s ease-in-out infinite;
+}
+@keyframes ds-hb {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(0.75); }
+}
+
+/* ── PHASE 2: Orbital Command Core — enlarged + featured ── */
+#ds-orbital-panel {
+  border-color: rgba(99,168,255,0.2);
+  box-shadow: 0 0 0 1px rgba(99,168,255,0.06) inset, 0 8px 32px rgba(0,0,0,0.4);
+}
+.ds-orbital-command-wrap {
+  position: relative;
+  width: 100%;
+  padding-bottom: 52%;  /* Taller for centerpiece: ~16:8 */
+  background: #000;
+  overflow: hidden;
+}
+.ds-orbital-command-label {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+.ds-orbital-command-wrap #ds-orbital-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── PHASE 3: Live Link Visualization ── */
+#ds-live-links-panel {
+  border-color: rgba(99,168,255,0.1);
+}
+.ds-links-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+.ds-link-chain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(99,168,255,0.1);
+  border-radius: 7px;
+  background: rgba(99,168,255,0.03);
+  min-width: 110px;
+}
+.ds-link-node {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: rgba(99,168,255,0.08);
+  border: 1px solid rgba(99,168,255,0.15);
+  white-space: nowrap;
+}
+.ds-link-node.ground { color: #28c840; background: rgba(40,200,64,0.06); border-color: rgba(40,200,64,0.15); }
+.ds-link-node.rover  { color: #ffb347; background: rgba(255,179,71,0.06); border-color: rgba(255,179,71,0.15); }
+
+/* Animated signal flow connector */
+.ds-link-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  position: relative;
+  height: 28px;
+  width: 2px;
+  overflow: visible;
+}
+.ds-link-line {
+  width: 1px;
+  flex: 1;
+  background: linear-gradient(to bottom,
+    rgba(99,168,255,0.5),
+    rgba(99,168,255,0.1));
+  position: relative;
+}
+.ds-link-pulse {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  left: 50%;
+  transform: translateX(-50%);
+  animation: ds-link-flow 2s ease-in-out infinite;
+  box-shadow: 0 0 4px rgba(99,168,255,0.8);
+}
+.ds-link-pulse.down { animation-name: ds-link-flow-down; }
+.ds-link-pulse.up   { animation-name: ds-link-flow-up; animation-delay: 1s; }
+.ds-link-pulse.ground { background: #28c840; box-shadow: 0 0 4px rgba(40,200,64,0.8); }
+
+@keyframes ds-link-flow-down {
+  0%   { top: 0;    opacity: 0; }
+  10%  {            opacity: 1; }
+  90%  {            opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes ds-link-flow-up {
+  0%   { top: 100%; opacity: 0; }
+  10%  {            opacity: 1; }
+  90%  {            opacity: 1; }
+  100% { top: 0;    opacity: 0; }
+}
+
+.ds-link-status {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(40,200,64,0.7);
+  margin-top: 6px;
+}
+.ds-link-status.degraded { color: rgba(255,179,71,0.7); }
+.ds-link-status.offline  { color: rgba(255,255,255,0.2); }
+
+/* ── PHASE 4: Telemetry Ticker ── */
+#ds-telemetry-ticker {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: rgba(0,0,0,0.35);
+  border-top: 1px solid rgba(99,168,255,0.08);
+  flex-shrink: 0;
+  overflow: hidden;
+  height: 28px;
+}
+.ds-ticker-label {
+  flex-shrink: 0;
+  padding: 0 12px;
+  font-size: 8px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-right: 1px solid rgba(99,168,255,0.15);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: rgba(99,168,255,0.05);
+  white-space: nowrap;
+}
+.ds-ticker-track {
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+  position: relative;
+}
+.ds-ticker-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ds-ticker-scroll 60s linear infinite;
+}
+.ds-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 28px 0 0;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-ticker-item::before {
+  content: '◆';
+  font-size: 5px;
+  color: rgba(99,168,255,0.4);
+  flex-shrink: 0;
+}
+.ds-ticker-item.nominal::before  { color: rgba(40,200,64,0.5); }
+.ds-ticker-item.warning::before  { color: rgba(255,179,71,0.5); }
+.ds-ticker-item.critical::before { color: rgba(255,95,87,0.5); }
+@keyframes ds-ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ds-ticker-inner:hover { animation-play-state: paused; }
+
+/* ── PHASE 5: Contextual panels — shared status thread ── */
+.ds-panel-status-thread {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  background: rgba(99,168,255,0.02);
+  flex-shrink: 0;
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.ds-thread-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #28c840;
+  flex-shrink: 0;
+}
+.ds-thread-dot.warn { background: #ffb347; }
+.ds-thread-dot.err  { background: #ff5f57; }
+.ds-thread-label { color: rgba(154,169,187,0.6); }
+.ds-thread-value { color: rgba(99,168,255,0.7); }
+
+/* ── PHASE 6: Command Center Depth ── */
+
+/* Glass layering — subtle inset glow on active panels */
+.ds-panel {
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.ds-panel.ds-panel-active {
+  border-color: rgba(99,168,255,0.3);
+  box-shadow: 0 0 0 1px rgba(99,168,255,0.06) inset,
+              0 4px 24px rgba(0,0,0,0.35);
+}
+
+/* Status illumination — panel header accent bar */
+.ds-panel-header {
+  position: relative;
+  overflow: hidden;
+}
+.ds-panel-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: transparent;
+  transition: background 0.4s ease;
+}
+.ds-panel.ds-panel-active .ds-panel-header::before {
+  background: rgba(99,168,255,0.4);
+}
+.ds-panel.ds-panel-focus-launch .ds-panel-header::before {
+  background: rgba(255,179,71,0.6);
+}
+.ds-panel.ds-panel-focus-rover .ds-panel-header::before {
+  background: rgba(40,200,64,0.5);
+}
+.ds-panel.ds-panel-focus-network .ds-panel-header::before {
+  background: rgba(255,95,87,0.5);
+}
+
+/* Data flow indicator on telemetry values */
+@keyframes ds-data-flow {
+  0%   { opacity: 0.3; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+.ds-data-value.ds-live-pulse {
+  animation: ds-data-flow 3s ease-in-out infinite;
+}
+
+/* ── PHASE 7: Intelligent Focus ── */
+.ds-panel.ds-panel-dim {
+  opacity: 0.55;
+  filter: saturate(0.6);
+  transition: opacity 0.5s ease, filter 0.5s ease;
+}
+.ds-panel.ds-panel-dim:hover {
+  opacity: 0.85;
+  filter: saturate(0.85);
+}
+.ds-panel.ds-focus-active {
+  opacity: 1;
+  filter: none;
+  border-color: rgba(255,179,71,0.35);
+  box-shadow: 0 0 20px rgba(255,179,71,0.06), 0 0 0 1px rgba(255,179,71,0.08) inset;
+  transition: all 0.5s ease;
+}
+.ds-panel.ds-focus-rover {
+  border-color: rgba(40,200,64,0.3);
+  box-shadow: 0 0 20px rgba(40,200,64,0.05), 0 0 0 1px rgba(40,200,64,0.06) inset;
+}
+.ds-panel.ds-focus-network {
+  border-color: rgba(255,95,87,0.3);
+  box-shadow: 0 0 20px rgba(255,95,87,0.05), 0 0 0 1px rgba(255,95,87,0.06) inset;
+}
+
+/* Focus transition for orbital core — always prominent */
+#ds-orbital-panel {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Topbar upgrade — more command center authority */
+#ds-topbar {
+  background: rgba(0,0,0,0.5);
+  border-bottom: 1px solid rgba(99,168,255,0.15);
+}
+.ds-topbar-title {
+  font-size: 12px;
+  letter-spacing: 4px;
+}
+
+@media (max-width: 700px) {
+  #ds-command-ribbon { gap: 0; padding: 0 10px; }
+  .ds-ribbon-cell { min-width: 75px; padding: 7px 14px 7px 0; }
+  .ds-ribbon-value { font-size: 11px; }
+  .ds-links-grid { gap: 8px; }
 }
 
 /* ── EDEX BOOT SCREEN ── */
@@ -4313,6 +5034,36 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 
+  <!-- ── PHASE 1: Mission Status Ribbon ── -->
+  <div id="ds-command-ribbon" role="status" aria-label="Mission command ribbon">
+    <div class="ds-ribbon-cell">
+      <span class="ds-ribbon-label">Mission Health</span>
+      <span class="ds-ribbon-value nominal" id="ds-ribbon-health">
+        <span class="ds-ribbon-heartbeat"></span>NOMINAL
+      </span>
+    </div>
+    <div class="ds-ribbon-cell">
+      <span class="ds-ribbon-label">Active Missions</span>
+      <span class="ds-ribbon-value accent" id="ds-ribbon-missions">—</span>
+    </div>
+    <div class="ds-ribbon-cell">
+      <span class="ds-ribbon-label">Active Assets</span>
+      <span class="ds-ribbon-value accent" id="ds-ribbon-assets">—</span>
+    </div>
+    <div class="ds-ribbon-cell">
+      <span class="ds-ribbon-label">Online Stations</span>
+      <span class="ds-ribbon-value nominal" id="ds-ribbon-stations">—</span>
+    </div>
+    <div class="ds-ribbon-cell">
+      <span class="ds-ribbon-label">Active Rovers</span>
+      <span class="ds-ribbon-value accent" id="ds-ribbon-rovers">—</span>
+    </div>
+    <div class="ds-ribbon-cell">
+      <span class="ds-ribbon-label">Network Status</span>
+      <span class="ds-ribbon-value nominal" id="ds-ribbon-network">ONLINE</span>
+    </div>
+  </div>
+
   <!-- ── Dashboard Scroll Area ── -->
   <div id="ds-dashboard">
 
@@ -4456,19 +5207,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </div><!-- /ROW 3 -->
 
-    <!-- ROW 4: Orbital Visualization -->
+    <!-- ROW 4: Orbital Command Core — PHASE 2 CENTERPIECE -->
     <div class="ds-row ds-row-1">
 
-      <!-- Panel 6: Orbital Visualization -->
-      <div class="ds-panel" id="ds-orbital-panel">
+      <!-- Panel 6: Orbital Command Core -->
+      <div class="ds-panel ds-panel-active" id="ds-orbital-panel">
         <div class="ds-panel-header">
-          <span class="ds-panel-title">Orbital Visualization</span>
           <div style="display:flex;align-items:center;gap:10px;">
+            <span class="ds-panel-title">◎ Orbital Command Core</span>
             <span class="ds-panel-badge nominal" id="ds-orbit-status">TRACKING</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
             <span class="ds-panel-badge" id="ds-orbit-fps"></span>
+            <span class="ds-panel-badge" id="ds-orbit-sat-count" style="color:var(--accent);"></span>
           </div>
         </div>
-        <div class="ds-orbital-wrap">
+        <!-- Phase 5: status thread -->
+        <div class="ds-panel-status-thread">
+          <span class="ds-thread-dot"></span>
+          <span class="ds-thread-label">ACTIVE LINK ·</span>
+          <span class="ds-thread-value" id="ds-orb-link-label">BANGALORE-01 → ATULSAT-1</span>
+        </div>
+        <div class="ds-orbital-command-wrap">
+          <span class="ds-orbital-command-label">ORBITAL DISPLAY — LIVE</span>
           <canvas id="ds-orbital-canvas" aria-label="Orbital visualization — ATULSAT-1 orbit around Earth"></canvas>
           <!-- Telemetry overlay -->
           <div class="ds-orb-overlay">
@@ -4489,6 +5250,21 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
 
     </div><!-- /ROW 4 -->
+
+    <!-- ROW 4b: Live Link Visualization — PHASE 3 -->
+    <div class="ds-row ds-row-1">
+      <div class="ds-panel" id="ds-live-links-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Live Communication Links</span>
+          <span class="ds-panel-badge nominal" id="ds-links-status">ACTIVE</span>
+        </div>
+        <div class="ds-panel-body" style="padding:12px 14px;">
+          <div class="ds-links-grid" id="ds-links-grid">
+            <!-- Link chains populated by Phase 3 JS -->
+          </div>
+        </div>
+      </div>
+    </div><!-- /ROW 4b -->
 
     <!-- ROW 5: Active Assets — Module 4.92 Multi-Satellite Tracking -->
     <div class="ds-row ds-row-1">
@@ -4605,9 +5381,154 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </div><!-- /ROW 8 -->
 
+    <!-- ROW 9: Rover Operations Console — Module 4.95 -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 11: Rover Operations -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Rover Operations</span>
+          <span class="ds-panel-badge nominal" id="ds-rovers-count">0 ROVERS</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-rover-grid">
+
+            <!-- Rover Selector -->
+            <div>
+              <div class="ds-mission-timeline-title" style="margin-bottom:8px;">ACTIVE ROVERS</div>
+              <div class="ds-rover-list" id="ds-rover-list" role="list" aria-label="Tracked rovers">
+                <!-- Rover cards populated by Module 4.95 -->
+              </div>
+            </div>
+
+            <!-- Rover Detail -->
+            <div class="ds-rover-detail">
+              <div>
+                <div class="ds-rover-section-title" id="ds-rover-detail-title">ROVER STATUS</div>
+                <div class="ds-rover-status-grid" id="ds-rover-status">
+                  <!-- Status cells populated by Module 4.95 -->
+                </div>
+              </div>
+
+              <div>
+                <div class="ds-rover-section-title">MOVEMENT STATUS</div>
+                <div class="ds-rover-movement" id="ds-rover-movement">
+                  <!-- Movement readout populated by Module 4.95 -->
+                </div>
+              </div>
+
+              <div>
+                <div class="ds-rover-section-title">ACTIVE OBJECTIVE</div>
+                <div class="ds-rover-objective" id="ds-rover-objective">
+                  Select a rover to view its current objective.
+                </div>
+              </div>
+
+              <div>
+                <div class="ds-rover-section-title">SENSOR PANEL</div>
+                <div class="ds-rover-sensor-grid" id="ds-rover-sensors">
+                  <!-- Sensor cells populated by Module 4.95 -->
+                </div>
+              </div>
+
+              <div>
+                <div class="ds-rover-section-title">ROVER EVENT LOG</div>
+                <div class="ds-roverlog-list" id="ds-roverlog" aria-label="Rover event log">
+                  <!-- Log entries populated by Module 4.95 -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 9 -->
+
+    <!-- ROW 10: Ground Station Network — Module 4.96 -->
+    <div class="ds-row ds-row-1">
+
+      <!-- Panel 12: Ground Station Network -->
+      <div class="ds-panel">
+        <div class="ds-panel-header">
+          <span class="ds-panel-title">Ground Station Network</span>
+          <span class="ds-panel-badge nominal" id="ds-gsn-status-badge">0 ONLINE</span>
+        </div>
+        <div class="ds-panel-body">
+          <div class="ds-gsn-grid">
+
+            <!-- Stations -->
+            <div>
+              <div class="ds-mission-timeline-title" style="margin-bottom:8px;">STATIONS</div>
+              <div class="ds-gsn-stations" id="ds-gsn-stations" role="list" aria-label="Ground stations">
+                <!-- Station cards populated by Module 4.96 -->
+              </div>
+            </div>
+
+            <!-- Network Health / Links / Comm Log -->
+            <div class="ds-gsn-side">
+              <div>
+                <div class="ds-mission-timeline-title" style="margin-bottom:8px;">NETWORK HEALTH</div>
+                <div class="ds-gsn-health-grid" id="ds-gsn-health">
+                  <!-- Health cells populated by Module 4.96 -->
+                </div>
+              </div>
+
+              <div>
+                <div class="ds-mission-timeline-title" style="margin-bottom:8px;">ACTIVE LINKS</div>
+                <div class="ds-gsn-links" id="ds-gsn-links" aria-label="Active asset links">
+                  <!-- Link items populated by Module 4.96 -->
+                </div>
+              </div>
+
+              <div>
+                <div class="ds-mission-timeline-title" style="margin-bottom:8px;">COMMUNICATION EVENTS</div>
+                <div class="ds-gsnlog-list" id="ds-gsnlog" aria-label="Communication event log">
+                  <!-- Log entries populated by Module 4.96 -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ROW 10 -->
+
   </div><!-- /#ds-dashboard -->
 
-  <div class="ds-version-tag">DEEPSPACE v2.0 — MODULE 4.90</div>
+  <!-- ── PHASE 4: Telemetry Ticker ── -->
+  <div id="ds-telemetry-ticker" aria-hidden="true">
+    <span class="ds-ticker-label">⬛ TELEMETRY</span>
+    <div class="ds-ticker-track">
+      <div class="ds-ticker-inner" id="ds-ticker-inner">
+        <!-- Seeded entries — JS will prepend live events -->
+        <span class="ds-ticker-item nominal">SIGNAL ACQUIRED — ATULSAT-1 UPLINK CONFIRMED</span>
+        <span class="ds-ticker-item nominal">TELEMETRY RECEIVED — ALL SYSTEMS NOMINAL</span>
+        <span class="ds-ticker-item">ORBITAL MECHANICS — TRAJECTORY WITHIN PARAMETERS</span>
+        <span class="ds-ticker-item nominal">GROUND STATION BANGALORE-01 — LINK ACTIVE</span>
+        <span class="ds-ticker-item">MISSION ELAPSED TIME — TRACKING</span>
+        <span class="ds-ticker-item nominal">NETWORK HEALTH — VERIFIED</span>
+        <span class="ds-ticker-item">ATULSAT-1 — ALTITUDE 412 KM · VELOCITY 7.68 KM/S</span>
+        <span class="ds-ticker-item nominal">PACKET SUCCESS RATE — 98.7%</span>
+        <span class="ds-ticker-item">POWER SUBSYSTEM — NOMINAL</span>
+        <span class="ds-ticker-item nominal">ATTITUDE CONTROL — STABLE</span>
+        <!-- Duplicate for seamless loop -->
+        <span class="ds-ticker-item nominal">SIGNAL ACQUIRED — ATULSAT-1 UPLINK CONFIRMED</span>
+        <span class="ds-ticker-item nominal">TELEMETRY RECEIVED — ALL SYSTEMS NOMINAL</span>
+        <span class="ds-ticker-item">ORBITAL MECHANICS — TRAJECTORY WITHIN PARAMETERS</span>
+        <span class="ds-ticker-item nominal">GROUND STATION BANGALORE-01 — LINK ACTIVE</span>
+        <span class="ds-ticker-item">MISSION ELAPSED TIME — TRACKING</span>
+        <span class="ds-ticker-item nominal">NETWORK HEALTH — VERIFIED</span>
+        <span class="ds-ticker-item">ATULSAT-1 — ALTITUDE 412 KM · VELOCITY 7.68 KM/S</span>
+        <span class="ds-ticker-item nominal">PACKET SUCCESS RATE — 98.7%</span>
+        <span class="ds-ticker-item">POWER SUBSYSTEM — NOMINAL</span>
+        <span class="ds-ticker-item nominal">ATTITUDE CONTROL — STABLE</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-version-tag">DEEPSPACE v2.1 — COMMAND CENTER EXPERIENCE</div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════
@@ -13890,8 +14811,8 @@ document.addEventListener('DOMContentLoaded', function () {
       var rect = wrap.getBoundingClientRect();
       var w    = Math.floor(rect.width);
       var h    = Math.floor(rect.height);
-      // Last-resort: derive height from padding-bottom ratio
-      if (h < 2 && w > 0) h = Math.floor(w * 0.375);
+      // Last-resort: derive height from padding-bottom ratio (ds-orbital-command-wrap = 52%)
+      if (h < 2 && w > 0) h = Math.floor(w * 0.52);
       if (w < 2 || h < 2) return;
       if (_canvas.width === w * dpr && _canvas.height === h * dpr) return; // no change
       _canvas.width        = w * dpr;
@@ -22122,6 +23043,821 @@ window.safeAppend = function safeAppend(parent, child) {
 ════════════════════════════════════════════════════════════════ -->
 
 <!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.95 — DEEPSPACE ROVER OPERATIONS CONSOLE
+     Centralized rover registry — single source of truth.
+     Exposes: window._deepspaceRovers
+     Drives: "Rover Operations" panel
+             (#ds-rover-list, #ds-rover-status, #ds-rover-movement,
+              #ds-rover-objective, #ds-rover-sensors, #ds-roverlog)
+             Mission Terminal commands
+             (mission rovers|rover <name>|roverlog|objectives)
+     Each rover is its own self-contained record (status, position,
+     health, sensors, movement, objectives, event history) — NO
+     duplicate telemetry/asset/mission systems. Rendering is mostly
+     event-driven (selection); ONE shared setInterval drives the
+     simulation tick, started/stopped via the same DeepSpace
+     lifecycle hooks as Modules 4.92/4.93/4.94 — no duplicate loops.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  function _el(id) { return document.getElementById(id); }
+
+  function _jitter(val, range, min, max) {
+    var delta = (Math.random() - 0.5) * range;
+    var next  = val + delta;
+    if (min !== undefined) next = Math.max(min, next);
+    if (max !== undefined) next = Math.min(max, next);
+    return Math.round(next * 10) / 10;
+  }
+
+  var _MISSION_STATUS_CLASS = {
+    ACTIVE:    'active',
+    STANDBY:   'standby',
+    TRAVERSE:  'traverse',
+    OFFLINE:   'offline'
+  };
+
+  // ── Centralized Rover Registry — single source of truth ─────────
+  // Shape: { name, location, missionStatus, health, position,
+  //          sensors:{temperature,pressure,battery,signal},
+  //          movement:{direction,speed,heading,navState},
+  //          objectives:[{label,status}], log:[{time,msg}] }
+  // Future fields (camera feed URL, GPS fix, ESP32 link state, real
+  // env sensors) extend this same shape — add fields, don't restructure.
+  var _rovers = [
+    {
+      name:          'ATULROVER-1',
+      location:      'Earth Test Site Alpha',
+      missionStatus: 'ACTIVE',
+      health:        'NOMINAL',
+      power:         87,
+      position:      { lat: 28.6139, lon: 77.2090 },
+      sensors:       { temperature: 24, pressure: 101.3, battery: 87, signal: 92 },
+      movement:      { direction: 'NORTH-EAST', speed: 0.42, heading: 47, navState: 'AUTONOMOUS' },
+      objectives: [
+        { label: 'Terrain Scan',      status: 'ACTIVE' },
+        { label: 'Signal Relay',      status: 'PENDING' },
+        { label: 'Sample Collection', status: 'PENDING' }
+      ],
+      log: []
+    },
+    {
+      name:          'MARS-SCOUT',
+      location:      'Jezero Crater Sim',
+      missionStatus: 'TRAVERSE',
+      health:        'NOMINAL',
+      power:         64,
+      position:      { lat: 18.4447, lon: 77.4508 },
+      sensors:       { temperature: -58, pressure: 0.6, battery: 64, signal: 71 },
+      movement:      { direction: 'SOUTH', speed: 0.18, heading: 182, navState: 'WAYPOINT FOLLOW' },
+      objectives: [
+        { label: 'Rock Analysis', status: 'ACTIVE' },
+        { label: 'Terrain Scan',  status: 'COMPLETE' }
+      ],
+      log: []
+    },
+    {
+      name:          'LUNAR-EXPLORER',
+      location:      'Shackleton Crater Rim Sim',
+      missionStatus: 'STANDBY',
+      health:        'DEGRADED',
+      power:         41,
+      position:      { lat: -89.9, lon: 0.0 },
+      sensors:       { temperature: -180, pressure: 0.0, battery: 41, signal: 38 },
+      movement:      { direction: 'HOLD', speed: 0.0, heading: 0, navState: 'STANDBY' },
+      objectives: [
+        { label: 'Signal Relay',      status: 'ACTIVE' },
+        { label: 'Sample Collection', status: 'PENDING' }
+      ],
+      log: []
+    }
+  ];
+
+  var _MAX_LOG = 20;
+  var _selectedRover = _rovers[0] ? _rovers[0].name : null;
+
+  function _nowTime() {
+    var d = new Date();
+    return d.toLocaleTimeString('en-US', { hour12: false });
+  }
+
+  function _appendLog(rover, msg) {
+    rover.log.unshift({ time: _nowTime(), msg: msg });
+    if (rover.log.length > _MAX_LOG) rover.log.length = _MAX_LOG;
+  }
+
+  function _findRover(name) {
+    var n = (name || '').trim().toUpperCase();
+    return _rovers.find(function(r) { return r.name.toUpperCase() === n; }) || null;
+  }
+
+  function _healthClass(health) {
+    if (health === 'NOMINAL')  return 'health-nominal';
+    if (health === 'DEGRADED') return 'health-degraded';
+    if (health === 'CRITICAL') return 'health-critical';
+    return '';
+  }
+
+  // ── Render Rover Selector list ───────────────────────────────
+  function _renderList() {
+    var list = _el('ds-rover-list');
+    if (!list) return;
+
+    list.innerHTML = _rovers.map(function(r) {
+      var statusClass = _MISSION_STATUS_CLASS[r.missionStatus] || 'standby';
+      var selected = (r.name === _selectedRover) ? ' selected' : '';
+      return '<div class="ds-rover-card' + selected + '" data-rover="' + r.name + '" ' +
+               'role="listitem" tabindex="0" aria-label="' + r.name + ' — ' + r.missionStatus + '">' +
+        '<div class="ds-rover-card-head">' +
+          '<span class="ds-rover-name">' + r.name + '</span>' +
+          '<span class="ds-rover-mstatus ' + statusClass + '">' + r.missionStatus + '</span>' +
+        '</div>' +
+        '<span class="ds-rover-location">' + r.location + '</span>' +
+      '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(list.querySelectorAll('.ds-rover-card'), function(card) {
+      card.addEventListener('click', function() {
+        _selectRover(card.getAttribute('data-rover'));
+      });
+      card.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          _selectRover(card.getAttribute('data-rover'));
+        }
+      });
+    });
+
+    var countEl = _el('ds-rovers-count');
+    if (countEl) {
+      var activeCount = _rovers.filter(function(r) { return r.missionStatus === 'ACTIVE' || r.missionStatus === 'TRAVERSE'; }).length;
+      countEl.textContent = _rovers.length + ' ROVERS · ' + activeCount + ' ACTIVE';
+    }
+  }
+
+  // ── Render Rover Status grid ─────────────────────────────────
+  function _renderStatus() {
+    var grid  = _el('ds-rover-status');
+    var title = _el('ds-rover-detail-title');
+    var rover = _findRover(_selectedRover);
+    if (!grid) return;
+
+    if (!rover) {
+      grid.innerHTML = '';
+      if (title) title.textContent = 'ROVER STATUS';
+      return;
+    }
+    if (title) title.textContent = rover.name + ' — ' + rover.location;
+
+    grid.innerHTML =
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Health</span>' +
+        '<span class="ds-rover-stat-value ' + _healthClass(rover.health) + '">' + rover.health + '</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Power</span>' +
+        '<span class="ds-rover-stat-value">' + rover.power.toFixed(0) + '%</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Signal</span>' +
+        '<span class="ds-rover-stat-value">' + rover.sensors.signal.toFixed(0) + '%</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Position</span>' +
+        '<span class="ds-rover-stat-value" style="font-size:11px;">' +
+          rover.position.lat.toFixed(4) + ', ' + rover.position.lon.toFixed(4) + '</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Temperature</span>' +
+        '<span class="ds-rover-stat-value">' + rover.sensors.temperature.toFixed(0) + '°C</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Mission Status</span>' +
+        '<span class="ds-rover-stat-value" style="font-size:11px;">' + rover.missionStatus + '</span></div>';
+  }
+
+  // ── Render Movement readout ──────────────────────────────────
+  function _renderMovement() {
+    var wrap = _el('ds-rover-movement');
+    var rover = _findRover(_selectedRover);
+    if (!wrap) return;
+    if (!rover) { wrap.innerHTML = ''; return; }
+
+    var m = rover.movement;
+    wrap.innerHTML =
+      '<div class="ds-rover-movement-item"><span class="lbl">Direction</span> ' + m.direction + '</div>' +
+      '<div class="ds-rover-movement-item"><span class="lbl">Speed</span> ' + m.speed.toFixed(2) + ' M/S</div>' +
+      '<div class="ds-rover-movement-item"><span class="lbl">Heading</span> ' + m.heading.toFixed(0) + '°</div>' +
+      '<div class="ds-rover-movement-item"><span class="lbl">Nav State</span> ' + m.navState + '</div>';
+  }
+
+  // ── Render Active Objective ──────────────────────────────────
+  function _renderObjective() {
+    var box = _el('ds-rover-objective');
+    var rover = _findRover(_selectedRover);
+    if (!box) return;
+    if (!rover) { box.textContent = 'Select a rover to view its current objective.'; return; }
+
+    var active = rover.objectives.find(function(o) { return o.status === 'ACTIVE'; });
+    if (!active) {
+      box.textContent = rover.name + ': No active objective. All tasks complete or pending.';
+    } else {
+      box.textContent = rover.name + ': ' + active.label + ' (in progress)';
+    }
+  }
+
+  // ── Render Sensor Panel ───────────────────────────────────────
+  function _renderSensors() {
+    var grid = _el('ds-rover-sensors');
+    var rover = _findRover(_selectedRover);
+    if (!grid) return;
+    if (!rover) { grid.innerHTML = ''; return; }
+
+    var s = rover.sensors;
+    grid.innerHTML =
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Temperature</span>' +
+        '<span class="ds-rover-stat-value">' + s.temperature.toFixed(1) + '°C</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Pressure</span>' +
+        '<span class="ds-rover-stat-value">' + s.pressure.toFixed(2) + ' kPa</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Battery</span>' +
+        '<span class="ds-rover-stat-value">' + s.battery.toFixed(0) + '%</span></div>' +
+      '<div class="ds-rover-stat"><span class="ds-rover-stat-label">Signal Strength</span>' +
+        '<span class="ds-rover-stat-value">' + s.signal.toFixed(0) + '%</span></div>';
+  }
+
+  // ── Render Rover Event Log ────────────────────────────────────
+  function _renderLog() {
+    var list = _el('ds-roverlog');
+    var rover = _findRover(_selectedRover);
+    if (!list) return;
+    if (!rover || !rover.log.length) {
+      list.innerHTML = '<div class="ds-roverlog-item"><span class="ds-roverlog-msg" style="color:var(--muted);">No events recorded.</span></div>';
+      return;
+    }
+    list.innerHTML = rover.log.map(function(e) {
+      return '<div class="ds-roverlog-item">' +
+        '<span class="ds-roverlog-time">[' + e.time + ']</span>' +
+        '<span class="ds-roverlog-msg">' + e.msg + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderDetail() {
+    _renderStatus();
+    _renderMovement();
+    _renderObjective();
+    _renderSensors();
+    _renderLog();
+  }
+
+  function _renderAll() {
+    _renderList();
+    _renderDetail();
+  }
+
+  function _selectRover(name) {
+    _selectedRover = name;
+    _renderList();
+    _renderDetail();
+  }
+
+  // ── Simulation tick — jitter sensors/movement for non-offline rovers ─
+  function _tick() {
+    _rovers.forEach(function(r) {
+      if (r.missionStatus === 'OFFLINE') return;
+
+      r.sensors.temperature = _jitter(r.sensors.temperature, 1.0, -200, 60);
+      r.sensors.pressure    = _jitter(r.sensors.pressure, 0.05, 0, 105);
+      r.sensors.signal      = _jitter(r.sensors.signal, 2, 20, 100);
+      r.power = Math.max(5, r.power - Math.random() * 0.3);
+      r.sensors.battery = r.power;
+
+      if (r.missionStatus === 'TRAVERSE') {
+        r.movement.heading = (r.movement.heading + _jitter(0, 4)) % 360;
+        if (r.movement.heading < 0) r.movement.heading += 360;
+        r.position.lat += (Math.random() - 0.5) * 0.0008;
+        r.position.lon += (Math.random() - 0.5) * 0.0008;
+        if (Math.random() < 0.15) _appendLog(r, 'Navigation Updated');
+      }
+      if (Math.random() < 0.08) _appendLog(r, 'Signal Stable');
+      if (Math.random() < 0.05) _appendLog(r, 'Power Nominal');
+    });
+
+    _renderList();
+    if (_selectedRover) _renderDetail();
+  }
+
+  // ── Lifecycle: single shared interval, tied to DeepSpace dashboard ─
+  var _timer = null;
+
+  function _start() {
+    if (_timer) return; // guard against duplicate loops
+    _renderAll();
+    _timer = setInterval(_tick, 5000); // matches 4.92/4.93/4.94 cadence
+  }
+
+  function _stop() {
+    if (_timer) { clearInterval(_timer); _timer = null; }
+  }
+
+  function _hookLifecycle() {
+    var dash = window._deepspaceDashboard;
+    if (dash && !dash._roversHooked) {
+      var _origStart = dash.start;
+      var _origStop  = dash.stop;
+      dash.start = function() { _origStart.apply(this, arguments); _start(); };
+      dash.stop  = function() { _origStop.apply(this, arguments);  _stop();  };
+      dash._roversHooked = true;
+    }
+
+    var _prevEnter = window.switchToDeepSpaceMode;
+    if (_prevEnter && !_prevEnter._roversPatched) {
+      window.switchToDeepSpaceMode = function() {
+        _prevEnter.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._roversPatched = true;
+    }
+    ['switchToOSMode', 'switchToClassicMode'].forEach(function(fnName) {
+      var orig = window[fnName];
+      if (!orig || orig._roversExitPatched) return;
+      window[fnName] = function() {
+        _stop();
+        return orig.apply(this, arguments);
+      };
+      window[fnName]._roversExitPatched = true;
+    });
+  }
+
+  setTimeout(_hookLifecycle, 0);
+
+  // If DeepSpace is already active when this module loads, start now.
+  setTimeout(function() {
+    var ds = document.getElementById('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) _start();
+  }, 50);
+
+  // Seed initial log entries
+  _rovers.forEach(function(r) {
+    _appendLog(r, 'Rover Operations Console online.');
+    if (r.objectives.length) {
+      var active = r.objectives.find(function(o) { return o.status === 'ACTIVE'; });
+      if (active) _appendLog(r, 'Sample Collection Started'.indexOf(active.label) >= 0
+        ? 'Sample Collection Started'
+        : active.label + ' in progress');
+    }
+  });
+
+  // ── Public API — single source of truth for future modules ──────
+  window._deepspaceRovers = {
+    list: function() {
+      return _rovers.map(function(r) {
+        return {
+          name: r.name, location: r.location, missionStatus: r.missionStatus,
+          health: r.health, power: r.power,
+          position: Object.assign({}, r.position),
+          sensors: Object.assign({}, r.sensors),
+          movement: Object.assign({}, r.movement),
+          objectives: r.objectives.map(function(o) { return Object.assign({}, o); }),
+          log: r.log.map(function(e) { return Object.assign({}, e); })
+        };
+      });
+    },
+    get: function(name) {
+      var r = _findRover(name);
+      if (!r) return null;
+      return {
+        name: r.name, location: r.location, missionStatus: r.missionStatus,
+        health: r.health, power: r.power,
+        position: Object.assign({}, r.position),
+        sensors: Object.assign({}, r.sensors),
+        movement: Object.assign({}, r.movement),
+        objectives: r.objectives.map(function(o) { return Object.assign({}, o); }),
+        log: r.log.map(function(e) { return Object.assign({}, e); })
+      };
+    },
+    getLog: function(name) {
+      var r = _findRover(name);
+      if (!r) return [];
+      return r.log.map(function(e) { return Object.assign({}, e); });
+    },
+    getObjectives: function() {
+      return _rovers.map(function(r) {
+        return {
+          name: r.name,
+          objectives: r.objectives.map(function(o) { return Object.assign({}, o); })
+        };
+      });
+    },
+    setMissionStatus: function(name, status) {
+      var r = _findRover(name);
+      if (!r || !_MISSION_STATUS_CLASS.hasOwnProperty(status)) return false;
+      r.missionStatus = status;
+      _renderList();
+      if (_selectedRover === r.name) _renderDetail();
+      return true;
+    },
+    // Future: register new rovers (ESP32 hardware, camera-equipped,
+    // GPS-tracked) without restructuring this module — same shape.
+    register: function(rover) {
+      if (!rover || !rover.name) return false;
+      if (!rover.objectives) rover.objectives = [];
+      if (!rover.log) rover.log = [];
+      _rovers.push(rover);
+      _renderList();
+      return true;
+    },
+    select: _selectRover,
+    log:    _appendLog,
+    start:  _start,
+    stop:   _stop,
+    render: _renderAll
+  };
+
+  console.log('[AtulOS 4.95] Rover Operations Console installed. Rovers: ' + _rovers.map(function(r){return r.name;}).join(', '));
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.95 — DEEPSPACE ROVER OPERATIONS CONSOLE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.96 — DEEPSPACE GROUND STATION NETWORK
+     Centralized ground station registry — single source of truth.
+     Exposes: window._deepspaceStations
+     Drives: "Ground Station Network" panel
+             (#ds-gsn-stations, #ds-gsn-health, #ds-gsn-links,
+              #ds-gsnlog)
+             Mission Terminal commands
+             (mission stations|station <name>|links)
+             + extends existing "mission network" (Module 4.92)
+             with a Ground Station Network summary section.
+     Linked assets are cross-referenced by name into
+     window._deepspaceAssets (Module 4.92) — NO duplicate telemetry
+     system. ONE shared setInterval drives signal/latency/data-rate
+     simulation and comm-event log, started/stopped via the same
+     DeepSpace lifecycle hooks as Modules 4.92-4.95 — no duplicate
+     loops, cleaned up on mode exit.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  function _el(id) { return document.getElementById(id); }
+
+  function _jitter(val, range, min, max) {
+    var delta = (Math.random() - 0.5) * range;
+    var next  = val + delta;
+    if (min !== undefined) next = Math.max(min, next);
+    if (max !== undefined) next = Math.min(max, next);
+    return Math.round(next * 10) / 10;
+  }
+
+  var _STATUS_CLASS = {
+    ONLINE:      'online',
+    OFFLINE:     'offline',
+    MAINTENANCE: 'maintenance',
+    TRACKING:    'tracking'
+  };
+
+  // ── Centralized Station Registry — single source of truth ───────
+  // Shape: { name, status, signal, linkedAssets:[assetName,...],
+  //          latency (ms), dataRate (Mbps), log:[{time,msg}] }
+  // Future fields (ESP32/LoRa/SDR link state, antenna az/el, real
+  // ground-station API endpoints) extend this same shape — add
+  // fields, don't restructure.
+  var _stations = [
+    {
+      name:         'ATUL GS-DELHI',
+      status:       'ONLINE',
+      signal:       94,
+      linkedAssets: ['ATULSAT-1'],
+      latency:      42,
+      dataRate:     12.4,
+      log: []
+    },
+    {
+      name:         'ATUL GS-BENGALURU',
+      status:       'TRACKING',
+      signal:       88,
+      linkedAssets: ['ATULSAT-2', 'MANGALYAAN-X'],
+      latency:      55,
+      dataRate:     9.8,
+      log: []
+    },
+    {
+      name:         'ATUL GS-LUNAR RELAY',
+      status:       'MAINTENANCE',
+      signal:       41,
+      linkedAssets: ['CHANDRA-1'],
+      latency:      210,
+      dataRate:     2.1,
+      log: []
+    },
+    {
+      name:         'ATUL GS-DEEPSPACE',
+      status:       'ONLINE',
+      signal:       76,
+      linkedAssets: ['VOYAGER-SIM'],
+      latency:      890,
+      dataRate:     0.6,
+      log: []
+    }
+  ];
+
+  var _MAX_LOG = 20;
+
+  function _nowTime() {
+    var d = new Date();
+    return d.toLocaleTimeString('en-US', { hour12: false });
+  }
+
+  function _appendLog(station, msg) {
+    station.log.unshift({ time: _nowTime(), msg: msg });
+    if (station.log.length > _MAX_LOG) station.log.length = _MAX_LOG;
+    _renderLog();
+  }
+
+  function _findStation(name) {
+    var n = (name || '').trim().toUpperCase();
+    return _stations.find(function(s) { return s.name.toUpperCase() === n; }) || null;
+  }
+
+  // ── Render Station cards ─────────────────────────────────────
+  function _renderStations() {
+    var grid = _el('ds-gsn-stations');
+    if (!grid) return;
+
+    grid.innerHTML = _stations.map(function(s) {
+      var statusClass = _STATUS_CLASS[s.status] || 'offline';
+      var assetsLabel = s.linkedAssets.length ? s.linkedAssets.join(', ') : 'None';
+      return '<div class="ds-gsn-card" role="listitem" aria-label="' + s.name + ' — ' + s.status + '">' +
+        '<div class="ds-gsn-card-head">' +
+          '<span class="ds-gsn-name">' + s.name + '</span>' +
+          '<span class="ds-gsn-status ' + statusClass + '">' + s.status + '</span>' +
+        '</div>' +
+        '<div class="ds-gsn-meta">' +
+          '<div><span class="ds-gsn-meta-label">Signal</span><br><span class="ds-gsn-meta-value">' + s.signal.toFixed(0) + '%</span></div>' +
+          '<div><span class="ds-gsn-meta-label">Latency</span><br><span class="ds-gsn-meta-value">' + s.latency.toFixed(0) + ' ms</span></div>' +
+          '<div><span class="ds-gsn-meta-label">Data Rate</span><br><span class="ds-gsn-meta-value">' + s.dataRate.toFixed(1) + ' Mbps</span></div>' +
+          '<div><span class="ds-gsn-meta-label">Status</span><br><span class="ds-gsn-meta-value">' + s.status + '</span></div>' +
+        '</div>' +
+        '<span class="ds-gsn-assets">Connected: ' + assetsLabel + '</span>' +
+      '</div>';
+    }).join('');
+
+    var badge = _el('ds-gsn-status-badge');
+    if (badge) {
+      var onlineCount = _stations.filter(function(s) { return s.status === 'ONLINE' || s.status === 'TRACKING'; }).length;
+      badge.textContent = onlineCount + ' / ' + _stations.length + ' ONLINE';
+    }
+  }
+
+  // ── Render Network Health summary ────────────────────────────
+  function _renderHealth() {
+    var grid = _el('ds-gsn-health');
+    if (!grid) return;
+
+    var onlineCount = _stations.filter(function(s) { return s.status === 'ONLINE' || s.status === 'TRACKING'; }).length;
+    var activeLinks = _stations.reduce(function(sum, s) { return sum + s.linkedAssets.length; }, 0);
+    var totalSignal = _stations.reduce(function(sum, s) { return sum + s.signal; }, 0);
+    var avgSignal   = _stations.length ? Math.round(totalSignal / _stations.length) : 0;
+    var netStatus   = (onlineCount === _stations.length) ? 'NOMINAL' : (onlineCount === 0 ? 'CRITICAL' : 'DEGRADED');
+
+    grid.innerHTML =
+      '<div class="ds-gsn-health-item"><span class="ds-gsn-health-label">Total Stations</span>' +
+        '<span class="ds-gsn-health-value">' + _stations.length + '</span></div>' +
+      '<div class="ds-gsn-health-item"><span class="ds-gsn-health-label">Online Stations</span>' +
+        '<span class="ds-gsn-health-value">' + onlineCount + '</span></div>' +
+      '<div class="ds-gsn-health-item"><span class="ds-gsn-health-label">Active Links</span>' +
+        '<span class="ds-gsn-health-value">' + activeLinks + '</span></div>' +
+      '<div class="ds-gsn-health-item"><span class="ds-gsn-health-label">Avg Signal</span>' +
+        '<span class="ds-gsn-health-value">' + avgSignal + '%</span></div>' +
+      '<div class="ds-gsn-health-item" style="grid-column:1 / -1;"><span class="ds-gsn-health-label">Network Status</span>' +
+        '<span class="ds-gsn-health-value">' + netStatus + '</span></div>';
+  }
+
+  // ── Render Active Asset Links ────────────────────────────────
+  function _renderLinks() {
+    var wrap = _el('ds-gsn-links');
+    if (!wrap) return;
+
+    var items = [];
+    _stations.forEach(function(s) {
+      s.linkedAssets.forEach(function(assetName) {
+        items.push(
+          '<div class="ds-gsn-link-item">' +
+            '<span>' + s.name + '</span>' +
+            '<span class="arrow">&#8597;</span>' +
+            '<span>' + assetName + '</span>' +
+          '</div>'
+        );
+      });
+    });
+
+    wrap.innerHTML = items.length ? items.join('') :
+      '<div class="ds-gsn-link-item" style="color:var(--muted);">No active links.</div>';
+  }
+
+  // ── Render Communication Event Log ───────────────────────────
+  function _renderLog() {
+    var list = _el('ds-gsnlog');
+    if (!list) return;
+
+    var combined = [];
+    _stations.forEach(function(s) {
+      s.log.forEach(function(e) { combined.push({ time: e.time, msg: s.name + ': ' + e.msg, _t: e._t }); });
+    });
+    // Most-recent-first across all stations (log entries already unshifted
+    // per-station; merge by simple recency heuristic — newest first overall)
+    combined.sort(function(a, b) { return (b._t || 0) - (a._t || 0); });
+    combined = combined.slice(0, _MAX_LOG);
+
+    if (!combined.length) {
+      list.innerHTML = '<div class="ds-gsnlog-item"><span class="ds-gsnlog-msg" style="color:var(--muted);">No communication events recorded.</span></div>';
+      return;
+    }
+
+    list.innerHTML = combined.map(function(e) {
+      return '<div class="ds-gsnlog-item">' +
+        '<span class="ds-gsnlog-time">[' + e.time + ']</span>' +
+        '<span class="ds-gsnlog-msg">' + e.msg + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderAll() {
+    _renderStations();
+    _renderHealth();
+    _renderLinks();
+    _renderLog();
+  }
+
+  // ── Simulation tick — jitter signal/latency/data-rate, cross-ref
+  // live asset telemetry from Module 4.92 where available ──────────
+  function _tick() {
+    var ts = Date.now();
+    _stations.forEach(function(s) {
+      if (s.status === 'OFFLINE') return;
+
+      s.signal   = _jitter(s.signal, 2, 5, 100);
+      s.latency  = _jitter(s.latency, s.latency * 0.04, 1, 5000);
+      s.dataRate = _jitter(s.dataRate, s.dataRate * 0.05, 0, 50);
+
+      // Cross-reference linked asset signal (no duplicate telemetry —
+      // read-only blend with the ground station's own signal reading)
+      if (window._deepspaceAssets && typeof window._deepspaceAssets.get === 'function') {
+        s.linkedAssets.forEach(function(assetName) {
+          try {
+            var asset = window._deepspaceAssets.get(assetName);
+            if (asset && typeof asset.telemetry.signal === 'number') {
+              s.signal = Math.round((s.signal + asset.telemetry.signal) / 2);
+            }
+          } catch (e) { /* asset registry not ready */ }
+        });
+      }
+
+      if (Math.random() < 0.10) {
+        var events = ['Signal Acquired', 'Link Stabilized', 'Tracking Started', 'Tracking Complete', 'Asset Hand-off'];
+        var msg = events[Math.floor(Math.random() * events.length)];
+        s.log.unshift({ time: _nowTime(), msg: msg, _t: ts });
+        if (s.log.length > _MAX_LOG) s.log.length = _MAX_LOG;
+      }
+    });
+
+    _renderStations();
+    _renderHealth();
+    _renderLog();
+  }
+
+  // ── Lifecycle: single shared interval, tied to DeepSpace dashboard ─
+  var _timer = null;
+
+  function _start() {
+    if (_timer) return; // guard against duplicate loops
+    _renderAll();
+    _timer = setInterval(_tick, 5000); // matches 4.92-4.95 cadence
+  }
+
+  function _stop() {
+    if (_timer) { clearInterval(_timer); _timer = null; }
+  }
+
+  function _hookLifecycle() {
+    var dash = window._deepspaceDashboard;
+    if (dash && !dash._stationsHooked) {
+      var _origStart = dash.start;
+      var _origStop  = dash.stop;
+      dash.start = function() { _origStart.apply(this, arguments); _start(); };
+      dash.stop  = function() { _origStop.apply(this, arguments);  _stop();  };
+      dash._stationsHooked = true;
+    }
+
+    var _prevEnter = window.switchToDeepSpaceMode;
+    if (_prevEnter && !_prevEnter._stationsPatched) {
+      window.switchToDeepSpaceMode = function() {
+        _prevEnter.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._stationsPatched = true;
+    }
+    ['switchToOSMode', 'switchToClassicMode'].forEach(function(fnName) {
+      var orig = window[fnName];
+      if (!orig || orig._stationsExitPatched) return;
+      window[fnName] = function() {
+        _stop();
+        return orig.apply(this, arguments);
+      };
+      window[fnName]._stationsExitPatched = true;
+    });
+  }
+
+  setTimeout(_hookLifecycle, 0);
+
+  // If DeepSpace is already active when this module loads, start now.
+  setTimeout(function() {
+    var ds = document.getElementById('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) _start();
+  }, 50);
+
+  // Seed initial log entries
+  var _seedTs = Date.now();
+  _stations.forEach(function(s) {
+    var msg = (s.status === 'TRACKING') ? 'Tracking Started' :
+              (s.status === 'MAINTENANCE') ? 'Link Stabilized' : 'Signal Acquired';
+    s.log.unshift({ time: _nowTime(), msg: msg, _t: _seedTs });
+  });
+
+  // ── Public API — single source of truth for future modules ──────
+  window._deepspaceStations = {
+    list: function() {
+      return _stations.map(function(s) {
+        return {
+          name: s.name, status: s.status, signal: s.signal,
+          linkedAssets: s.linkedAssets.slice(),
+          latency: s.latency, dataRate: s.dataRate,
+          log: s.log.map(function(e) { return Object.assign({}, e); })
+        };
+      });
+    },
+    get: function(name) {
+      var s = _findStation(name);
+      if (!s) return null;
+      return {
+        name: s.name, status: s.status, signal: s.signal,
+        linkedAssets: s.linkedAssets.slice(),
+        latency: s.latency, dataRate: s.dataRate,
+        log: s.log.map(function(e) { return Object.assign({}, e); })
+      };
+    },
+    getLinks: function() {
+      var links = [];
+      _stations.forEach(function(s) {
+        s.linkedAssets.forEach(function(assetName) {
+          links.push({ station: s.name, asset: assetName });
+        });
+      });
+      return links;
+    },
+    getNetworkHealth: function() {
+      var onlineCount = _stations.filter(function(s) { return s.status === 'ONLINE' || s.status === 'TRACKING'; }).length;
+      var activeLinks = _stations.reduce(function(sum, s) { return sum + s.linkedAssets.length; }, 0);
+      var totalSignal = _stations.reduce(function(sum, s) { return sum + s.signal; }, 0);
+      var avgSignal   = _stations.length ? Math.round(totalSignal / _stations.length) : 0;
+      return {
+        totalStations:  _stations.length,
+        onlineStations: onlineCount,
+        activeLinks:    activeLinks,
+        avgSignal:      avgSignal,
+        networkStatus:  (onlineCount === _stations.length) ? 'NOMINAL' : (onlineCount === 0 ? 'CRITICAL' : 'DEGRADED')
+      };
+    },
+    setStatus: function(name, status) {
+      var s = _findStation(name);
+      if (!s || !_STATUS_CLASS.hasOwnProperty(status)) return false;
+      s.status = status;
+      _renderStations();
+      _renderHealth();
+      return true;
+    },
+    // Future: register new ground stations (ESP32/LoRa/SDR-backed,
+    // real antenna hardware) without restructuring this module —
+    // same shape, new fields ok.
+    register: function(station) {
+      if (!station || !station.name) return false;
+      if (!station.linkedAssets) station.linkedAssets = [];
+      if (!station.log) station.log = [];
+      _stations.push(station);
+      _renderStations();
+      _renderHealth();
+      _renderLinks();
+      return true;
+    },
+    log:    _appendLog,
+    start:  _start,
+    stop:   _stop,
+    render: _renderAll
+  };
+
+  console.log('[AtulOS 4.96] Ground Station Network installed. Stations: ' + _stations.map(function(s){return s.name;}).join(', '));
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.96 — DEEPSPACE GROUND STATION NETWORK
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
      MODULE 4.91 — DEEPSPACE MISSION COMMAND TERMINAL
      Adds: mission status | telemetry | orbit | comms | log | help
      Reads: window._deepspaceDashboard, window._deepspaceOrbit
@@ -22300,6 +24036,64 @@ window.safeAppend = function safeAppend(parent, child) {
     return null;
   }
 
+  // ── Rover Operations Console (Module 4.95) readers ─────────────
+  function _getRovers() {
+    if (window._deepspaceRovers && typeof window._deepspaceRovers.list === 'function') {
+      try { return window._deepspaceRovers.list(); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getRover(name) {
+    if (window._deepspaceRovers && typeof window._deepspaceRovers.get === 'function') {
+      try { return window._deepspaceRovers.get(name); } catch (e) {}
+    }
+    return null;
+  }
+
+  function _getRoverLog(name) {
+    if (window._deepspaceRovers && typeof window._deepspaceRovers.getLog === 'function') {
+      try { return window._deepspaceRovers.getLog(name); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getRoverObjectives() {
+    if (window._deepspaceRovers && typeof window._deepspaceRovers.getObjectives === 'function') {
+      try { return window._deepspaceRovers.getObjectives(); } catch (e) {}
+    }
+    return [];
+  }
+
+  // ── Ground Station Network (Module 4.96) readers ────────────────
+  function _getStations() {
+    if (window._deepspaceStations && typeof window._deepspaceStations.list === 'function') {
+      try { return window._deepspaceStations.list(); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getStation(name) {
+    if (window._deepspaceStations && typeof window._deepspaceStations.get === 'function') {
+      try { return window._deepspaceStations.get(name); } catch (e) {}
+    }
+    return null;
+  }
+
+  function _getStationLinks() {
+    if (window._deepspaceStations && typeof window._deepspaceStations.getLinks === 'function') {
+      try { return window._deepspaceStations.getLinks(); } catch (e) {}
+    }
+    return [];
+  }
+
+  function _getStationNetworkHealth() {
+    if (window._deepspaceStations && typeof window._deepspaceStations.getNetworkHealth === 'function') {
+      try { return window._deepspaceStations.getNetworkHealth(); } catch (e) {}
+    }
+    return null;
+  }
+
   // ── Orbital position description ─────────────────────────────
   function _describePosition(angleRad) {
     // Map radian angle to orbital quadrant label (0 = top, clockwise)
@@ -22403,11 +24197,17 @@ window.safeAppend = function safeAppend(parent, child) {
         'mission readiness  — Mission readiness status',
         'mission countdown  — Active countdown',
         'mission launchlog  — Launch event log',
+        'mission rovers     — List all rovers',
+        'mission rover <id> — Detailed rover readout',
+        'mission roverlog   — Rover event log',
+        'mission objectives — All rover objectives',
+        'mission stations   — List ground stations',
+        'mission station <name> — Detailed station readout',
+        'mission links      — Active asset links',
         'mission help       — This menu',
         '',
         'Coming soon:',
-        '  mission rover      | mission track',
-        '  mission groundstation',
+        '  mission track',
         '──────────────────────────────────────────'
       ].join('\n');
     },
@@ -22500,6 +24300,19 @@ window.safeAppend = function safeAppend(parent, child) {
         lines.push('Offline        : ' + counts.OFFLINE);
         lines.push('Avg Signal     : ' + avgSignal + '%');
       }
+
+      // ── Ground Station Network summary (Module 4.96) ────────────
+      var gsHealth = _getStationNetworkHealth();
+      if (gsHealth) {
+        lines.push('');
+        lines.push('─── GROUND STATION NETWORK ───────────────');
+        lines.push('Total Stations : ' + gsHealth.totalStations);
+        lines.push('Online         : ' + gsHealth.onlineStations);
+        lines.push('Active Links   : ' + gsHealth.activeLinks);
+        lines.push('Avg Signal     : ' + gsHealth.avgSignal + '%');
+        lines.push('Network Status : ' + gsHealth.networkStatus);
+      }
+
       lines.push('──────────────────────────────────────────');
       return lines.join('\n');
     },
@@ -22567,12 +24380,108 @@ window.safeAppend = function safeAppend(parent, child) {
       }
       lines.push('──────────────────────────────────────────');
       return lines.join('\n');
+    },
+
+    'mission rovers': function() {
+      var rovers = _getRovers();
+      var lines = ['─── ACTIVE ROVERS ────────────────────────'];
+      if (!rovers.length) {
+        lines.push('Rover Operations Console offline.');
+      } else {
+        rovers.forEach(function(r) {
+          lines.push(
+            r.name.padEnd(16, ' ') + ' ' +
+            r.missionStatus.padEnd(10, ' ') + ' ' +
+            r.health.padEnd(10, ' ') + ' ' +
+            r.power.toFixed(0) + '% PWR  ' +
+            r.sensors.signal.toFixed(0) + '% SIG'
+          );
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission roverlog': function() {
+      var rovers = _getRovers();
+      var lines = ['─── ROVER EVENT LOG ──────────────────────'];
+      if (!rovers.length) {
+        lines.push('Rover Operations Console offline.');
+      } else {
+        rovers.forEach(function(r, idx) {
+          if (idx > 0) lines.push('');
+          lines.push(r.name + ':');
+          if (!r.log.length) {
+            lines.push('  No events recorded.');
+          } else {
+            r.log.forEach(function(e) {
+              lines.push('  [' + e.time + '] ' + e.msg);
+            });
+          }
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission objectives': function() {
+      var data = _getRoverObjectives();
+      var lines = ['─── ROVER OBJECTIVES ─────────────────────'];
+      if (!data.length) {
+        lines.push('Rover Operations Console offline.');
+      } else {
+        data.forEach(function(r, idx) {
+          if (idx > 0) lines.push('');
+          lines.push(r.name + ':');
+          if (!r.objectives.length) {
+            lines.push('  No objectives assigned.');
+          } else {
+            r.objectives.forEach(function(o) {
+              lines.push('  ' + o.label.padEnd(20, ' ') + ' ' + o.status);
+            });
+          }
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission stations': function() {
+      var stations = _getStations();
+      var lines = ['─── GROUND STATION NETWORK ───────────────'];
+      if (!stations.length) {
+        lines.push('Ground Station Network offline.');
+      } else {
+        stations.forEach(function(s) {
+          lines.push(
+            s.name.padEnd(20, ' ') + ' ' +
+            s.status.padEnd(12, ' ') + ' ' +
+            s.signal.toFixed(0) + '% SIG  ' +
+            s.latency.toFixed(0) + ' MS  ' +
+            s.dataRate.toFixed(1) + ' MBPS'
+          );
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
+    },
+
+    'mission links': function() {
+      var links = _getStationLinks();
+      var lines = ['─── ACTIVE LINKS ─────────────────────────'];
+      if (!links.length) {
+        lines.push('No active links.');
+      } else {
+        links.forEach(function(l) {
+          lines.push(l.station + '  <->  ' + l.asset);
+        });
+      }
+      lines.push('──────────────────────────────────────────');
+      return lines.join('\n');
     }
 
     // ── FUTURE COMMAND STUBS — add here without modifying above ──
-    // 'mission rover':      function() { ... },
     // 'mission track':      function() { ... },
-    // 'mission groundstation': function() { ... },
   };
 
   // ── Command router ───────────────────────────────────────────
@@ -22667,6 +24576,88 @@ window.safeAppend = function safeAppend(parent, child) {
       return tLines.join('\n');
     }
 
+    // "mission rover <name>" — detailed rover readout, cross-referenced
+    // with the centralized rover registry (Module 4.95)
+    var roverMatch = cmd.match(/^mission rover\s+(.+)$/);
+    if (roverMatch) {
+      var roverId = roverMatch[1].trim().toUpperCase();
+      var rover   = _getRover(roverId);
+      if (!rover) {
+        return [
+          '⚠ Unknown rover: "' + roverMatch[1].trim() + '"',
+          'Type "mission rovers" for tracked rovers.'
+        ].join('\n');
+      }
+      var s = rover.sensors;
+      var m = rover.movement;
+      var rLines = [
+        '─── ROVER DETAIL ─────────────────────────',
+        'Name      : ' + rover.name,
+        'Location  : ' + rover.location,
+        'Status    : ' + rover.missionStatus,
+        'Health    : ' + rover.health,
+        'Power     : ' + rover.power.toFixed(0) + '%',
+        'Position  : ' + rover.position.lat.toFixed(4) + ', ' + rover.position.lon.toFixed(4),
+        '',
+        'Movement:',
+        '  Direction : ' + m.direction,
+        '  Speed     : ' + m.speed.toFixed(2) + ' M/S',
+        '  Heading   : ' + m.heading.toFixed(0) + '°',
+        '  Nav State : ' + m.navState,
+        '',
+        'Sensors:',
+        '  Temperature : ' + s.temperature.toFixed(1) + '°C',
+        '  Pressure    : ' + s.pressure.toFixed(2) + ' kPa',
+        '  Battery     : ' + s.battery.toFixed(0) + '%',
+        '  Signal      : ' + s.signal.toFixed(0) + '%',
+        '',
+        'Objectives:'
+      ];
+      if (!rover.objectives.length) {
+        rLines.push('  None assigned.');
+      } else {
+        rover.objectives.forEach(function(o) {
+          rLines.push('  ' + o.label.padEnd(20, ' ') + ' ' + o.status);
+        });
+      }
+      rLines.push('──────────────────────────────────────────');
+      return rLines.join('\n');
+    }
+
+    // "mission station <name>" — detailed ground station readout,
+    // cross-referenced with the centralized station registry (Module 4.96)
+    var stationMatch = cmd.match(/^mission station\s+(.+)$/);
+    if (stationMatch) {
+      var stationId = stationMatch[1].trim().toUpperCase();
+      var station   = _getStation(stationId);
+      if (!station) {
+        return [
+          '⚠ Unknown station: "' + stationMatch[1].trim() + '"',
+          'Type "mission stations" for ground stations.'
+        ].join('\n');
+      }
+      var gLines = [
+        '─── STATION DETAIL ───────────────────────',
+        'Name      : ' + station.name,
+        'Status    : ' + station.status,
+        'Signal    : ' + station.signal.toFixed(0) + '%',
+        'Latency   : ' + station.latency.toFixed(0) + ' ms',
+        'Data Rate : ' + station.dataRate.toFixed(1) + ' Mbps',
+        'Linked    : ' + (station.linkedAssets.length ? station.linkedAssets.join(', ') : 'None'),
+        '',
+        'Recent Events:'
+      ];
+      if (!station.log.length) {
+        gLines.push('  No events recorded.');
+      } else {
+        station.log.slice(0, 5).forEach(function(e) {
+          gLines.push('  [' + e.time + '] ' + e.msg);
+        });
+      }
+      gLines.push('──────────────────────────────────────────');
+      return gLines.join('\n');
+    }
+
     // Prefix "mission" with unrecognised subcommand
     if (/^mission\b/.test(cmd)) {
       var sub = cmd.replace(/^mission\s*/, '') || '(none)';
@@ -22738,7 +24729,7 @@ window.safeAppend = function safeAppend(parent, child) {
       window.jarvisProcess._missionCommandPatched = true;
     }
 
-    console.log('[AtulOS 4.91] Mission Command Terminal installed. Commands: mission status|telemetry|orbit|comms|log|satellites|asset|network|ops|list|details|timeline|launch|readiness|countdown|launchlog|help');
+    console.log('[AtulOS 4.91] Mission Command Terminal installed. Commands: mission status|telemetry|orbit|comms|log|satellites|asset|network|ops|list|details|timeline|launch|readiness|countdown|launchlog|rovers|rover|roverlog|objectives|stations|station|links|help');
     return true;
   }
 
@@ -22762,6 +24753,462 @@ window.safeAppend = function safeAppend(parent, child) {
 </script>
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.91 — DEEPSPACE MISSION COMMAND TERMINAL
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.97 — DEEPSPACE COMMAND CENTER EXPERIENCE V1
+     Visual Architecture Upgrade — Phases 1-7
+     Ribbon · Orbital Core · Live Links · Ticker · Depth · Focus
+     PATCH ONLY — modifies presentation layer, no data changes.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ── helpers ── */
+  function _el(id) { return document.getElementById(id); }
+  function _qs(sel, parent) { return (parent || document).querySelector(sel); }
+  function _qsa(sel, parent) { return Array.from((parent || document).querySelectorAll(sel)); }
+
+  var _timers = [];
+  var _active = false;
+
+  function _tick(fn, ms) {
+    var id = setInterval(fn, ms);
+    _timers.push(id);
+    return id;
+  }
+  function _stopAll() {
+    _timers.forEach(function(id) { clearInterval(id); });
+    _timers = [];
+    _active = false;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     PHASE 1 — Mission Status Ribbon
+  ════════════════════════════════════════════════════════════ */
+  function _updateRibbon() {
+    /* Pull live data from existing public APIs — no duplicate state */
+
+    // Mission count
+    var missions = (window._deepspaceMissions && window._deepspaceMissions.list
+      ? window._deepspaceMissions.list() : []);
+    var activeMissions = missions.filter(function(m) {
+      return m.status === 'ACTIVE' || m.status === 'IN PROGRESS';
+    });
+
+    // Assets
+    var assets = (window._deepspaceAssets && window._deepspaceAssets.list
+      ? window._deepspaceAssets.list() : []);
+    var activeAssets = assets.filter(function(a) {
+      return a.status === 'OPERATIONAL' || a.status === 'NOMINAL';
+    });
+
+    // Stations
+    var stations = (window._deepspaceStations && window._deepspaceStations.list
+      ? window._deepspaceStations.list() : []);
+    var onlineStations = stations.filter(function(s) {
+      return s.status === 'ONLINE' || s.status === 'ACTIVE';
+    });
+
+    // Rovers
+    var rovers = (window._deepspaceRovers && window._deepspaceRovers.list
+      ? window._deepspaceRovers.list() : []);
+    var activeRovers = rovers.filter(function(r) {
+      return r.missionStatus === 'ACTIVE';
+    });
+
+    // Determine health
+    var health = 'NOMINAL';
+    var healthClass = 'nominal';
+    if (onlineStations.length < stations.length || activeAssets.length < assets.length) {
+      health = 'DEGRADED'; healthClass = 'warning';
+    }
+    if (onlineStations.length === 0) {
+      health = 'CRITICAL'; healthClass = 'critical';
+    }
+
+    var rH = _el('ds-ribbon-health');
+    if (rH) {
+      rH.className = 'ds-ribbon-value ' + healthClass;
+      rH.innerHTML = '<span class="ds-ribbon-heartbeat"></span>' + health;
+    }
+    _setRibbon('ds-ribbon-missions', activeMissions.length + ' / ' + missions.length, 'accent');
+    _setRibbon('ds-ribbon-assets',   activeAssets.length  + ' / ' + assets.length,   'accent');
+    _setRibbon('ds-ribbon-stations', onlineStations.length + ' / ' + stations.length, 'nominal');
+    _setRibbon('ds-ribbon-rovers',   activeRovers.length  + ' / ' + rovers.length,   'accent');
+
+    // Network status
+    var netOk = onlineStations.length > 0;
+    _setRibbon('ds-ribbon-network', netOk ? 'ONLINE' : 'DEGRADED', netOk ? 'nominal' : 'warning');
+  }
+
+  function _setRibbon(id, val, cls) {
+    var el = _el(id);
+    if (!el) return;
+    if (el.textContent !== val) el.textContent = val;
+    el.className = 'ds-ribbon-value ' + (cls || '');
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     PHASE 3 — Live Link Visualization
+  ════════════════════════════════════════════════════════════ */
+  var _linkDefs = [
+    { from: 'BANGALORE-01', to: 'ATULSAT-1',  type: 'ground',  status: 'NOMINAL' },
+    { from: 'ATULSAT-1',    to: 'MISSION OPS', type: 'default', status: 'NOMINAL' },
+    { from: 'ATULSAT-2',    to: 'GROUND NET',  type: 'default', status: 'NOMINAL' },
+    { from: 'GROUND NET',   to: 'ROVER-1',     type: 'ground',  status: 'NOMINAL' }
+  ];
+
+  function _buildLinkChain(def) {
+    var statusClass = def.status === 'NOMINAL' ? '' : (def.status === 'DEGRADED' ? 'degraded' : 'offline');
+    return '<div class="ds-link-chain">' +
+      '<div class="ds-link-node">' + def.from + '</div>' +
+      '<div class="ds-link-connector">' +
+        '<div class="ds-link-line">' +
+          '<div class="ds-link-pulse down ' + (def.type === 'ground' ? 'ground' : '') + '"></div>' +
+          '<div class="ds-link-pulse up"  style="animation-delay:1s"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ds-link-node ' + def.type + '">' + def.to + '</div>' +
+      '<div class="ds-link-status ' + statusClass + '">' + def.status + '</div>' +
+    '</div>';
+  }
+
+  function _renderLiveLinks() {
+    var grid = _el('ds-links-grid');
+    if (!grid) return;
+
+    /* Enrich from live station/asset data */
+    var stations = (window._deepspaceStations && window._deepspaceStations.list
+      ? window._deepspaceStations.list() : []);
+    var assets = (window._deepspaceAssets && window._deepspaceAssets.list
+      ? window._deepspaceAssets.list() : []);
+
+    /* Build link defs from live data; fall back to static seeded defs */
+    var liveDefs = [];
+    stations.forEach(function(s) {
+      var linked = (s.linkedAssets || []).slice(0, 2);
+      linked.forEach(function(aName) {
+        var a = assets.find(function(x) { return x.name === aName; });
+        liveDefs.push({
+          from: s.name,
+          to: aName,
+          type: 'ground',
+          status: (s.status === 'ONLINE' && (!a || a.status !== 'OFFLINE')) ? 'NOMINAL' : 'DEGRADED'
+        });
+      });
+    });
+
+    var defs = liveDefs.length ? liveDefs.slice(0, 5) : _linkDefs;
+    grid.innerHTML = defs.map(_buildLinkChain).join('');
+
+    /* Update orbital core active link label */
+    var lbl = _el('ds-orb-link-label');
+    if (lbl && defs[0]) {
+      lbl.textContent = defs[0].from + ' → ' + defs[0].to;
+    }
+    /* Update live links badge */
+    var badge = _el('ds-links-status');
+    if (badge) {
+      var allNominal = defs.every(function(d) { return d.status === 'NOMINAL'; });
+      badge.textContent = allNominal ? 'ALL NOMINAL' : 'DEGRADED';
+      badge.className   = 'ds-panel-badge ' + (allNominal ? 'nominal' : 'warning');
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     PHASE 4 — Telemetry Ticker live injection
+  ════════════════════════════════════════════════════════════ */
+  var _tickerPool = [
+    { text: 'SIGNAL ACQUIRED — ATULSAT-1 UPLINK CONFIRMED',          cls: 'nominal'  },
+    { text: 'TELEMETRY RECEIVED — ALL SYSTEMS NOMINAL',              cls: 'nominal'  },
+    { text: 'ORBITAL MECHANICS — TRAJECTORY WITHIN PARAMETERS',      cls: ''         },
+    { text: 'GROUND STATION HANDOFF — BANGALORE-01 ACTIVE',          cls: 'nominal'  },
+    { text: 'NETWORK HEALTH — VERIFIED',                             cls: 'nominal'  },
+    { text: 'ATULSAT-1 — ALTITUDE 412 KM · VELOCITY 7.68 KM/S',     cls: ''         },
+    { text: 'PACKET SUCCESS RATE — 98.7%',                           cls: 'nominal'  },
+    { text: 'POWER SUBSYSTEM — NOMINAL',                             cls: ''         },
+    { text: 'ATTITUDE CONTROL — STABLE',                             cls: 'nominal'  },
+    { text: 'THERMAL CONTROL — OPERATING WITHIN LIMITS',             cls: ''         },
+    { text: 'MISSION ELAPSED TIME — TRACKING',                       cls: ''         },
+    { text: 'COMMAND UPLINK — 8 COMMANDS QUEUED',                    cls: ''         },
+    { text: 'DOWNLINK RATE — 2.048 MBPS',                            cls: ''         },
+    { text: 'BATTERY CHARGE — 87%',                                  cls: 'nominal'  },
+    { text: 'SOLAR ARRAY OUTPUT — NOMINAL',                          cls: 'nominal'  },
+    { text: 'COMM WINDOW — NEXT IN 14 MIN',                          cls: ''         },
+    { text: 'ROVER-1 STATUS UPDATE RECEIVED',                        cls: 'nominal'  },
+    { text: 'GROUND STATION NETWORK — ALL NODES RESPONSIVE',         cls: 'nominal'  },
+  ];
+  var _tickerIdx = 0;
+
+  function _injectTickerEvent(text, cls) {
+    var inner = _el('ds-ticker-inner');
+    if (!inner) return;
+    var span = document.createElement('span');
+    span.className = 'ds-ticker-item ' + (cls || '');
+    span.textContent = text;
+    inner.appendChild(span);
+    /* Also inject a duplicate for the seamless loop second half */
+    var span2 = span.cloneNode(true);
+    inner.appendChild(span2);
+    /* Keep ticker from growing unboundedly */
+    var items = inner.querySelectorAll('.ds-ticker-item');
+    if (items.length > 60) {
+      items[0].remove();
+      items[1] && items[1].remove();
+    }
+  }
+
+  function _pullLiveTickerEvents() {
+    /* Pull from rover/station/asset logs and inject the latest entry */
+    var rovers  = window._deepspaceRovers  && window._deepspaceRovers.list  ? window._deepspaceRovers.list()  : [];
+    var stations = window._deepspaceStations && window._deepspaceStations.list ? window._deepspaceStations.list() : [];
+
+    // Pick one rover event
+    if (rovers.length) {
+      var r = rovers[Math.floor(Math.random() * rovers.length)];
+      if (r.log && r.log.length) {
+        var entry = r.log[r.log.length - 1];
+        if (entry && entry.msg) {
+          _injectTickerEvent(r.name.toUpperCase() + ' — ' + entry.msg.toUpperCase(), 'nominal');
+          return;
+        }
+      }
+    }
+    // Fallback: pool entry
+    _injectTickerEvent(_tickerPool[_tickerIdx % _tickerPool.length].text,
+                       _tickerPool[_tickerIdx % _tickerPool.length].cls);
+    _tickerIdx++;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     PHASE 5 — Contextual panel status threads
+  ════════════════════════════════════════════════════════════ */
+
+  /* Add .ds-panel-status-thread to contextual panels if not already present */
+  var _threadDefs = [
+    { panelId: 'ds-launch-panel',  labelId: 'ds-launch-thread', getStatus: function() {
+        var launches = window._deepspaceLaunches && window._deepspaceLaunches.list
+          ? window._deepspaceLaunches.list() : [];
+        var active = launches.find(function(l) { return l.status === 'GO' || l.status === 'LAUNCH COMMIT'; });
+        return active ? { dot: '', label: 'ACTIVE LAUNCH', value: active.name }
+                      : { dot: '', label: 'STANDBY', value: launches.length + ' MISSIONS' };
+    }},
+    { panelId: 'ds-gsn-panel',     labelId: 'ds-gsn-thread',    getStatus: function() {
+        var stations = window._deepspaceStations && window._deepspaceStations.list
+          ? window._deepspaceStations.list() : [];
+        var online = stations.filter(function(s) { return s.status === 'ONLINE'; });
+        return { dot: online.length > 0 ? '' : 'err', label: 'ONLINE', value: online.length + ' / ' + stations.length };
+    }},
+    { panelId: 'ds-rovers-panel',  labelId: 'ds-rovers-thread', getStatus: function() {
+        var rovers = window._deepspaceRovers && window._deepspaceRovers.list
+          ? window._deepspaceRovers.list() : [];
+        var active = rovers.filter(function(r) { return r.missionStatus === 'ACTIVE'; });
+        return { dot: '', label: 'ACTIVE ROVERS', value: active.length + ' / ' + rovers.length };
+    }},
+    { panelId: 'ds-ops-panel',     labelId: 'ds-ops-thread',    getStatus: function() {
+        var missions = window._deepspaceMissions && window._deepspaceMissions.list
+          ? window._deepspaceMissions.list() : [];
+        var active = missions.filter(function(m) { return m.status === 'ACTIVE' || m.status === 'IN PROGRESS'; });
+        return { dot: '', label: 'ACTIVE OPS', value: active.length + ' MISSIONS' };
+    }}
+  ];
+
+  function _injectStatusThreads() {
+    _threadDefs.forEach(function(def) {
+      var panel = _el(def.panelId);
+      if (!panel) return;
+      /* Only inject once */
+      if (panel.querySelector('.ds-panel-status-thread')) return;
+      var header = panel.querySelector('.ds-panel-header');
+      if (!header) return;
+      var thread = document.createElement('div');
+      thread.className = 'ds-panel-status-thread';
+      thread.id = def.labelId;
+      thread.innerHTML = '<span class="ds-thread-dot"></span>' +
+        '<span class="ds-thread-label">LOADING</span>';
+      header.insertAdjacentElement('afterend', thread);
+    });
+  }
+
+  function _updateStatusThreads() {
+    _threadDefs.forEach(function(def) {
+      var el = _el(def.labelId);
+      if (!el) return;
+      try {
+        var s = def.getStatus();
+        var dotClass = s.dot ? ' ' + s.dot : '';
+        el.innerHTML = '<span class="ds-thread-dot' + dotClass + '"></span>' +
+          '<span class="ds-thread-label">' + s.label + ' ·</span>' +
+          '<span class="ds-thread-value">' + s.value + '</span>';
+      } catch(e) {}
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     PHASE 6 — Pulse live telemetry values in orbital overlay
+  ════════════════════════════════════════════════════════════ */
+  function _pulseOrbitalValues() {
+    ['ds-orb-alt','ds-orb-vel','ds-orb-sig'].forEach(function(id) {
+      var el = _el(id);
+      if (!el) return;
+      el.classList.add('ds-live-pulse');
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     PHASE 7 — Intelligent Focus
+  ════════════════════════════════════════════════════════════ */
+  var _FOCUS_PANELS = {
+    launch:  'ds-launch-panel',
+    rover:   'ds-rovers-panel',
+    network: 'ds-gsn-panel',
+    ops:     'ds-ops-panel'
+  };
+
+  function _applyIntelligentFocus() {
+    /* Detect active condition */
+    var focusLaunch  = false;
+    var focusRover   = false;
+    var focusNetwork = false;
+
+    try {
+      var launches = window._deepspaceLaunches && window._deepspaceLaunches.list
+        ? window._deepspaceLaunches.list() : [];
+      focusLaunch = launches.some(function(l) {
+        return l.status === 'GO' || l.status === 'LAUNCH COMMIT' || l.status === 'COUNTDOWN';
+      });
+    } catch(e) {}
+
+    try {
+      var rovers = window._deepspaceRovers && window._deepspaceRovers.list
+        ? window._deepspaceRovers.list() : [];
+      focusRover = rovers.some(function(r) { return r.missionStatus === 'ACTIVE'; });
+    } catch(e) {}
+
+    try {
+      var stations = window._deepspaceStations && window._deepspaceStations.list
+        ? window._deepspaceStations.list() : [];
+      focusNetwork = stations.some(function(s) { return s.status === 'OFFLINE' || s.status === 'ERROR'; });
+    } catch(e) {}
+
+    /* Get all contextual panels */
+    var allPanelIds = Object.values ? Object.values(_FOCUS_PANELS) : ['ds-launch-panel','ds-rovers-panel','ds-gsn-panel','ds-ops-panel'];
+
+    /* No active focus state — remove dim/focus on all */
+    if (!focusLaunch && !focusRover && !focusNetwork) {
+      allPanelIds.forEach(function(id) {
+        var p = _el(id);
+        if (!p) return;
+        p.classList.remove('ds-panel-dim', 'ds-focus-active', 'ds-focus-rover', 'ds-focus-network', 'ds-panel-focus-launch');
+      });
+      return;
+    }
+
+    /* Apply dim to all, then lift the active one */
+    allPanelIds.forEach(function(id) {
+      var p = _el(id);
+      if (!p) return;
+      p.classList.remove('ds-focus-active','ds-focus-rover','ds-focus-network','ds-panel-focus-launch');
+      p.classList.add('ds-panel-dim');
+    });
+
+    if (focusLaunch) {
+      var lp = _el(_FOCUS_PANELS.launch);
+      if (lp) {
+        lp.classList.remove('ds-panel-dim');
+        lp.classList.add('ds-focus-active', 'ds-panel-focus-launch');
+      }
+    } else if (focusNetwork) {
+      var np = _el(_FOCUS_PANELS.network);
+      if (np) {
+        np.classList.remove('ds-panel-dim');
+        np.classList.add('ds-focus-active', 'ds-focus-network');
+      }
+    } else if (focusRover) {
+      var rp = _el(_FOCUS_PANELS.rover);
+      if (rp) {
+        rp.classList.remove('ds-panel-dim');
+        rp.classList.add('ds-focus-active', 'ds-focus-rover');
+      }
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     CSS: Orbital canvas container height override
+     The old .ds-orbital-wrap padding-bottom rule still applies
+     to the legacy selector; .ds-orbital-command-wrap uses the
+     new rule already added in CSS. Nothing to do here.
+  ════════════════════════════════════════════════════════════ */
+
+  /* ════════════════════════════════════════════════════════════
+     START / STOP
+  ════════════════════════════════════════════════════════════ */
+  function _start() {
+    if (_active) return;
+    _active = true;
+
+    /* Immediate renders */
+    _updateRibbon();
+    _renderLiveLinks();
+    _injectStatusThreads();
+    _updateStatusThreads();
+    _pulseOrbitalValues();
+    _applyIntelligentFocus();
+
+    /* Intervals — staggered to spread CPU load */
+    _tick(_updateRibbon,          4000);   // Ribbon every 4s
+    _tick(_renderLiveLinks,       8000);   // Links every 8s
+    _tick(_updateStatusThreads,   5000);   // Threads every 5s
+    _tick(_pullLiveTickerEvents,  12000);  // Ticker every 12s
+    _tick(_applyIntelligentFocus, 6000);   // Focus every 6s
+  }
+
+  function _stop() {
+    _stopAll();
+    /* Remove dim/focus classes on exit */
+    _qsa('.ds-panel-dim, .ds-focus-active, .ds-focus-rover, .ds-focus-network').forEach(function(p) {
+      p.classList.remove('ds-panel-dim','ds-focus-active','ds-focus-rover','ds-focus-network','ds-panel-focus-launch');
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     LIFECYCLE — patch switchToDeepSpaceMode chain
+  ════════════════════════════════════════════════════════════ */
+  function _hookLifecycle() {
+    var prev = window.switchToDeepSpaceMode;
+    if (prev && !prev._cmdCenterPatched) {
+      window.switchToDeepSpaceMode = function() {
+        prev.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._cmdCenterPatched = true;
+    }
+    ['switchToOSMode', 'switchToClassicMode'].forEach(function(fn) {
+      var orig = window[fn];
+      if (!orig || orig._cmdCenterExitPatched) return;
+      window[fn] = function() {
+        _stop();
+        return orig.apply(this, arguments);
+      };
+      window[fn]._cmdCenterExitPatched = true;
+    });
+  }
+
+  setTimeout(_hookLifecycle, 0);
+
+  /* If DeepSpace is already active when this module loads */
+  setTimeout(function() {
+    var ds = _el('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) _start();
+  }, 200);
+
+  console.log('[AtulOS 4.97] DeepSpace Command Center Experience installed. Phases 1-7 active.');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.97 — DEEPSPACE COMMAND CENTER EXPERIENCE V1
 ════════════════════════════════════════════════════════════════ -->
 </body>
 </html>
