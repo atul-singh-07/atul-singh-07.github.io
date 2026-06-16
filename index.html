@@ -29959,5 +29959,716 @@ window.safeAppend = function safeAppend(parent, child) {
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.101 — ATLAS MISSION DIRECTOR V1
 ════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.102 — DEEPSPACE MISSION CONTINUITY ENGINE V1
+     Persistence · History · Legacy · Program Memory
+     Reads: all existing _deepspace* registries + window.ATLAS
+     Outputs: session archive, terminal commands, ATLAS memory
+              trend analysis, expedition legacy record,
+              global timeline, contextual history overlays
+     PATCH ONLY — no existing modules modified.
+════════════════════════════════════════════════════════════════ -->
+<style>
+/* ── CONTINUITY ENGINE — inline styles ─────────────────────── */
+
+/* Timeline event rows in Mission Terminal / ATLAS panel */
+.mce-tl-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+.mce-tl-row:last-child { border-bottom: none; }
+.mce-tl-time {
+  color: rgba(154,169,187,0.4);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  flex-shrink: 0;
+}
+.mce-tl-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: rgba(99,168,255,0.4);
+}
+.mce-tl-dot.launch    { background: #28c840; }
+.mce-tl-dot.milestone { background: var(--accent, #63a8ff); }
+.mce-tl-dot.warning   { background: #ffb347; }
+.mce-tl-dot.critical  { background: #ff5f57; }
+.mce-tl-dot.recovery  { background: #28c840; }
+.mce-tl-dot.discovery { background: #a78bfa; }
+.mce-tl-event {
+  color: var(--fg, #d0d8e4);
+  line-height: 1.4;
+  flex: 1;
+}
+.mce-tl-mission {
+  color: rgba(99,168,255,0.55);
+  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Legacy record rows */
+.mce-legacy-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-size: 9px;
+}
+.mce-legacy-row:last-child { border-bottom: none; }
+.mce-lk { color: rgba(154,169,187,0.5); letter-spacing: 1px; text-transform: uppercase; }
+.mce-lv { color: var(--accent, #63a8ff); font-weight: 700; letter-spacing: 0.5px; }
+.mce-lv.nominal { color: #28c840; }
+
+/* ATLAS trend indicator */
+.mce-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.mce-trend.up   { color: #28c840; }
+.mce-trend.down { color: #ff5f57; }
+.mce-trend.flat { color: rgba(154,169,187,0.4); }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── helpers ── */
+  function _el(id)      { return document.getElementById(id); }
+  function _now()       { return new Date(); }
+  function _utc()       { var d = _now(); return d.toUTCString().replace(/\s*\([^)]*\)/, ''); }
+  function _hhmm()      { var d = _now(); return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + ' UTC'; }
+  function _yyyymmdd()  { var d = _now(); return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + String(d.getUTCDate()).padStart(2,'0'); }
+
+  /* ── Data accessors ── */
+  function _assets()   { return (window._deepspaceAssets    && window._deepspaceAssets.list)    ? window._deepspaceAssets.list()    : []; }
+  function _missions() { return (window._deepspaceMissions  && window._deepspaceMissions.list)  ? window._deepspaceMissions.list()  : []; }
+  function _stations() { return (window._deepspaceStations  && window._deepspaceStations.list)  ? window._deepspaceStations.list()  : []; }
+  function _rovers()   { return (window._deepspaceRovers    && window._deepspaceRovers.list)    ? window._deepspaceRovers.list()    : []; }
+  function _launches() { return (window._deepspaceLaunches  && window._deepspaceLaunches.list)  ? window._deepspaceLaunches.list()  : []; }
+
+  /* ════════════════════════════════════════════════════════
+     PROGRAM ARCHIVE
+     Canonical history of the AtulOS space program.
+     Each entry: { date, type, event, mission, category }
+     Types: launch · orbit · landing · milestone · failure
+            recovery · discovery · extension · completion
+     Future: ESP32/LoRa events injected via MCE.ingestEvent()
+  ════════════════════════════════════════════════════════ */
+  var _programArchive = [
+    /* ── Program foundation ── */
+    { date:'2020-03-01', type:'milestone',  category:'program',   mission:'ATULOS',       event:'AtulOS Space Program founded — mission statement ratified' },
+    { date:'2020-06-15', type:'milestone',  category:'program',   mission:'ATULOS',       event:'Ground Station Bangalore-01 commissioned — first antenna array online' },
+    { date:'2020-11-22', type:'milestone',  category:'program',   mission:'ATULOS',       event:'Mission Operations Center established — first flight director assigned' },
+
+    /* ── ATULSAT-1 ── */
+    { date:'2022-04-18', type:'launch',     category:'earth',     mission:'ATULSAT-1',    event:'Launch successful — PSLV-C53 lift-off from Sriharikota at 09:30 UTC' },
+    { date:'2022-04-18', type:'orbit',      category:'earth',     mission:'ATULSAT-1',    event:'Orbit insertion confirmed — 412 km LEO, inclination 97.7°' },
+    { date:'2022-04-19', type:'milestone',  category:'earth',     mission:'ATULSAT-1',    event:'First signal acquired — Bangalore-01 ground contact established' },
+    { date:'2022-04-25', type:'milestone',  category:'earth',     mission:'ATULSAT-1',    event:'Commissioning complete — all subsystems nominal, science ops initiated' },
+    { date:'2022-07-12', type:'milestone',  category:'earth',     mission:'ATULSAT-1',    event:'First Earth observation image transmitted — 2m resolution confirmed' },
+    { date:'2022-10-01', type:'failure',    category:'earth',     mission:'ATULSAT-1',    event:'Attitude control anomaly detected — spacecraft in safe mode' },
+    { date:'2022-10-03', type:'recovery',   category:'earth',     mission:'ATULSAT-1',    event:'Attitude control restored — root cause: software patch, corrected' },
+    { date:'2023-09-15', type:'extension',  category:'earth',     mission:'ATULSAT-1',    event:'Mission extended 18 months — fuel reserves sufficient, science payload performing' },
+    { date:'2024-02-20', type:'milestone',  category:'earth',     mission:'ATULSAT-1',    event:'10,000th orbit completed — continuous operations record for AtulOS' },
+
+    /* ── ATULSAT-2 ── */
+    { date:'2024-03-10', type:'launch',     category:'earth',     mission:'ATULSAT-2',    event:'Launch successful — SSLV-D3 from Sriharikota, constellation expansion begins' },
+    { date:'2024-03-10', type:'orbit',      category:'earth',     mission:'ATULSAT-2',    event:'Orbit insertion nominal — 561 km SSO, formation flying sequence initiated' },
+    { date:'2024-03-17', type:'milestone',  category:'earth',     mission:'ATULSAT-2',    event:'Formation acquisition with ATULSAT-1 — constellation operational' },
+
+    /* ── CHANDRA-1 ── */
+    { date:'2023-07-14', type:'launch',     category:'moon',      mission:'CHANDRA-1',    event:'Launch successful — LVM3 from Sriharikota — lunar mission begins' },
+    { date:'2023-07-14', type:'milestone',  category:'moon',      mission:'CHANDRA-1',    event:'Trans-lunar injection burn completed — 3.84×10⁵ km journey begins' },
+    { date:'2023-08-05', type:'orbit',      category:'moon',      mission:'CHANDRA-1',    event:'Lunar orbit insertion — 100 km polar orbit achieved' },
+    { date:'2023-08-19', type:'landing',    category:'moon',      mission:'CHANDRA-1',    event:'Lunar south pole — soft landing confirmed at 69.37°S 32.35°E' },
+    { date:'2023-08-19', type:'discovery',  category:'moon',      mission:'CHANDRA-1',    event:'Water ice signatures detected — permanently shadowed crater survey begins' },
+    { date:'2023-09-02', type:'milestone',  category:'moon',      mission:'CHANDRA-1',    event:'Science payload fully deployed — spectrometer, camera, seismometer active' },
+    { date:'2023-11-15', type:'failure',    category:'moon',      mission:'CHANDRA-1',    event:'Communication outage — solar angle degraded link quality' },
+    { date:'2023-11-17', type:'recovery',   category:'moon',      mission:'CHANDRA-1',    event:'Link restored via Bangalore-02 backup station — operations resumed' },
+
+    /* ── MANGALYAAN-X ── */
+    { date:'2023-10-20', type:'launch',     category:'mars',      mission:'MANGALYAAN-X', event:'Launch window opened — GSLV Mk III, Earth escape velocity achieved' },
+    { date:'2023-10-20', type:'milestone',  category:'mars',      mission:'MANGALYAAN-X', event:'Heliocentric transfer orbit confirmed — 680-day cruise to Mars begins' },
+    { date:'2024-01-14', type:'milestone',  category:'mars',      mission:'MANGALYAAN-X', event:'Mid-course correction burn #1 — trajectory refined, fuel nominal' },
+    { date:'2024-04-08', type:'milestone',  category:'mars',      mission:'MANGALYAAN-X', event:'Mid-course correction burn #2 — Mars approach geometry optimized' },
+
+    /* ── ATULROVER-1 ── */
+    { date:'2023-01-05', type:'launch',     category:'mars',      mission:'ATULROVER-1',  event:'Mars mission launched — first AtulOS rover, 7-month cruise begins' },
+    { date:'2023-08-12', type:'landing',    category:'mars',      mission:'ATULROVER-1',  event:'Mars landing confirmed — Jezero Crater, EDL sequence nominal' },
+    { date:'2023-08-12', type:'discovery',  category:'mars',      mission:'ATULROVER-1',  event:'First Mars surface images transmitted — ancient lake bed features confirmed' },
+    { date:'2023-09-01', type:'milestone',  category:'mars',      mission:'ATULROVER-1',  event:'Science operations active — geological survey of delta deposit begins' },
+    { date:'2023-12-20', type:'discovery',  category:'mars',      mission:'ATULROVER-1',  event:'Organic compound signatures detected — sample designated Priority-Alpha' },
+    { date:'2024-02-10', type:'milestone',  category:'mars',      mission:'ATULROVER-1',  event:'15 km total traverse — longest continuous surface operation by AtulOS' },
+    { date:'2024-05-03', type:'milestone',  category:'mars',      mission:'ATULROVER-1',  event:'Core drill Site Delta-7 — 8cm depth, sample secured for future return' },
+
+    /* ── MARS-SCOUT ── */
+    { date:'2024-01-28', type:'launch',     category:'mars',      mission:'MARS-SCOUT',   event:'Launch on trajectory to Mars — atmospheric entry probe, 9-month cruise' },
+    { date:'2024-06-14', type:'milestone',  category:'mars',      mission:'MARS-SCOUT',   event:'Atmospheric entry interface reached — heat shield nominal at 3,000°C' },
+
+    /* ── VOYAGER-SIM ── */
+    { date:'2019-08-20', type:'launch',     category:'deep',      mission:'VOYAGER-SIM',  event:'Deep space probe launched — long-range communication demonstration mission' },
+    { date:'2021-03-12', type:'milestone',  category:'deep',      mission:'VOYAGER-SIM',  event:'Heliopause boundary approached — solar wind termination shock observed' },
+    { date:'2022-11-05', type:'discovery',  category:'deep',      mission:'VOYAGER-SIM',  event:'Heliopause crossed — interstellar medium particle density confirmed' },
+    { date:'2024-01-01', type:'milestone',  category:'deep',      mission:'VOYAGER-SIM',  event:'1,840 mission days — deepest AtulOS asset at 21.8 billion km' },
+
+    /* ── Program milestones ── */
+    { date:'2023-08-12', type:'discovery',  category:'program',   mission:'ATULOS',       event:'AtulOS achieves first planetary landing — Mars surface operations begin' },
+    { date:'2023-11-01', type:'milestone',  category:'program',   mission:'ATULOS',       event:'Three simultaneous active missions — Earth, Moon, Mars operations concurrent' },
+    { date:'2024-03-10', type:'milestone',  category:'program',   mission:'ATULOS',       event:'Satellite constellation deployed — continuous Earth observation achieved' },
+  ];
+
+  /* ════════════════════════════════════════════════════════
+     SESSION ARCHIVE — runtime log of events during this session
+  ════════════════════════════════════════════════════════ */
+  var _sessionLog = [];
+  var _sessionStart = _utc();
+
+  function _logEvent(type, mission, event) {
+    _sessionLog.push({ time: _hhmm(), date: _yyyymmdd(), type: type, mission: mission, event: event });
+    /* Keep last 200 */
+    if (_sessionLog.length > 200) _sessionLog.shift();
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ATLAS MEMORY — sliding window of past assessments & alerts
+  ════════════════════════════════════════════════════════ */
+  var _atlasMemory = {
+    assessments: [],   /* { time, text, alertCount } */
+    alerts:      [],   /* { time, level, msg } — last 50 */
+    netEvents:   [],   /* { time, event } — last 30 */
+    recs:        [],   /* { time, text, priority } — last 20 */
+  };
+
+  var _lastAlertSnapshot = [];
+
+  function _snapshotATLAS() {
+    if (!window.ATLAS) return;
+
+    /* Assessment */
+    try {
+      var summary = window.ATLAS.summary();
+      var alerts  = window.ATLAS.alerts();
+      _atlasMemory.assessments.push({ time: _hhmm(), text: summary, alertCount: alerts.length });
+      if (_atlasMemory.assessments.length > 24) _atlasMemory.assessments.shift();
+
+      /* Delta-detect new alerts */
+      alerts.forEach(function(a) {
+        var alreadySeen = _lastAlertSnapshot.some(function(p){ return p.msg === a.msg; });
+        if (!alreadySeen) {
+          _atlasMemory.alerts.push({ time: _hhmm(), level: a.level, msg: a.msg });
+          _logEvent(a.level, 'ATLAS', a.msg);
+          if (_atlasMemory.alerts.length > 50) _atlasMemory.alerts.shift();
+        }
+      });
+      _lastAlertSnapshot = alerts.slice();
+
+      /* Recommendations */
+      var recs = window.ATLAS.recommend();
+      recs.forEach(function(r) {
+        var alreadySeen = _atlasMemory.recs.some(function(p){ return p.text === r.text; });
+        if (!alreadySeen) {
+          _atlasMemory.recs.push({ time: _hhmm(), text: r.text, priority: r.priority });
+          if (_atlasMemory.recs.length > 20) _atlasMemory.recs.shift();
+        }
+      });
+    } catch(e) {}
+
+    /* Network events — detect station status changes */
+    try {
+      var stations = _stations();
+      stations.forEach(function(s) {
+        var key = s.name + ':' + s.status;
+        if (!_atlasMemory._stationCache) _atlasMemory._stationCache = {};
+        if (_atlasMemory._stationCache[s.name] && _atlasMemory._stationCache[s.name] !== s.status) {
+          var evt = s.name + ' status changed: ' + _atlasMemory._stationCache[s.name] + ' → ' + s.status;
+          _atlasMemory.netEvents.push({ time: _hhmm(), event: evt });
+          _logEvent('milestone', s.name, evt);
+          if (_atlasMemory.netEvents.length > 30) _atlasMemory.netEvents.shift();
+        }
+        _atlasMemory._stationCache[s.name] = s.status;
+      });
+    } catch(e) {}
+
+    /* Asset health changes */
+    try {
+      var assets = _assets();
+      if (!_atlasMemory._assetCache) _atlasMemory._assetCache = {};
+      assets.forEach(function(a) {
+        var prevHealth = _atlasMemory._assetCache[a.name];
+        if (prevHealth && prevHealth !== a.health) {
+          var evt = a.name + ' health: ' + prevHealth + ' → ' + a.health;
+          _logEvent(a.health === 'CRITICAL' ? 'failure' : a.health === 'NOMINAL' ? 'recovery' : 'milestone', a.name, evt);
+          _atlasMemory.netEvents.push({ time: _hhmm(), event: evt });
+          if (_atlasMemory.netEvents.length > 30) _atlasMemory.netEvents.shift();
+        }
+        _atlasMemory._assetCache[a.name] = a.health;
+      });
+    } catch(e) {}
+  }
+
+  /* ════════════════════════════════════════════════════════
+     EXPEDITION LEGACY RECORD
+  ════════════════════════════════════════════════════════ */
+  function _buildLegacy() {
+    var launches   = _programArchive.filter(function(e){ return e.type === 'launch'; });
+    var landings   = _programArchive.filter(function(e){ return e.type === 'landing'; });
+    var discoveries= _programArchive.filter(function(e){ return e.type === 'discovery'; });
+    var failures   = _programArchive.filter(function(e){ return e.type === 'failure'; });
+    var recoveries = _programArchive.filter(function(e){ return e.type === 'recovery'; });
+    var missions   = _missions();
+
+    /* Worlds reached from archive */
+    var worldsSet = {};
+    landings.forEach(function(e){ worldsSet[e.category] = true; });
+    /* Earth orbit counts as world reached */
+    _programArchive.filter(function(e){ return e.type==='orbit'; }).forEach(function(e){ worldsSet[e.category] = true; });
+    var worldsReached = Object.keys(worldsSet).filter(function(w){ return w !== 'program'; });
+
+    /* Longest mission from expedition data (VOYAGER-SIM seeded at 1840 days) */
+    var longestMission = 'VOYAGER-SIM';
+    var longestDays    = 1840;
+
+    /* Most successful: most milestones + discoveries */
+    var scoreMap = {};
+    _programArchive.forEach(function(e) {
+      if (e.mission === 'ATULOS') return;
+      scoreMap[e.mission] = (scoreMap[e.mission] || 0) + (e.type === 'discovery' ? 3 : e.type === 'milestone' ? 1 : 0);
+    });
+    var topMission = Object.keys(scoreMap).sort(function(a,b){ return scoreMap[b]-scoreMap[a]; })[0] || '—';
+
+    /* Total active days (sum of seeded expedition durations) */
+    var totalDays = 1840 + 380 + 210 + 180 + 12 + 45; /* voyager+rover+mangalyaan+atulsat1+atulsat2+chandra */
+
+    /* Distance (voyager dominates; others nominal LEO) */
+    var totalDistKm = '21.8B KM';
+
+    /* Success rate */
+    var successRate = Math.round((recoveries.length + 0.5) / Math.max(failures.length, 1) * 100);
+    successRate = Math.min(successRate, 98); /* cap */
+
+    return {
+      totalMissions:   launches.length,
+      worldsReached:   worldsReached.length,
+      worldsList:      worldsReached.map(function(w){ return w.toUpperCase(); }).join(', '),
+      totalLandings:   landings.length,
+      totalDiscoveries:discoveries.length,
+      totalFailures:   failures.length,
+      totalRecoveries: recoveries.length,
+      longestMission:  longestMission,
+      longestDays:     longestDays,
+      mostSuccessful:  topMission,
+      totalActiveDays: totalDays,
+      totalDistance:   totalDistKm,
+      recoveryRate:    Math.round(recoveries.length / Math.max(failures.length,1) * 100) + '%',
+      programAge:      '4 YEARS, 3 MONTHS',
+    };
+  }
+
+  /* ════════════════════════════════════════════════════════
+     TREND ANALYSIS — compare ATLAS snapshots
+  ════════════════════════════════════════════════════════ */
+  function _trend() {
+    var mem  = _atlasMemory.assessments;
+    if (mem.length < 2) return { direction: 'flat', text: 'Insufficient history for trend analysis.' };
+    var recent = mem.slice(-3).reduce(function(s,e){ return s + e.alertCount; }, 0) / Math.min(mem.length,3);
+    var older  = mem.slice(0, Math.floor(mem.length/2)).reduce(function(s,e){ return s + e.alertCount; },0) / Math.max(Math.floor(mem.length/2),1);
+    if (recent < older - 0.5) return { direction:'up',   text: 'Network health improving — alert frequency declining.' };
+    if (recent > older + 0.5) return { direction:'down', text: 'Conditions degrading — alert frequency increasing. Review recommended.' };
+    return { direction:'flat', text: 'Network health stable — no significant change detected.' };
+  }
+
+  /* ════════════════════════════════════════════════════════
+     TERMINAL COMMANDS
+  ════════════════════════════════════════════════════════ */
+  var SEP = '──────────────────────────────────────────';
+
+  function _fmtArchiveEntry(e) {
+    return '[' + e.date + '] ' + e.mission.padEnd(14) + ' ' + e.event;
+  }
+
+  var _MCE_CMDS = {
+
+    /* ── atlas history ── */
+    'atlas history': function() {
+      var mem  = _atlasMemory;
+      var trnd = _trend();
+      var lines = [
+        '─── ATLAS MEMORY — MISSION HISTORY ──────',
+        'Session Start  : ' + _sessionStart,
+        'Assessments    : ' + mem.assessments.length + ' recorded',
+        'Alerts Logged  : ' + mem.alerts.length,
+        'Network Events : ' + mem.netEvents.length,
+        'Health Trend   : ' + trnd.text,
+        '',
+      ];
+
+      if (mem.assessments.length) {
+        lines.push('Recent Assessments:');
+        mem.assessments.slice(-4).reverse().forEach(function(a) {
+          lines.push('  [' + a.time + '] ' + a.text.slice(0,60) + (a.text.length>60?'…':'') + ' (alerts: ' + a.alertCount + ')');
+        });
+        lines.push('');
+      }
+
+      if (mem.alerts.length) {
+        lines.push('Recent ATLAS Alerts:');
+        mem.alerts.slice(-6).reverse().forEach(function(a) {
+          lines.push('  [' + a.time + '] [' + a.level.toUpperCase().padEnd(8) + '] ' + a.msg);
+        });
+        lines.push('');
+      }
+
+      if (mem.netEvents.length) {
+        lines.push('Network Events:');
+        mem.netEvents.slice(-5).reverse().forEach(function(n) {
+          lines.push('  [' + n.time + '] ' + n.event);
+        });
+      }
+
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    /* ── atlas timeline ── */
+    'atlas timeline': function() {
+      var lines = ['─── ATOS PROGRAM TIMELINE ────────────────'];
+      var sorted = _programArchive.slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+      var shown = sorted.slice(0,20);
+      shown.forEach(function(e) {
+        lines.push('[' + e.date + '] ' + (e.type.toUpperCase()).padEnd(10) + ' ' + e.mission.padEnd(14) + e.event.slice(0,48));
+      });
+      if (sorted.length > 20) lines.push('  … ' + (sorted.length - 20) + ' more events. Type "mission archive" for full history.');
+
+      /* Session events */
+      if (_sessionLog.length) {
+        lines.push('');
+        lines.push('This Session:');
+        _sessionLog.slice(-5).reverse().forEach(function(e) {
+          lines.push('  [' + e.time + '] ' + e.mission.padEnd(14) + ' ' + e.event);
+        });
+      }
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    /* ── atlas legacy ── */
+    'atlas legacy': function() {
+      var L = _buildLegacy();
+      return [
+        '─── EXPLORATION LEGACY RECORD ────────────',
+        'Program Age        : ' + L.programAge,
+        'Total Missions     : ' + L.totalMissions,
+        'Worlds Reached     : ' + L.worldsReached + ' (' + L.worldsList + ')',
+        'Planetary Landings : ' + L.totalLandings,
+        'Discoveries        : ' + L.totalDiscoveries,
+        'Total Active Days  : ' + L.totalActiveDays + ' days across fleet',
+        'Longest Mission    : ' + L.longestMission + ' — ' + L.longestDays + ' days',
+        'Most Successful    : ' + L.mostSuccessful,
+        'Deep Space Dist.   : ' + L.totalDistance,
+        '',
+        'Mission Record:',
+        '  Failures         : ' + L.totalFailures,
+        '  Recoveries       : ' + L.totalRecoveries,
+        '  Recovery Rate    : ' + L.recoveryRate,
+        '',
+        'Status: PROGRAM ACTIVE — EXPLORATION ONGOING',
+        SEP
+      ].join('\n');
+    },
+
+    /* ── mission archive ── */
+    'mission archive': function() {
+      var sorted = _programArchive.slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+      var lines  = ['─── MISSION ARCHIVE — FULL PROGRAM HISTORY'];
+      var lastYear = '';
+      sorted.forEach(function(e) {
+        var year = e.date.slice(0,4);
+        if (year !== lastYear) { lines.push(''); lines.push('── ' + year + ' ──────────────────────────────────'); lastYear = year; }
+        lines.push('[' + e.date + '] [' + e.type.toUpperCase().padEnd(9) + '] ' + e.mission.padEnd(14) + e.event.slice(0,44));
+      });
+      lines.push('');
+      lines.push('Total: ' + sorted.length + ' archived events');
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    /* ── mission history <id> ── */
+    'mission history': function(arg) {
+      if (!arg) {
+        /* Summary of all missions */
+        var missions = _missions();
+        var lines = ['─── MISSION HISTORY SUMMARY ──────────────'];
+        if (missions.length) {
+          missions.forEach(function(m) {
+            var events = _programArchive.filter(function(e){ return e.mission === m.name.toUpperCase(); });
+            lines.push(m.name.padEnd(16) + m.status.padEnd(12) + events.length + ' archived events');
+          });
+        }
+        /* Add seeded missions not in registry */
+        var seeded = ['ATULSAT-1','ATULSAT-2','CHANDRA-1','MANGALYAAN-X','ATULROVER-1','MARS-SCOUT','VOYAGER-SIM'];
+        seeded.forEach(function(name) {
+          if (!missions.find(function(m){ return m.name.toUpperCase() === name; })) {
+            var events = _programArchive.filter(function(e){ return e.mission === name; });
+            if (events.length) lines.push(name.padEnd(16) + 'ARCHIVED    '.padEnd(12) + events.length + ' archived events');
+          }
+        });
+        lines.push('');
+        lines.push('Usage: mission history <mission-name>');
+        lines.push(SEP);
+        return lines.join('\n');
+      }
+
+      var target = arg.trim().toUpperCase();
+      var events = _programArchive.filter(function(e){ return e.mission === target; });
+      if (!events.length) {
+        return '⚠ No history for "' + arg.trim() + '"\nType "mission history" for available missions.';
+      }
+      var sorted = events.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+      var lines  = ['─── MISSION HISTORY: ' + target + ' '];
+      sorted.forEach(function(e) {
+        lines.push('[' + e.date + '] [' + e.type.toUpperCase().padEnd(9) + '] ' + e.event);
+      });
+      lines.push('');
+      lines.push('Total: ' + sorted.length + ' events');
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+  };
+
+  /* ── Parameterized router ── */
+  function _route(raw) {
+    var cmd = raw.trim().toLowerCase().replace(/\s+/g,' ');
+
+    /* Exact match */
+    if (_MCE_CMDS[cmd]) return _MCE_CMDS[cmd]();
+
+    /* mission history <id> */
+    var histMatch = cmd.match(/^mission history(?:\s+(.+))?$/);
+    if (histMatch) return _MCE_CMDS['mission history'](histMatch[1] || '');
+
+    /* mission archive */
+    if (cmd === 'mission archive') return _MCE_CMDS['mission archive']();
+
+    /* atlas commands */
+    if (cmd === 'atlas history')  return _MCE_CMDS['atlas history']();
+    if (cmd === 'atlas timeline') return _MCE_CMDS['atlas timeline']();
+    if (cmd === 'atlas legacy')   return _MCE_CMDS['atlas legacy']();
+
+    return null; /* pass through */
+  }
+
+  function _out(text) {
+    if (typeof window.termPrintLine === 'function') {
+      window.termPrintLine('AI', text, 'jarvis-line', false);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ENRICH EXPEDITION TIMELINE with archive events
+     Called once after Expedition module is ready.
+  ════════════════════════════════════════════════════════ */
+  function _enrichExpeditionTimeline() {
+    /* The expedition module stores _timelineSeed in its IIFE scope —
+       we can't reach it directly. Instead we inject into the
+       dcv-timeline-body (Celestial View) and dex-milestone-list
+       (Expedition View) if they exist and are visible. */
+
+    var tlBody = _el('dcv-timeline-body');
+    if (tlBody && tlBody.children.length === 0) {
+      /* Build rich timeline from archive */
+      var recent = _programArchive.slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; }).slice(0,10);
+      tlBody.innerHTML = recent.map(function(e) {
+        var dotCls = e.type === 'launch'     ? 'nominal'
+                   : e.type === 'discovery'  ? 'accent'
+                   : e.type === 'failure'    ? 'critical'
+                   : e.type === 'recovery'   ? 'nominal'
+                   : '';
+        return '<div class="mce-tl-row">' +
+          '<span class="mce-tl-time">' + e.date + '</span>' +
+          '<span class="mce-tl-dot ' + dotCls + '"></span>' +
+          '<span class="mce-tl-event">' + e.event + '</span>' +
+          '<span class="mce-tl-mission">' + e.mission + '</span>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ENRICH ATLAS PANEL with history context
+  ════════════════════════════════════════════════════════ */
+  function _enrichATLASPanel() {
+    /* Append trend indicator below assessment text if ATLAS panel exists */
+    var assessment = _el('atlas-assessment');
+    if (!assessment) return;
+
+    var trnd = _trend();
+    var existingTrend = assessment.parentElement.querySelector('.mce-trend');
+    if (existingTrend) existingTrend.remove();
+
+    if (_atlasMemory.assessments.length >= 2) {
+      var trendEl = document.createElement('div');
+      trendEl.className = 'mce-trend ' + trnd.direction;
+      trendEl.innerHTML = (trnd.direction === 'up' ? '▲' : trnd.direction === 'down' ? '▼' : '─') +
+        ' TREND: ' + trnd.text;
+      trendEl.style.cssText = 'margin-top:6px; font-size:8px; letter-spacing:1.5px; text-transform:uppercase;';
+      assessment.insertAdjacentElement('afterend', trendEl);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     PATCH COMMAND CHAIN
+  ════════════════════════════════════════════════════════ */
+  function _installPatch() {
+    var origJarvis = window._jarvisProcessInternal;
+    if (typeof origJarvis === 'function' && !origJarvis._mcePatched) {
+      window._jarvisProcessInternal = function mceAwareJarvis(raw) {
+        var result = _route(raw);
+        if (result !== null) { _out(result); return result; }
+        return origJarvis(raw);
+      };
+      window._jarvisProcessInternal._mcePatched = true;
+    }
+
+    var origExec = window.executeCommand;
+    if (typeof origExec === 'function' && !origExec._mcePatched) {
+      window.executeCommand = function mceAwareExecute(raw) {
+        if (!raw) return origExec(raw);
+        var result = _route(raw);
+        if (result !== null) { _out(result); return result; }
+        return origExec(raw);
+      };
+      window.executeCommand._mcePatched = true;
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     UPDATE MISSION HELP to include new commands
+  ════════════════════════════════════════════════════════ */
+  function _patchMissionHelp() {
+    /* Find the existing mission help handler and extend it */
+    /* We can't reach the _HANDLERS object directly — but we can
+       intercept "mission help" before the existing handler runs.
+       The existing chain returns text; we append our section. */
+    var origExec = window.executeCommand;
+    if (!origExec || origExec._mceHelpPatched) return;
+    window.executeCommand = function mceHelpExecute(raw) {
+      if (raw && raw.trim().toLowerCase() === 'mission help') {
+        var base = origExec(raw) || '';
+        var extra = '\nMission Continuity Engine:\n' +
+          '  mission archive    — Full program event archive\n' +
+          '  mission history    — Summary of all mission histories\n' +
+          '  mission history <n> — Specific mission event history\n' +
+          '\nATLAS Memory & History:\n' +
+          '  atlas history      — ATLAS session memory & trends\n' +
+          '  atlas timeline     — Chronological program timeline\n' +
+          '  atlas legacy       — Expedition legacy record';
+        return base + extra;
+      }
+      return origExec(raw);
+    };
+    window.executeCommand._mceHelpPatched = true;
+    window.executeCommand._mcePatched     = true; /* prevent double-wrap */
+  }
+
+  /* ════════════════════════════════════════════════════════
+     PUBLIC API — window.MCE
+  ════════════════════════════════════════════════════════ */
+  window.MCE = {
+    version:  '1.0',
+    archive:  function() { return _programArchive.slice(); },
+    session:  function() { return _sessionLog.slice(); },
+    memory:   function() { return _atlasMemory; },
+    legacy:   _buildLegacy,
+    trend:    _trend,
+    /* Hardware injection — ESP32 / LoRa / SDR events */
+    ingestEvent: function(type, mission, event) {
+      _logEvent(type, mission, event);
+      _programArchive.push({ date: _yyyymmdd(), type: type, mission: mission, event: event });
+    },
+    /* For real telemetry: push station / network events */
+    ingestNetworkEvent: function(event) {
+      _atlasMemory.netEvents.push({ time: _hhmm(), event: event });
+      if (_atlasMemory.netEvents.length > 30) _atlasMemory.netEvents.shift();
+    },
+  };
+
+  /* ════════════════════════════════════════════════════════
+     LIFECYCLE
+  ════════════════════════════════════════════════════════ */
+  var _timers = [];
+
+  function _start() {
+    /* Seed session start event */
+    _logEvent('milestone', 'ATULOS', 'Mission Continuity Engine online — session monitoring active');
+
+    /* Initial ATLAS snapshot after registries have loaded */
+    setTimeout(_snapshotATLAS, 1500);
+
+    /* Periodic snapshots every 30s — low CPU, no polling loop */
+    if (!_timers.length) {
+      _timers.push(setInterval(_snapshotATLAS,     30000));
+      _timers.push(setInterval(_enrichATLASPanel,  35000));
+    }
+
+    /* Enrich views once on activation */
+    setTimeout(_enrichExpeditionTimeline, 800);
+    setTimeout(_enrichATLASPanel,         3000);
+  }
+
+  function _stop() {
+    _timers.forEach(function(id){ clearInterval(id); });
+    _timers = [];
+  }
+
+  function _hookLifecycle() {
+    var prev = window.switchToDeepSpaceMode;
+    if (prev && !prev._mcePatched) {
+      window.switchToDeepSpaceMode = function() {
+        prev.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._mcePatched = true;
+    }
+    ['switchToOSMode','switchToClassicMode'].forEach(function(fn) {
+      var orig = window[fn];
+      if (!orig || orig._mceExitPatched) return;
+      window[fn] = function() { _stop(); return orig.apply(this, arguments); };
+      window[fn]._mceExitPatched = true;
+    });
+  }
+
+  setTimeout(_hookLifecycle, 0);
+  setTimeout(_installPatch,  80);
+  setTimeout(_patchMissionHelp, 160);
+
+  /* Auto-start if DeepSpace already active */
+  setTimeout(function() {
+    var ds = _el('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) _start();
+  }, 500);
+
+  console.log('[AtulOS 4.102] Mission Continuity Engine online. APIs: window.MCE | Commands: atlas history/timeline/legacy | mission archive/history');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.102 — DEEPSPACE MISSION CONTINUITY ENGINE V1
+════════════════════════════════════════════════════════════════ -->
 </body>
 </html>
