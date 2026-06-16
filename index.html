@@ -3641,13 +3641,1531 @@ body {
   .ds-gsn-health-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Responsive ── */
 @media (max-width: 700px) {
   .ds-row-2 { grid-template-columns: 1fr; }
   #ds-dashboard { padding: 10px; gap: 10px; }
   .ds-clock-value { font-size: 18px; }
   #ds-log-body { max-height: 140px; }
   .ds-orbital-wrap { padding-bottom: 60%; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ATLAS — MISSION DIRECTOR CSS
+   MODULE 4.101
+════════════════════════════════════════════════════════════════ */
+
+#atlas-panel {
+  border-color: rgba(99,168,255,0.18);
+}
+#atlas-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Top row: assessment · priority · network ── */
+#atlas-top-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+/* ── Bottom row: alerts · recommendations ── */
+#atlas-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.atlas-block {
+  padding: 10px 14px;
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+.atlas-block:last-child { border-right: none; }
+.atlas-block-wide { }
+
+.atlas-block-label {
+  font-size: 8px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.45);
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Status dot */
+.atlas-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #28c840;
+  display: inline-block;
+  animation: atlas-hb 2.6s ease-in-out infinite;
+}
+.atlas-status-dot.warn     { background: #ffb347; }
+.atlas-status-dot.critical { background: #ff5f57; }
+@keyframes atlas-hb {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:.4; transform:scale(.7); }
+}
+
+/* Collapse button */
+.atlas-collapse-btn {
+  background: transparent;
+  border: 1px solid rgba(99,168,255,0.15);
+  border-radius: 4px;
+  color: rgba(154,169,187,0.5);
+  font-size: 10px;
+  width: 22px; height: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.atlas-collapse-btn:hover { color: var(--accent); border-color: rgba(99,168,255,0.3); }
+.atlas-collapse-btn.collapsed { transform: rotate(-90deg); }
+
+/* Assessment */
+.atlas-assessment-text {
+  font-size: 10px;
+  color: var(--fg);
+  line-height: 1.6;
+  letter-spacing: 0.3px;
+}
+
+/* Priority mission */
+.atlas-priority-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.atlas-priority-meta {
+  font-size: 9px;
+  color: rgba(154,169,187,0.55);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+
+/* Network rows */
+#atlas-network-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.atlas-net-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.atlas-net-label {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.45);
+}
+.atlas-net-val {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+.atlas-net-val.nominal  { color: #28c840; }
+.atlas-net-val.warning  { color: #ffb347; }
+.atlas-net-val.critical { color: #ff5f57; }
+
+/* Alert count badge */
+.atlas-alert-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  background: rgba(255,95,87,0.15);
+  border: 1px solid rgba(255,95,87,0.25);
+  color: #ff5f57;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.atlas-alert-count.zero {
+  background: rgba(40,200,64,0.08);
+  border-color: rgba(40,200,64,0.15);
+  color: rgba(40,200,64,0.6);
+}
+
+/* Alerts */
+#atlas-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.atlas-no-alerts {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(40,200,64,0.45);
+}
+.atlas-alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 2px solid;
+}
+.atlas-alert-item.info     { border-color: rgba(99,168,255,0.4);  background: rgba(99,168,255,0.04); }
+.atlas-alert-item.warning  { border-color: rgba(255,179,71,0.5);  background: rgba(255,179,71,0.04); }
+.atlas-alert-item.critical { border-color: rgba(255,95,87,0.6);   background: rgba(255,95,87,0.04);  }
+.atlas-alert-level {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-top: 1px;
+  min-width: 44px;
+}
+.atlas-alert-item.info     .atlas-alert-level { color: rgba(99,168,255,0.7); }
+.atlas-alert-item.warning  .atlas-alert-level { color: rgba(255,179,71,0.8); }
+.atlas-alert-item.critical .atlas-alert-level { color: rgba(255,95,87,0.9); }
+.atlas-alert-msg {
+  font-size: 9px;
+  color: rgba(154,169,187,0.75);
+  line-height: 1.4;
+  letter-spacing: 0.3px;
+}
+
+/* Recommendations */
+#atlas-recs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.atlas-rec-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(99,168,255,0.03);
+  border: 1px solid rgba(99,168,255,0.08);
+}
+.atlas-rec-item::before {
+  content: '→';
+  color: rgba(99,168,255,0.4);
+  font-size: 9px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.atlas-rec-text {
+  font-size: 9px;
+  color: rgba(154,169,187,0.7);
+  line-height: 1.4;
+  letter-spacing: 0.3px;
+}
+.atlas-rec-priority {
+  margin-left: auto;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-left: 8px;
+}
+.atlas-rec-priority.high { color: rgba(255,179,71,0.7); }
+.atlas-rec-priority.normal { color: rgba(99,168,255,0.5); }
+
+/* Collapsed state */
+#atlas-body.atlas-collapsed { display: none; }
+
+@media (max-width: 900px) {
+  #atlas-top-row    { grid-template-columns: 1fr 1fr; }
+  #atlas-bottom-row { grid-template-columns: 1fr; }
+  #atlas-network-block { display: none; }
+}
+@media (max-width: 600px) {
+  #atlas-top-row { grid-template-columns: 1fr; }
+}
+
+/* ── Container ── */
+#ds-expedition-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  background: var(--bg, #05070b);
+}
+#ds-expedition-view[hidden] { display: none !important; }
+
+/* ── Exploration Stats Bar ── */
+#dex-statsbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 14px;
+  background: rgba(0,0,0,0.5);
+  border-bottom: 1px solid rgba(99,168,255,0.1);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#dex-statsbar::-webkit-scrollbar { display: none; }
+
+.dex-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 16px 7px 0;
+  margin-right: 16px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+.dex-stat:last-child { border-right: none; margin-right: 0; }
+.dex-stat-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.5);
+  white-space: nowrap;
+}
+.dex-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dex-stat-value.nominal { color: #28c840; }
+.dex-stat-value.accent  { color: var(--accent); }
+.dex-stat-value.warning { color: #ffb347; }
+
+/* Mission selector pills */
+.dex-mission-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 420px;
+}
+.dex-mission-selector::-webkit-scrollbar { display: none; }
+.dex-ms-btn {
+  padding: 4px 10px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: 1px solid rgba(99,168,255,0.15);
+  background: transparent;
+  color: rgba(154,169,187,0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dex-ms-btn:hover { color: var(--accent); background: rgba(99,168,255,0.07); border-color: rgba(99,168,255,0.22); }
+.dex-ms-btn.dex-ms-active {
+  color: var(--accent);
+  background: rgba(99,168,255,0.1);
+  border-color: rgba(99,168,255,0.3);
+}
+
+/* ── Main Scene ── */
+#dex-scene {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 200px 1fr 220px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Column shared styles ── */
+.dex-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  background: rgba(99,168,255,0.025);
+  flex-shrink: 0;
+}
+.dex-col-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.6);
+}
+.dex-col-badge {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(154,169,187,0.5);
+  background: rgba(255,255,255,0.02);
+}
+.dex-col-badge.nominal { color: #28c840; border-color: rgba(40,200,64,0.2); background: rgba(40,200,64,0.04); }
+.dex-col-badge.accent  { color: var(--accent); border-color: rgba(99,168,255,0.2); }
+
+.dex-section-label {
+  font-size: 8px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.4);
+  padding: 10px 12px 4px;
+  flex-shrink: 0;
+}
+
+/* ── Left: Route Canvas ── */
+#dex-route-col {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(99,168,255,0.07);
+  background: rgba(0,0,0,0.18);
+  overflow: hidden;
+}
+#dex-route-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#dex-route-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Center: Detail ── */
+#dex-detail-col {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(99,168,255,0.07);
+  overflow: hidden;
+}
+#dex-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,168,255,0.1) transparent;
+}
+
+/* Mission card */
+#dex-mission-card {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  background: rgba(99,168,255,0.02);
+}
+#dex-mc-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+#dex-mc-goal {
+  font-size: 9px;
+  color: rgba(154,169,187,0.6);
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+#dex-mc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dex-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 60px;
+}
+.dex-mk {
+  font-size: 7px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.4);
+}
+.dex-mv {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.dex-mv.accent { color: var(--accent); }
+
+/* Progress */
+#dex-progress-wrap {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.dex-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.dex-pk {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.5);
+}
+.dex-pv {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.dex-progress-track {
+  height: 3px;
+  background: rgba(99,168,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.dex-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(99,168,255,0.6), var(--accent));
+  border-radius: 2px;
+  transition: width 0.8s ease;
+}
+
+/* Phase timeline */
+#dex-phase-timeline {
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+#dex-phase-list {
+  padding: 4px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.dex-phase-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+  position: relative;
+}
+.dex-phase-item:last-child { border-bottom: none; }
+.dex-phase-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(99,168,255,0.3);
+  background: transparent;
+}
+.dex-phase-dot.done    { background: rgba(40,200,64,0.35); border-color: #28c840; }
+.dex-phase-dot.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px rgba(99,168,255,0.5); animation: dex-cur-pulse 2s ease-in-out infinite; }
+.dex-phase-dot.future  { background: transparent; border-color: rgba(99,168,255,0.2); }
+@keyframes dex-cur-pulse {
+  0%,100% { box-shadow: 0 0 4px rgba(99,168,255,0.4); }
+  50%     { box-shadow: 0 0 10px rgba(99,168,255,0.7); }
+}
+.dex-phase-line {
+  position: absolute;
+  left: 3.5px;
+  top: 13px;
+  width: 1px;
+  height: calc(100% - 4px);
+  background: rgba(99,168,255,0.12);
+}
+.dex-phase-line.done { background: rgba(40,200,64,0.25); }
+.dex-phase-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.dex-phase-name.done   { color: #28c840; }
+.dex-phase-name.current{ color: var(--accent); }
+.dex-phase-name.future { color: rgba(154,169,187,0.35); }
+.dex-phase-status {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.dex-phase-status.done    { color: rgba(40,200,64,0.6); }
+.dex-phase-status.current { color: rgba(99,168,255,0.7); }
+.dex-phase-status.future  { color: rgba(154,169,187,0.2); }
+
+/* Objectives */
+#dex-objectives { padding-bottom: 10px; }
+#dex-obj-list { padding: 4px 16px 0; display: flex; flex-direction: column; gap: 5px; }
+.dex-obj-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(99,168,255,0.08);
+  border-radius: 5px;
+  background: rgba(99,168,255,0.02);
+}
+.dex-obj-tier {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.5);
+  white-space: nowrap;
+  padding-top: 1px;
+  min-width: 52px;
+}
+.dex-obj-tier.primary   { color: rgba(99,168,255,0.65); }
+.dex-obj-tier.secondary { color: rgba(255,179,71,0.55); }
+.dex-obj-tier.longterm  { color: rgba(154,169,187,0.4); }
+.dex-obj-text {
+  font-size: 9px;
+  color: rgba(154,169,187,0.7);
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+}
+
+/* ── Right: Milestone Timeline ── */
+#dex-right-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0,0,0,0.18);
+}
+#dex-milestone-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,168,255,0.1) transparent;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.dex-ms-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.dex-ms-item:last-child { border-bottom: none; }
+.dex-ms-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+  background: rgba(99,168,255,0.3);
+}
+.dex-ms-dot.done    { background: #28c840; }
+.dex-ms-dot.current { background: var(--accent); animation: dex-cur-pulse 2s ease-in-out infinite; }
+.dex-ms-dot.upcoming{ background: rgba(255,255,255,0.1); }
+.dex-ms-content { flex: 1; min-width: 0; }
+.dex-ms-event {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dex-ms-event.done    { color: rgba(154,169,187,0.6); }
+.dex-ms-event.current { color: var(--accent); }
+.dex-ms-event.upcoming{ color: rgba(154,169,187,0.3); }
+.dex-ms-mission {
+  font-size: 8px;
+  color: rgba(99,168,255,0.5);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dex-ms-time {
+  font-size: 7px;
+  color: rgba(154,169,187,0.35);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Next milestone callout */
+#dex-next-milestone {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(99,168,255,0.08);
+  padding-bottom: 8px;
+}
+#dex-next-body {
+  margin: 4px 10px 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,179,71,0.15);
+  border-radius: 5px;
+  background: rgba(255,179,71,0.04);
+  font-size: 9px;
+  color: rgba(255,179,71,0.7);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+
+/* ── Discovery Feed ── */
+#dex-discovery-feed {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.4);
+  border-top: 1px solid rgba(99,168,255,0.07);
+  overflow: hidden;
+}
+.dex-feed-label {
+  flex-shrink: 0;
+  padding: 0 12px;
+  font-size: 8px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.55);
+  border-right: 1px solid rgba(99,168,255,0.12);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: rgba(99,168,255,0.04);
+  white-space: nowrap;
+}
+.dex-feed-track { flex: 1; overflow: hidden; height: 100%; }
+.dex-feed-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  animation: dex-scroll 75s linear infinite;
+  will-change: transform;
+}
+.dex-feed-inner:hover { animation-play-state: paused; }
+.dex-feed-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 30px 0 0;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dex-feed-item::before { content: '◆'; font-size: 5px; color: rgba(99,168,255,0.2); flex-shrink: 0; }
+.dex-feed-item.nominal::before { color: rgba(40,200,64,0.4); }
+@keyframes dex-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  #dex-scene { grid-template-columns: 160px 1fr 180px; }
+}
+@media (max-width: 700px) {
+  #dex-scene { grid-template-columns: 1fr; grid-template-rows: 180px 1fr auto; overflow-y: auto; }
+  #dex-route-col { border-right: none; border-bottom: 1px solid rgba(99,168,255,0.07); }
+  #dex-right-col { border-top: 1px solid rgba(99,168,255,0.07); max-height: 200px; }
+  .dex-mission-selector { display: none; }
+}
+
+/* ── Container ── */
+#ds-celestial-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  background: var(--bg, #05070b);
+}
+#ds-celestial-view[hidden] { display: none !important; }
+
+/* ── Stats Bar ── */
+#dcv-statsbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 14px;
+  background: rgba(0,0,0,0.5);
+  border-bottom: 1px solid rgba(99,168,255,0.1);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
+}
+#dcv-statsbar::-webkit-scrollbar { display: none; }
+
+.dcv-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 18px 7px 0;
+  margin-right: 18px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+.dcv-stat:last-child { border-right: none; margin-right: 0; }
+.dcv-stat-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.55);
+  white-space: nowrap;
+}
+.dcv-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dcv-stat-value.nominal { color: #28c840; }
+.dcv-stat-value.accent  { color: var(--accent); }
+.dcv-stat-value.warning { color: #ffb347; }
+
+/* Region filter buttons (in statsbar) */
+.dcv-region-filter {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 18px;
+}
+.dcv-region-btn {
+  padding: 4px 10px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: 1px solid rgba(99,168,255,0.15);
+  background: transparent;
+  color: rgba(154,169,187,0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.dcv-region-btn:hover {
+  color: var(--accent);
+  background: rgba(99,168,255,0.07);
+  border-color: rgba(99,168,255,0.25);
+}
+.dcv-region-btn.dcv-region-btn-active {
+  color: var(--accent);
+  background: rgba(99,168,255,0.1);
+  border-color: rgba(99,168,255,0.3);
+}
+
+/* ── Main Scene ── */
+#dcv-scene {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Solar System Canvas ── */
+#dcv-solar-wrap {
+  position: relative;
+  overflow: hidden;
+  background: #02040a;
+}
+#dcv-solar-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+/* ── Asset Tooltip ── */
+#dcv-tooltip {
+  position: absolute;
+  pointer-events: none;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(99,168,255,0.25);
+  border-radius: 5px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--fg);
+  line-height: 1.7;
+  white-space: nowrap;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  text-transform: uppercase;
+}
+#dcv-tooltip.dcv-tt-visible { opacity: 1; }
+#dcv-tooltip .dcv-tt-name  { font-weight: 700; color: var(--accent); display: block; margin-bottom: 2px; }
+#dcv-tooltip .dcv-tt-stat  { color: #28c840; }
+#dcv-tooltip .dcv-tt-loc   { color: rgba(154,169,187,0.7); }
+
+/* ── Right Panel ── */
+#dcv-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border-left: 1px solid rgba(99,168,255,0.08);
+  background: rgba(0,0,0,0.2);
+}
+.dcv-panel {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(99,168,255,0.07);
+  flex-shrink: 0;
+}
+.dcv-panel:last-child { flex: 1; border-bottom: none; overflow: hidden; }
+.dcv-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  background: rgba(99,168,255,0.02);
+  flex-shrink: 0;
+}
+.dcv-panel-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.65);
+}
+.dcv-panel-badge {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(154,169,187,0.5);
+  background: rgba(255,255,255,0.02);
+}
+.dcv-panel-badge.nominal { color: #28c840; border-color: rgba(40,200,64,0.2); background: rgba(40,200,64,0.04); }
+.dcv-panel-badge.accent  { color: var(--accent); border-color: rgba(99,168,255,0.2); }
+
+/* ── Discovery Timeline ── */
+.dcv-timeline-body {
+  padding: 8px 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,168,255,0.1) transparent;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.dcv-tl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  position: relative;
+}
+.dcv-tl-item:last-child { border-bottom: none; }
+.dcv-tl-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(99,168,255,0.4);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.dcv-tl-dot.nominal  { background: #28c840; box-shadow: 0 0 4px rgba(40,200,64,0.4); }
+.dcv-tl-dot.accent   { background: var(--accent); }
+.dcv-tl-dot.warning  { background: #ffb347; }
+.dcv-tl-content { flex: 1; min-width: 0; }
+.dcv-tl-event {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--fg);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dcv-tl-mission {
+  font-size: 8px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.dcv-tl-time {
+  font-size: 8px;
+  color: rgba(154,169,187,0.4);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── Region Detail ── */
+.dcv-region-body {
+  padding: 10px 12px;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,168,255,0.1) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dcv-asset-card {
+  padding: 8px 10px;
+  border: 1px solid rgba(99,168,255,0.1);
+  border-radius: 5px;
+  background: rgba(99,168,255,0.02);
+  transition: border-color 0.2s ease;
+}
+.dcv-asset-card:hover { border-color: rgba(99,168,255,0.22); }
+.dcv-asset-card.dimmed { opacity: 0.35; }
+.dcv-asset-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.dcv-asset-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+.dcv-asset-key {
+  font-size: 8px;
+  color: rgba(154,169,187,0.45);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.dcv-asset-val {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.dcv-asset-val.nominal  { color: #28c840; }
+.dcv-asset-val.warning  { color: #ffb347; }
+.dcv-asset-val.critical { color: #ff5f57; }
+
+/* ── Bottom Exploration Feed ── */
+#dcv-feed {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.4);
+  border-top: 1px solid rgba(99,168,255,0.07);
+  overflow: hidden;
+}
+.dcv-feed-label {
+  flex-shrink: 0;
+  padding: 0 12px;
+  font-size: 8px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.6);
+  border-right: 1px solid rgba(99,168,255,0.12);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: rgba(99,168,255,0.04);
+  white-space: nowrap;
+}
+.dcv-feed-track { flex: 1; overflow: hidden; height: 100%; }
+.dcv-feed-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  animation: dcv-scroll 80s linear infinite;
+  will-change: transform;
+}
+.dcv-feed-inner:hover { animation-play-state: paused; }
+.dcv-feed-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 32px 0 0;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dcv-feed-item::before {
+  content: '◆';
+  font-size: 5px;
+  color: rgba(99,168,255,0.25);
+  flex-shrink: 0;
+}
+.dcv-feed-item.nominal::before { color: rgba(40,200,64,0.45); }
+@keyframes dcv-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  #dcv-scene { grid-template-columns: 1fr 200px; }
+}
+@media (max-width: 700px) {
+  #dcv-scene { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  #dcv-right-panel { border-left: none; border-top: 1px solid rgba(99,168,255,0.08); max-height: 200px; flex-direction: row; overflow-x: auto; }
+  .dcv-panel { flex: 0 0 220px; border-bottom: none; border-right: 1px solid rgba(99,168,255,0.07); }
+  .dcv-region-filter { display: none; }
+}
+.ds-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(99,168,255,0.15);
+  border-radius: 6px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.ds-view-btn {
+  padding: 4px 14px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(154,169,187,0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.ds-view-btn:hover {
+  color: var(--accent);
+  background: rgba(99,168,255,0.07);
+}
+.ds-view-btn.ds-view-btn-active {
+  background: rgba(99,168,255,0.12);
+  border-color: rgba(99,168,255,0.25);
+  color: var(--accent);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TACTICAL VIEW — LAYOUT
+════════════════════════════════════════════════════════════════ */
+#ds-tactical-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+#ds-tactical-view[hidden] { display: none !important; }
+
+/* ── Status Bar ── */
+#dtv-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 18px;
+  background: rgba(0,0,0,0.45);
+  border-bottom: 1px solid rgba(99,168,255,0.12);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#dtv-statusbar::-webkit-scrollbar { display: none; }
+
+.dtv-sb-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 20px 7px 0;
+  margin-right: 20px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.dtv-sb-cell:last-child { border-right: none; margin-right: 0; }
+.dtv-sb-utc { margin-left: auto; padding-right: 0; border-right: none; min-width: 0; }
+.dtv-sb-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.6);
+  white-space: nowrap;
+}
+.dtv-sb-value {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dtv-sb-value.nominal { color: #28c840; }
+.dtv-sb-value.warning { color: #ffb347; }
+.dtv-sb-value.critical{ color: #ff5f57; }
+.dtv-sb-value.accent  { color: var(--accent); }
+
+/* Heartbeat pulse */
+.dtv-hb {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #28c840;
+  margin-right: 5px;
+  vertical-align: middle;
+  animation: dtv-hb 2.4s ease-in-out infinite;
+}
+@keyframes dtv-hb {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.35; transform:scale(.75); }
+}
+
+/* ── Scene: left | center | right ── */
+#dtv-scene {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  grid-template-rows: 1fr;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Side Columns ── */
+.dtv-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,168,255,0.15) transparent;
+  padding: 10px 8px;
+  background: rgba(0,0,0,0.22);
+  border-right: 1px solid rgba(99,168,255,0.08);
+}
+.dtv-col-right {
+  border-right: none;
+  border-left: 1px solid rgba(99,168,255,0.08);
+}
+
+/* ── Tactical Blocks (compact panels) ── */
+.dtv-block {
+  flex-shrink: 0;
+  border: 1px solid rgba(99,168,255,0.1);
+  border-radius: 6px;
+  background: rgba(99,168,255,0.02);
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+}
+.dtv-block:last-child { margin-bottom: 0; }
+.dtv-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  background: rgba(99,168,255,0.03);
+}
+.dtv-block-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(154,169,187,0.7);
+}
+.dtv-block-badge {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(154,169,187,0.6);
+  background: rgba(255,255,255,0.03);
+}
+.dtv-block-badge.nominal { color: #28c840; border-color: rgba(40,200,64,0.25); background: rgba(40,200,64,0.05); }
+.dtv-block-badge.warning { color: #ffb347; border-color: rgba(255,179,71,0.25); background: rgba(255,179,71,0.05); }
+.dtv-block-badge.critical{ color: #ff5f57; border-color: rgba(255,95,87,0.25);  background: rgba(255,95,87,0.05);  }
+.dtv-block-badge.accent  { color: var(--accent); border-color: rgba(99,168,255,0.25); background: rgba(99,168,255,0.05); }
+
+.dtv-block-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dtv-placeholder {
+  font-size: 9px;
+  color: rgba(154,169,187,0.3);
+  letter-spacing: 1px;
+}
+
+/* Tactical data rows */
+.dtv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.dtv-row:last-child { border-bottom: none; }
+.dtv-row-label {
+  font-size: 9px;
+  color: rgba(154,169,187,0.55);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+.dtv-row-value {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--fg);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dtv-row-value.nominal  { color: #28c840; }
+.dtv-row-value.warning  { color: #ffb347; }
+.dtv-row-value.critical { color: #ff5f57; }
+.dtv-row-value.accent   { color: var(--accent); }
+
+/* Mission item */
+.dtv-mission-item {
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.dtv-mission-item:last-child { border-bottom: none; }
+.dtv-mission-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.dtv-mission-sub {
+  font-size: 8px;
+  color: rgba(154,169,187,0.5);
+  letter-spacing: 0.5px;
+}
+
+/* Station item */
+.dtv-station-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.dtv-station-item:last-child { border-bottom: none; }
+.dtv-station-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #28c840;
+}
+.dtv-station-dot.offline { background: rgba(255,255,255,0.15); }
+.dtv-station-dot.warn    { background: #ffb347; }
+.dtv-station-name {
+  font-size: 9px;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dtv-station-sig {
+  font-size: 8px;
+  color: rgba(154,169,187,0.5);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Center: Orbital Command Core ── */
+.dtv-center {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: stretch;
+}
+#dtv-orbital-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+#dtv-orbital-canvas,
+#dtv-link-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#dtv-link-canvas {
+  pointer-events: none;
+  z-index: 2;
+}
+.dtv-orbital-label {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(99,168,255,0.3);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Corner readout overlays */
+.dtv-orb-readout {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 3;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(99,168,255,0.1);
+  border-radius: 4px;
+}
+.dtv-orb-tl { bottom: 14px; left: 14px; }
+.dtv-orb-tr { bottom: 14px; right: 14px; }
+.dtv-readout-row { display: flex; gap: 8px; align-items: center; }
+.dtv-rk {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(99,168,255,0.5);
+  text-transform: uppercase;
+  width: 22px;
+}
+.dtv-rv {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+.dtv-rv.nominal { color: #28c840; }
+
+/* ── Bottom Command Feed ── */
+#dtv-feed {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.4);
+  border-top: 1px solid rgba(99,168,255,0.08);
+  overflow: hidden;
+}
+.dtv-feed-label {
+  flex-shrink: 0;
+  padding: 0 12px;
+  font-size: 8px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-right: 1px solid rgba(99,168,255,0.15);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: rgba(99,168,255,0.05);
+  white-space: nowrap;
+}
+.dtv-feed-track {
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+  position: relative;
+}
+.dtv-feed-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  animation: dtv-scroll 70s linear infinite;
+  will-change: transform;
+}
+.dtv-feed-inner:hover { animation-play-state: paused; }
+.dtv-feed-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 30px 0 0;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dtv-feed-item::before {
+  content: '◆';
+  font-size: 5px;
+  color: rgba(99,168,255,0.3);
+  flex-shrink: 0;
+}
+.dtv-feed-item.nominal::before { color: rgba(40,200,64,0.5); }
+.dtv-feed-item.warning::before { color: rgba(255,179,71,0.5); }
+@keyframes dtv-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── Link canvas signal animation — drawn per frame in JS ── */
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  #dtv-scene { grid-template-columns: 180px 1fr 180px; }
+}
+@media (max-width: 700px) {
+  #dtv-scene {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 260px auto;
+  }
+  .dtv-col { flex-direction: row; flex-wrap: wrap; padding: 6px; }
+  .dtv-block { flex: 1 1 45%; }
+  .dtv-col-right { border-left: none; border-top: 1px solid rgba(99,168,255,0.08); }
+  .ds-view-toggle { display: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -5023,6 +6541,25 @@ document.addEventListener('DOMContentLoaded', function() {
   <div id="ds-topbar">
     <div class="ds-topbar-title">✦ AtulOS — Mission Control</div>
     <div class="ds-topbar-meta" id="ds-topbar-mission">ATULSAT-1</div>
+    <!-- VIEW TOGGLE -->
+    <div class="ds-view-toggle" id="ds-view-toggle" role="tablist" aria-label="DeepSpace view selector">
+      <button type="button" class="ds-view-btn ds-view-btn-active" id="ds-btn-ops"
+              role="tab" aria-selected="true" onclick="window.dsSetView && window.dsSetView('ops')">
+        OPS VIEW
+      </button>
+      <button type="button" class="ds-view-btn" id="ds-btn-tactical"
+              role="tab" aria-selected="false" onclick="window.dsSetView && window.dsSetView('tactical')">
+        TACTICAL VIEW
+      </button>
+      <button type="button" class="ds-view-btn" id="ds-btn-celestial"
+              role="tab" aria-selected="false" onclick="window.dsSetView && window.dsSetView('celestial')">
+        CELESTIAL VIEW
+      </button>
+      <button type="button" class="ds-view-btn" id="ds-btn-expedition"
+              role="tab" aria-selected="false" onclick="window.dsSetView && window.dsSetView('expedition')">
+        EXPEDITION
+      </button>
+    </div>
     <button type="button" id="ds-terminal-btn" class="ds-terminal-btn"
             onclick="window.openDeepSpaceTerminal && window.openDeepSpaceTerminal()"
             aria-label="Open Mission Command Terminal">
@@ -5067,7 +6604,59 @@ document.addEventListener('DOMContentLoaded', function() {
   <!-- ── Dashboard Scroll Area ── -->
   <div id="ds-dashboard">
 
-    <!-- ROW 1: Mission Status + Mission Clock -->
+    <!-- ROW 0: ATLAS Mission Director ── MODULE 4.101 -->
+    <div class="ds-row ds-row-1" id="atlas-row">
+      <div class="ds-panel" id="atlas-panel">
+        <div class="ds-panel-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="ds-panel-title">◈ ATLAS — MISSION DIRECTOR</span>
+            <span class="ds-panel-badge" id="atlas-mode-badge">AUTONOMOUS TELEMETRY &amp; LAUNCH ASSISTANCE</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="atlas-status-dot" id="atlas-dot"></span>
+            <span class="ds-panel-badge nominal" id="atlas-status-badge">ONLINE</span>
+            <button type="button" class="atlas-collapse-btn" id="atlas-collapse-btn" aria-label="Toggle ATLAS panel" onclick="window.atlasToggle && window.atlasToggle()">▾</button>
+          </div>
+        </div>
+        <div id="atlas-body">
+          <!-- Assessment + Priority Mission -->
+          <div id="atlas-top-row">
+            <div class="atlas-block" id="atlas-assessment-block">
+              <div class="atlas-block-label">CURRENT ASSESSMENT</div>
+              <div class="atlas-assessment-text" id="atlas-assessment">Initializing ATLAS analysis engine…</div>
+            </div>
+            <div class="atlas-block" id="atlas-priority-block">
+              <div class="atlas-block-label">PRIORITY MISSION</div>
+              <div class="atlas-priority-name" id="atlas-priority-name">—</div>
+              <div class="atlas-priority-meta" id="atlas-priority-meta">—</div>
+            </div>
+            <div class="atlas-block" id="atlas-network-block">
+              <div class="atlas-block-label">NETWORK STATUS</div>
+              <div id="atlas-network-rows">
+                <div class="atlas-net-row"><span class="atlas-net-label">STATIONS</span><span class="atlas-net-val" id="atlas-net-stations">—</span></div>
+                <div class="atlas-net-row"><span class="atlas-net-label">ASSETS</span><span class="atlas-net-val" id="atlas-net-assets">—</span></div>
+                <div class="atlas-net-row"><span class="atlas-net-label">UPLINK</span><span class="atlas-net-val nominal" id="atlas-net-uplink">—</span></div>
+              </div>
+            </div>
+          </div>
+          <!-- Alerts + Recommendations -->
+          <div id="atlas-bottom-row">
+            <div class="atlas-block atlas-block-wide" id="atlas-alerts-block">
+              <div class="atlas-block-label">CRITICAL ALERTS <span class="atlas-alert-count" id="atlas-alert-count">0</span></div>
+              <div id="atlas-alerts-list">
+                <div class="atlas-no-alerts">◉ ALL SYSTEMS NOMINAL — NO ACTIVE ALERTS</div>
+              </div>
+            </div>
+            <div class="atlas-block atlas-block-wide" id="atlas-recs-block">
+              <div class="atlas-block-label">RECOMMENDATIONS</div>
+              <div id="atlas-recs-list">
+                <div class="atlas-rec-item">Analyzing mission state…</div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /atlas-body -->
+      </div>
+    </div><!-- /ROW 0 -->
     <div class="ds-row ds-row-2">
 
       <!-- Panel 1: Mission Status -->
@@ -5496,6 +7085,441 @@ document.addEventListener('DOMContentLoaded', function() {
     </div><!-- /ROW 10 -->
 
   </div><!-- /#ds-dashboard -->
+
+  <!-- ══════════════════════════════════════════════════════════════
+       TACTICAL VIEW — Full-screen integrated command scene
+       Hidden by default; toggled by dsSetView('tactical')
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="ds-tactical-view" aria-label="Tactical Command View" role="region" hidden>
+
+    <!-- STATUS BAR -->
+    <div id="dtv-statusbar">
+      <div class="dtv-sb-cell">
+        <span class="dtv-sb-label">MISSION HEALTH</span>
+        <span class="dtv-sb-value nominal" id="dtv-sb-health"><span class="dtv-hb"></span>NOMINAL</span>
+      </div>
+      <div class="dtv-sb-cell">
+        <span class="dtv-sb-label">ACTIVE ASSETS</span>
+        <span class="dtv-sb-value accent" id="dtv-sb-assets">—</span>
+      </div>
+      <div class="dtv-sb-cell">
+        <span class="dtv-sb-label">ONLINE STATIONS</span>
+        <span class="dtv-sb-value nominal" id="dtv-sb-stations">—</span>
+      </div>
+      <div class="dtv-sb-cell">
+        <span class="dtv-sb-label">ACTIVE MISSIONS</span>
+        <span class="dtv-sb-value accent" id="dtv-sb-missions">—</span>
+      </div>
+      <div class="dtv-sb-cell">
+        <span class="dtv-sb-label">NETWORK QUALITY</span>
+        <span class="dtv-sb-value nominal" id="dtv-sb-net">OPTIMAL</span>
+      </div>
+      <div class="dtv-sb-cell dtv-sb-utc">
+        <span class="dtv-sb-label">UTC</span>
+        <span class="dtv-sb-value" id="dtv-sb-utc">——:——:——</span>
+      </div>
+    </div>
+
+    <!-- COMMAND SCENE: left | center | right -->
+    <div id="dtv-scene">
+
+      <!-- LEFT STRATEGIC COLUMN -->
+      <div class="dtv-col dtv-col-left" id="dtv-left">
+
+        <div class="dtv-block" id="dtv-missions-block">
+          <div class="dtv-block-header">
+            <span class="dtv-block-title">Active Missions</span>
+            <span class="dtv-block-badge nominal" id="dtv-missions-badge">LIVE</span>
+          </div>
+          <div class="dtv-block-body" id="dtv-missions-body">
+            <div class="dtv-placeholder">Loading…</div>
+          </div>
+        </div>
+
+        <div class="dtv-block" id="dtv-assets-block">
+          <div class="dtv-block-header">
+            <span class="dtv-block-title">Asset Summary</span>
+            <span class="dtv-block-badge" id="dtv-assets-badge">—</span>
+          </div>
+          <div class="dtv-block-body" id="dtv-assets-body">
+            <div class="dtv-placeholder">Loading…</div>
+          </div>
+        </div>
+
+        <div class="dtv-block" id="dtv-launch-block">
+          <div class="dtv-block-header">
+            <span class="dtv-block-title">Launch Status</span>
+            <span class="dtv-block-badge" id="dtv-launch-badge">STANDBY</span>
+          </div>
+          <div class="dtv-block-body" id="dtv-launch-body">
+            <div class="dtv-placeholder">Loading…</div>
+          </div>
+        </div>
+
+      </div><!-- /dtv-left -->
+
+      <!-- CENTER: ORBITAL COMMAND CORE -->
+      <div class="dtv-center" id="dtv-center">
+        <div id="dtv-orbital-wrap">
+          <span class="dtv-orbital-label">ORBITAL COMMAND CORE — LIVE</span>
+          <!-- Canvas is shared with ops view; JS moves it here -->
+          <canvas id="dtv-orbital-canvas" aria-label="Tactical orbital display"></canvas>
+          <!-- Tactical overlay: comm link arcs drawn here -->
+          <canvas id="dtv-link-canvas" aria-label="Communication link overlay"></canvas>
+          <!-- Corner readouts -->
+          <div class="dtv-orb-readout dtv-orb-tl">
+            <div class="dtv-readout-row"><span class="dtv-rk">ALT</span><span class="dtv-rv" id="dtv-orb-alt">412 KM</span></div>
+            <div class="dtv-readout-row"><span class="dtv-rk">VEL</span><span class="dtv-rv" id="dtv-orb-vel">7.68 KM/S</span></div>
+          </div>
+          <div class="dtv-orb-readout dtv-orb-tr">
+            <div class="dtv-readout-row"><span class="dtv-rk">SIG</span><span class="dtv-rv nominal" id="dtv-orb-sig">STRONG</span></div>
+            <div class="dtv-readout-row"><span class="dtv-rk">PKT</span><span class="dtv-rv" id="dtv-orb-pkt">98.7%</span></div>
+          </div>
+        </div>
+      </div><!-- /dtv-center -->
+
+      <!-- RIGHT STRATEGIC COLUMN -->
+      <div class="dtv-col dtv-col-right" id="dtv-right">
+
+        <div class="dtv-block" id="dtv-stations-block">
+          <div class="dtv-block-header">
+            <span class="dtv-block-title">Ground Stations</span>
+            <span class="dtv-block-badge nominal" id="dtv-stations-badge">—</span>
+          </div>
+          <div class="dtv-block-body" id="dtv-stations-body">
+            <div class="dtv-placeholder">Loading…</div>
+          </div>
+        </div>
+
+        <div class="dtv-block" id="dtv-comms-block">
+          <div class="dtv-block-header">
+            <span class="dtv-block-title">Communications</span>
+            <span class="dtv-block-badge nominal" id="dtv-comms-badge">NOMINAL</span>
+          </div>
+          <div class="dtv-block-body" id="dtv-comms-body">
+            <div class="dtv-placeholder">Loading…</div>
+          </div>
+        </div>
+
+        <div class="dtv-block" id="dtv-rovers-block">
+          <div class="dtv-block-header">
+            <span class="dtv-block-title">Rover Status</span>
+            <span class="dtv-block-badge" id="dtv-rovers-badge">—</span>
+          </div>
+          <div class="dtv-block-body" id="dtv-rovers-body">
+            <div class="dtv-placeholder">Loading…</div>
+          </div>
+        </div>
+
+      </div><!-- /dtv-right -->
+
+    </div><!-- /dtv-scene -->
+
+    <!-- BOTTOM COMMAND FEED -->
+    <div id="dtv-feed">
+      <span class="dtv-feed-label">▶ COMMAND FEED</span>
+      <div class="dtv-feed-track">
+        <div class="dtv-feed-inner" id="dtv-feed-inner">
+          <span class="dtv-feed-item nominal">SIGNAL ACQUIRED — ATULSAT-1 UPLINK CONFIRMED</span>
+          <span class="dtv-feed-item">ORBITAL MECHANICS — TRAJECTORY WITHIN PARAMETERS</span>
+          <span class="dtv-feed-item nominal">GROUND STATION BANGALORE-01 — LINK ACTIVE</span>
+          <span class="dtv-feed-item nominal">NETWORK HEALTH — VERIFIED</span>
+          <span class="dtv-feed-item">ATULSAT-1 — ALTITUDE 412 KM · VELOCITY 7.68 KM/S</span>
+          <span class="dtv-feed-item nominal">PACKET SUCCESS RATE — 98.7%</span>
+          <span class="dtv-feed-item">POWER SUBSYSTEM — NOMINAL</span>
+          <span class="dtv-feed-item nominal">ATTITUDE CONTROL — STABLE</span>
+          <span class="dtv-feed-item">PAYLOAD — ACTIVE</span>
+          <span class="dtv-feed-item nominal">ROVER UPDATE RECEIVED</span>
+          <span class="dtv-feed-item">MISSION STATUS NOMINAL</span>
+          <span class="dtv-feed-item nominal">GROUND STATION HANDOFF COMPLETE</span>
+          <!-- duplicate for seamless loop -->
+          <span class="dtv-feed-item nominal">SIGNAL ACQUIRED — ATULSAT-1 UPLINK CONFIRMED</span>
+          <span class="dtv-feed-item">ORBITAL MECHANICS — TRAJECTORY WITHIN PARAMETERS</span>
+          <span class="dtv-feed-item nominal">GROUND STATION BANGALORE-01 — LINK ACTIVE</span>
+          <span class="dtv-feed-item nominal">NETWORK HEALTH — VERIFIED</span>
+          <span class="dtv-feed-item">ATULSAT-1 — ALTITUDE 412 KM · VELOCITY 7.68 KM/S</span>
+          <span class="dtv-feed-item nominal">PACKET SUCCESS RATE — 98.7%</span>
+          <span class="dtv-feed-item">POWER SUBSYSTEM — NOMINAL</span>
+          <span class="dtv-feed-item nominal">ATTITUDE CONTROL — STABLE</span>
+          <span class="dtv-feed-item">PAYLOAD — ACTIVE</span>
+          <span class="dtv-feed-item nominal">ROVER UPDATE RECEIVED</span>
+          <span class="dtv-feed-item">MISSION STATUS NOMINAL</span>
+          <span class="dtv-feed-item nominal">GROUND STATION HANDOFF COMPLETE</span>
+        </div>
+      </div>
+    </div><!-- /dtv-feed -->
+
+  </div><!-- /#ds-tactical-view -->
+
+  <!-- ══════════════════════════════════════════════════════════════
+       CELESTIAL VIEW — Planetary-scale exploration overview
+       Hidden by default; activated by dsSetView('celestial')
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="ds-celestial-view" aria-label="Celestial Exploration View" role="region" hidden>
+
+    <!-- TOP STATS BAR -->
+    <div id="dcv-statsbar">
+      <div class="dcv-stat">
+        <span class="dcv-stat-label">ACTIVE MISSIONS</span>
+        <span class="dcv-stat-value accent" id="dcv-stat-missions">—</span>
+      </div>
+      <div class="dcv-stat">
+        <span class="dcv-stat-label">SPACECRAFT</span>
+        <span class="dcv-stat-value accent" id="dcv-stat-spacecraft">—</span>
+      </div>
+      <div class="dcv-stat">
+        <span class="dcv-stat-label">ACTIVE ROVERS</span>
+        <span class="dcv-stat-value accent" id="dcv-stat-rovers">—</span>
+      </div>
+      <div class="dcv-stat">
+        <span class="dcv-stat-label">GROUND STATIONS</span>
+        <span class="dcv-stat-value nominal" id="dcv-stat-stations">—</span>
+      </div>
+      <div class="dcv-stat">
+        <span class="dcv-stat-label">SUCCESS RATE</span>
+        <span class="dcv-stat-value nominal" id="dcv-stat-success">—</span>
+      </div>
+      <div class="dcv-stat">
+        <span class="dcv-stat-label">NETWORK HEALTH</span>
+        <span class="dcv-stat-value nominal" id="dcv-stat-network">NOMINAL</span>
+      </div>
+      <!-- Region filter buttons -->
+      <div class="dcv-region-filter" id="dcv-region-filter">
+        <button type="button" class="dcv-region-btn dcv-region-btn-active" data-region="all">ALL</button>
+        <button type="button" class="dcv-region-btn" data-region="earth">EARTH</button>
+        <button type="button" class="dcv-region-btn" data-region="moon">MOON</button>
+        <button type="button" class="dcv-region-btn" data-region="mars">MARS</button>
+        <button type="button" class="dcv-region-btn" data-region="deep">DEEP SPACE</button>
+      </div>
+    </div>
+
+    <!-- MAIN SCENE -->
+    <div id="dcv-scene">
+
+      <!-- SOLAR SYSTEM CANVAS — centerpiece -->
+      <div id="dcv-solar-wrap">
+        <canvas id="dcv-solar-canvas" aria-label="Solar system exploration map"></canvas>
+        <!-- Asset tooltip -->
+        <div id="dcv-tooltip" aria-live="polite"></div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div id="dcv-right-panel">
+
+        <!-- Discovery Timeline -->
+        <div class="dcv-panel" id="dcv-timeline-panel">
+          <div class="dcv-panel-header">
+            <span class="dcv-panel-title">Discovery Timeline</span>
+            <span class="dcv-panel-badge nominal" id="dcv-timeline-badge">LIVE</span>
+          </div>
+          <div class="dcv-timeline-body" id="dcv-timeline-body">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Region detail -->
+        <div class="dcv-panel" id="dcv-region-panel">
+          <div class="dcv-panel-header">
+            <span class="dcv-panel-title" id="dcv-region-title">SOLAR SYSTEM</span>
+            <span class="dcv-panel-badge" id="dcv-region-badge">OVERVIEW</span>
+          </div>
+          <div class="dcv-region-body" id="dcv-region-body">
+            <!-- Populated on region select -->
+          </div>
+        </div>
+
+      </div><!-- /dcv-right-panel -->
+
+    </div><!-- /dcv-scene -->
+
+    <!-- BOTTOM EXPLORATION FEED -->
+    <div id="dcv-feed">
+      <span class="dcv-feed-label">◉ EXPLORATION LOG</span>
+      <div class="dcv-feed-track">
+        <div class="dcv-feed-inner" id="dcv-feed-inner">
+          <span class="dcv-feed-item nominal">ATULSAT-1 — ORBIT NOMINAL · EARTH LEO</span>
+          <span class="dcv-feed-item">MANGALYAAN-X — MARS TRANSFER ORBIT · NOMINAL</span>
+          <span class="dcv-feed-item nominal">CHANDRA-1 — LUNAR APPROACH · SIGNAL ACQUIRED</span>
+          <span class="dcv-feed-item">ATULROVER-1 — MARS SURFACE OPERATIONS ACTIVE</span>
+          <span class="dcv-feed-item nominal">VOYAGER-SIM — DEEP SPACE · TELEMETRY NOMINAL</span>
+          <span class="dcv-feed-item">MARS-SCOUT — ATMOSPHERIC ENTRY NOMINAL</span>
+          <span class="dcv-feed-item nominal">NETWORK HEALTH — ALL GROUND STATIONS RESPONSIVE</span>
+          <span class="dcv-feed-item">MISSION SUCCESS RATE — 94.2%</span>
+          <span class="dcv-feed-item nominal">ATULSAT-2 — ORBIT INSERTION COMPLETE</span>
+          <span class="dcv-feed-item">SCIENCE OPERATIONS — ACTIVE ON 3 MISSIONS</span>
+          <!-- duplicate for seamless loop -->
+          <span class="dcv-feed-item nominal">ATULSAT-1 — ORBIT NOMINAL · EARTH LEO</span>
+          <span class="dcv-feed-item">MANGALYAAN-X — MARS TRANSFER ORBIT · NOMINAL</span>
+          <span class="dcv-feed-item nominal">CHANDRA-1 — LUNAR APPROACH · SIGNAL ACQUIRED</span>
+          <span class="dcv-feed-item">ATULROVER-1 — MARS SURFACE OPERATIONS ACTIVE</span>
+          <span class="dcv-feed-item nominal">VOYAGER-SIM — DEEP SPACE · TELEMETRY NOMINAL</span>
+          <span class="dcv-feed-item">MARS-SCOUT — ATMOSPHERIC ENTRY NOMINAL</span>
+          <span class="dcv-feed-item nominal">NETWORK HEALTH — ALL GROUND STATIONS RESPONSIVE</span>
+          <span class="dcv-feed-item">MISSION SUCCESS RATE — 94.2%</span>
+          <span class="dcv-feed-item nominal">ATULSAT-2 — ORBIT INSERTION COMPLETE</span>
+          <span class="dcv-feed-item">SCIENCE OPERATIONS — ACTIVE ON 3 MISSIONS</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#ds-celestial-view -->
+
+  <!-- ══════════════════════════════════════════════════════════════
+       EXPEDITION VIEW — Mission Journey & Exploration Layer
+       Hidden by default; activated by dsSetView('expedition')
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="ds-expedition-view" aria-label="Expedition Mission View" role="region" hidden>
+
+    <!-- EXPLORATION STATS BAR -->
+    <div id="dex-statsbar">
+      <div class="dex-stat">
+        <span class="dex-stat-label">TOTAL MISSIONS</span>
+        <span class="dex-stat-value" id="dex-st-total">—</span>
+      </div>
+      <div class="dex-stat">
+        <span class="dex-stat-label">COMPLETED</span>
+        <span class="dex-stat-value nominal" id="dex-st-completed">—</span>
+      </div>
+      <div class="dex-stat">
+        <span class="dex-stat-label">ACTIVE EXPEDITIONS</span>
+        <span class="dex-stat-value accent" id="dex-st-active">—</span>
+      </div>
+      <div class="dex-stat">
+        <span class="dex-stat-label">WORLDS REACHED</span>
+        <span class="dex-stat-value accent" id="dex-st-worlds">—</span>
+      </div>
+      <div class="dex-stat">
+        <span class="dex-stat-label">DEEP SPACE DIST.</span>
+        <span class="dex-stat-value" id="dex-st-distance">—</span>
+      </div>
+      <div class="dex-stat">
+        <span class="dex-stat-label">SUCCESS RATE</span>
+        <span class="dex-stat-value nominal" id="dex-st-success">—</span>
+      </div>
+      <!-- Mission selector pills -->
+      <div class="dex-mission-selector" id="dex-mission-selector">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- MAIN LAYOUT: Journey Map | Mission Detail | Discovery Feed -->
+    <div id="dex-scene">
+
+      <!-- LEFT: Mission Route Map -->
+      <div id="dex-route-col">
+        <div class="dex-col-header">
+          <span class="dex-col-title">MISSION ROUTE</span>
+          <span class="dex-col-badge" id="dex-route-badge">SELECT MISSION</span>
+        </div>
+        <div id="dex-route-wrap">
+          <canvas id="dex-route-canvas" aria-label="Mission route visualization"></canvas>
+        </div>
+      </div>
+
+      <!-- CENTER: Mission Journey Detail -->
+      <div id="dex-detail-col">
+        <div class="dex-col-header">
+          <span class="dex-col-title" id="dex-detail-title">EXPEDITION OVERVIEW</span>
+          <span class="dex-col-badge nominal" id="dex-detail-badge">ACTIVE</span>
+        </div>
+        <div id="dex-detail-body">
+
+          <!-- Mission header card -->
+          <div id="dex-mission-card">
+            <div id="dex-mc-name">SELECT A MISSION</div>
+            <div id="dex-mc-goal">—</div>
+            <div id="dex-mc-meta">
+              <span class="dex-meta-item"><span class="dex-mk">FROM</span><span class="dex-mv" id="dex-mc-from">—</span></span>
+              <span class="dex-meta-item"><span class="dex-mk">TO</span><span class="dex-mv accent" id="dex-mc-to">—</span></span>
+              <span class="dex-meta-item"><span class="dex-mk">DURATION</span><span class="dex-mv" id="dex-mc-dur">—</span></span>
+              <span class="dex-meta-item"><span class="dex-mk">PHASE</span><span class="dex-mv accent" id="dex-mc-phase">—</span></span>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div id="dex-progress-wrap">
+            <div class="dex-progress-header">
+              <span class="dex-pk">MISSION COMPLETION</span>
+              <span class="dex-pv" id="dex-progress-pct">—</span>
+            </div>
+            <div class="dex-progress-track">
+              <div class="dex-progress-fill" id="dex-progress-fill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <!-- Phase timeline -->
+          <div id="dex-phase-timeline">
+            <div class="dex-section-label">MISSION PHASES</div>
+            <div id="dex-phase-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Objectives -->
+          <div id="dex-objectives">
+            <div class="dex-section-label">MISSION OBJECTIVES</div>
+            <div id="dex-obj-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+        </div><!-- /dex-detail-body -->
+      </div>
+
+      <!-- RIGHT: Milestone Timeline + Discovery Feed -->
+      <div id="dex-right-col">
+
+        <div class="dex-col-header">
+          <span class="dex-col-title">EXPEDITION TIMELINE</span>
+          <span class="dex-col-badge nominal" id="dex-tl-badge">LIVE</span>
+        </div>
+
+        <!-- Milestone timeline -->
+        <div id="dex-milestone-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Next milestone -->
+        <div id="dex-next-milestone">
+          <div class="dex-section-label">NEXT MILESTONE</div>
+          <div id="dex-next-body">—</div>
+        </div>
+
+      </div>
+
+    </div><!-- /dex-scene -->
+
+    <!-- DISCOVERY FEED -->
+    <div id="dex-discovery-feed">
+      <span class="dex-feed-label">◉ DISCOVERY LOG</span>
+      <div class="dex-feed-track">
+        <div class="dex-feed-inner" id="dex-feed-inner">
+          <span class="dex-feed-item nominal">NEW REGION MAPPED — ATULROVER-1 · MARS SURFACE</span>
+          <span class="dex-feed-item">SURFACE ANALYSIS COMPLETE — SOIL SAMPLE CONFIRMED</span>
+          <span class="dex-feed-item nominal">MISSION PHASE ADVANCED — ATULSAT-1 SCIENCE OPS ACTIVE</span>
+          <span class="dex-feed-item">COMMUNICATION LINK ESTABLISHED — VOYAGER-SIM DEEP SPACE</span>
+          <span class="dex-feed-item nominal">SIGNAL VERIFIED — CHANDRA-1 LUNAR APPROACH NOMINAL</span>
+          <span class="dex-feed-item">SCIENCE PAYLOAD ACTIVATED — MANGALYAAN-X MARS ORBIT</span>
+          <span class="dex-feed-item nominal">ATMOSPHERIC ANALYSIS COMPLETE — MARS-SCOUT ENTRY NOMINAL</span>
+          <span class="dex-feed-item">ORBIT INSERTION CONFIRMED — ATULSAT-2 LEO STABLE</span>
+          <span class="dex-feed-item nominal">TERRAIN MAPPING — 847 KM² SURVEYED</span>
+          <span class="dex-feed-item">RELAY DEPLOYMENT SUCCESSFUL — NETWORK EXTENDED</span>
+          <!-- loop duplicate -->
+          <span class="dex-feed-item nominal">NEW REGION MAPPED — ATULROVER-1 · MARS SURFACE</span>
+          <span class="dex-feed-item">SURFACE ANALYSIS COMPLETE — SOIL SAMPLE CONFIRMED</span>
+          <span class="dex-feed-item nominal">MISSION PHASE ADVANCED — ATULSAT-1 SCIENCE OPS ACTIVE</span>
+          <span class="dex-feed-item">COMMUNICATION LINK ESTABLISHED — VOYAGER-SIM DEEP SPACE</span>
+          <span class="dex-feed-item nominal">SIGNAL VERIFIED — CHANDRA-1 LUNAR APPROACH NOMINAL</span>
+          <span class="dex-feed-item">SCIENCE PAYLOAD ACTIVATED — MANGALYAAN-X MARS ORBIT</span>
+          <span class="dex-feed-item nominal">ATMOSPHERIC ANALYSIS COMPLETE — MARS-SCOUT ENTRY NOMINAL</span>
+          <span class="dex-feed-item">ORBIT INSERTION CONFIRMED — ATULSAT-2 LEO STABLE</span>
+          <span class="dex-feed-item nominal">TERRAIN MAPPING — 847 KM² SURVEYED</span>
+          <span class="dex-feed-item">RELAY DEPLOYMENT SUCCESSFUL — NETWORK EXTENDED</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#ds-expedition-view -->
 
   <!-- ── PHASE 4: Telemetry Ticker ── -->
   <div id="ds-telemetry-ticker" aria-hidden="true">
@@ -25209,6 +27233,2731 @@ window.safeAppend = function safeAppend(parent, child) {
 </script>
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.97 — DEEPSPACE COMMAND CENTER EXPERIENCE V1
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.98 — DEEPSPACE TACTICAL VIEW V1
+     View toggle · Orbital mirror · Side columns · Link arcs · Feed
+     PATCH ONLY — no existing modules modified.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── helpers ── */
+  function _el(id) { return document.getElementById(id); }
+  function _txt(id, fb) { var e = _el(id); return e ? e.textContent.trim() : (fb || ''); }
+
+  /* ── state ── */
+  var _view       = 'ops';   // 'ops' | 'tactical'
+  var _timers     = [];
+  var _raf        = null;
+  var _linkPhase  = 0;
+  var _feedIdx    = 0;
+
+  /* ── feed pool ── */
+  var _feedPool = [
+    { text: 'SIGNAL ACQUIRED — ATULSAT-1 UPLINK CONFIRMED',     cls: 'nominal' },
+    { text: 'TELEMETRY RECEIVED — ALL SYSTEMS NOMINAL',          cls: 'nominal' },
+    { text: 'ORBITAL MECHANICS — TRAJECTORY WITHIN PARAMETERS',  cls: '' },
+    { text: 'GROUND STATION HANDOFF COMPLETE',                   cls: 'nominal' },
+    { text: 'MISSION STATUS NOMINAL',                            cls: 'nominal' },
+    { text: 'ROVER UPDATE RECEIVED',                             cls: 'nominal' },
+    { text: 'PAYLOAD ACTIVE',                                    cls: '' },
+    { text: 'NETWORK HEALTH VERIFIED',                           cls: 'nominal' },
+    { text: 'ATULSAT-1 — ALTITUDE 412 KM · VELOCITY 7.68 KM/S', cls: '' },
+    { text: 'PACKET SUCCESS RATE — 98.7%',                       cls: 'nominal' },
+    { text: 'POWER SUBSYSTEM — NOMINAL',                         cls: '' },
+    { text: 'ATTITUDE CONTROL — STABLE',                         cls: 'nominal' },
+    { text: 'COMMAND UPLINK — SEQUENCE VERIFIED',                cls: '' },
+    { text: 'DOWNLINK RATE — 2.048 MBPS',                        cls: '' },
+    { text: 'SOLAR ARRAY OUTPUT — NOMINAL',                      cls: 'nominal' },
+  ];
+
+  /* ════════════════════════════════════════════════════════
+     DATA ACCESSORS — read existing module APIs
+  ════════════════════════════════════════════════════════ */
+  function _getMissions() {
+    return (window._deepspaceMissions && window._deepspaceMissions.list)
+      ? window._deepspaceMissions.list() : [];
+  }
+  function _getAssets() {
+    return (window._deepspaceAssets && window._deepspaceAssets.list)
+      ? window._deepspaceAssets.list() : [];
+  }
+  function _getStations() {
+    return (window._deepspaceStations && window._deepspaceStations.list)
+      ? window._deepspaceStations.list() : [];
+  }
+  function _getRovers() {
+    return (window._deepspaceRovers && window._deepspaceRovers.list)
+      ? window._deepspaceRovers.list() : [];
+  }
+  function _getLaunches() {
+    return (window._deepspaceLaunches && window._deepspaceLaunches.list)
+      ? window._deepspaceLaunches.list() : [];
+  }
+
+  /* ════════════════════════════════════════════════════════
+     VIEW SWITCHER
+  ════════════════════════════════════════════════════════ */
+  function _setView(v) {
+    _view = v;
+
+    var dash    = _el('ds-dashboard');
+    var ribbon  = _el('ds-command-ribbon');
+    var ticker  = _el('ds-telemetry-ticker');
+    var tactical= _el('ds-tactical-view');
+    var llinks  = _el('ds-live-links-panel') && _el('ds-live-links-panel').closest('.ds-row');
+    var btnOps  = _el('ds-btn-ops');
+    var btnTac  = _el('ds-btn-tactical');
+
+    if (v === 'tactical') {
+      if (dash)    dash.style.display    = 'none';
+      if (ribbon)  ribbon.style.display  = 'none';
+      if (ticker)  ticker.style.display  = 'none';
+      if (llinks)  llinks.style.display  = 'none';
+      if (tactical){ tactical.hidden = false; tactical.style.display = 'flex'; }
+      if (btnOps)  { btnOps.classList.remove('ds-view-btn-active');  btnOps.setAttribute('aria-selected','false'); }
+      if (btnTac)  { btnTac.classList.add('ds-view-btn-active');     btnTac.setAttribute('aria-selected','true');  }
+      _startTactical();
+    } else {
+      if (dash)    dash.style.display    = '';
+      if (ribbon)  ribbon.style.display  = '';
+      if (ticker)  ticker.style.display  = '';
+      if (llinks)  llinks.style.display  = '';
+      if (tactical){ tactical.hidden = true; tactical.style.display = 'none'; }
+      if (btnTac)  { btnTac.classList.remove('ds-view-btn-active'); btnTac.setAttribute('aria-selected','false'); }
+      if (btnOps)  { btnOps.classList.add('ds-view-btn-active');    btnOps.setAttribute('aria-selected','true');  }
+      _stopTactical();
+    }
+  }
+
+  /* expose globally for onclick handlers */
+  window.dsSetView = _setView;
+
+  /* ════════════════════════════════════════════════════════
+     ORBITAL CANVAS MIRROR
+     The existing orbital engine renders to #ds-orbital-canvas.
+     In tactical mode we read those pixels into #dtv-orbital-canvas
+     every animation frame — zero duplication of physics.
+  ════════════════════════════════════════════════════════ */
+  function _mirrorOrbital() {
+    var src = _el('ds-orbital-canvas');
+    var dst = _el('dtv-orbital-canvas');
+    if (!src || !dst) return;
+
+    var wrap = _el('dtv-orbital-wrap');
+    if (!wrap) return;
+
+    /* Sync destination size to wrapper */
+    var W = wrap.clientWidth  || 800;
+    var H = wrap.clientHeight || 500;
+    if (dst.width !== W || dst.height !== H) {
+      dst.width  = W;
+      dst.height = H;
+    }
+
+    /* Ensure source canvas is live (engine may have sized it) */
+    if (src.width < 2 || src.height < 2) return;
+
+    var ctx = dst.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(src, 0, 0, W, H);
+  }
+
+  /* ════════════════════════════════════════════════════════
+     LINK ARC VISUALIZATION
+     Draws animated comm-link arcs on #dtv-link-canvas
+     between named anchor positions (station / satellite / rover).
+  ════════════════════════════════════════════════════════ */
+  var _arcNodes = [
+    { name: 'GS-BLR',    x: 0.18, y: 0.82, color: '#28c840', type: 'station' },
+    { name: 'GS-SHR',    x: 0.82, y: 0.78, color: '#28c840', type: 'station' },
+    { name: 'ATULSAT-1', x: 0.50, y: 0.28, color: '#63a8ff', type: 'satellite' },
+    { name: 'ATULSAT-2', x: 0.72, y: 0.38, color: '#63a8ff', type: 'satellite' },
+    { name: 'ROVER-1',   x: 0.28, y: 0.68, color: '#ffb347', type: 'rover' },
+  ];
+
+  var _arcLinks = [
+    { a: 'GS-BLR',    b: 'ATULSAT-1', strength: 1.0 },
+    { a: 'GS-SHR',    b: 'ATULSAT-2', strength: 0.8 },
+    { a: 'ATULSAT-1', b: 'ROVER-1',   strength: 0.6 },
+    { a: 'ATULSAT-1', b: 'ATULSAT-2', strength: 0.5 },
+  ];
+
+  function _enrichArcNodesFromData() {
+    var stations = _getStations();
+    var assets   = _getAssets();
+    var rovers   = _getRovers();
+
+    /* Build node map from live data if available */
+    var liveNodes = [];
+    var stationPositions = [
+      {x:0.15, y:0.80}, {x:0.80, y:0.75}, {x:0.50, y:0.88}
+    ];
+    var satPositions = [
+      {x:0.50, y:0.25}, {x:0.70, y:0.35}, {x:0.30, y:0.30}
+    ];
+    var roverPositions = [
+      {x:0.28, y:0.65}, {x:0.60, y:0.70}
+    ];
+
+    stations.slice(0,3).forEach(function(s, i) {
+      var pos = stationPositions[i] || {x:0.5,y:0.85};
+      liveNodes.push({ name: s.name, x: pos.x, y: pos.y,
+        color: s.status === 'ONLINE' ? '#28c840' : 'rgba(255,255,255,0.2)',
+        type: 'station' });
+    });
+    assets.slice(0,3).forEach(function(a, i) {
+      var pos = satPositions[i] || {x:0.5,y:0.3};
+      liveNodes.push({ name: a.name, x: pos.x, y: pos.y, color: '#63a8ff', type: 'satellite' });
+    });
+    rovers.slice(0,2).forEach(function(r, i) {
+      var pos = roverPositions[i] || {x:0.4,y:0.7};
+      liveNodes.push({ name: r.name, x: pos.x, y: pos.y, color: '#ffb347', type: 'rover' });
+    });
+
+    if (liveNodes.length >= 2) {
+      _arcNodes = liveNodes;
+      /* rebuild links: stations → satellites → rovers */
+      _arcLinks = [];
+      var sts  = liveNodes.filter(function(n){return n.type==='station';});
+      var sats = liveNodes.filter(function(n){return n.type==='satellite';});
+      var rovs = liveNodes.filter(function(n){return n.type==='rover';});
+      sts.forEach(function(s, i) {
+        var sat = sats[i % sats.length];
+        if (sat) _arcLinks.push({a:s.name, b:sat.name, strength:1.0});
+      });
+      sats.forEach(function(s, i) {
+        var r = rovs[i % rovs.length];
+        if (r) _arcLinks.push({a:s.name, b:r.name, strength:0.6});
+        if (sats[i+1]) _arcLinks.push({a:s.name, b:sats[i+1].name, strength:0.4});
+      });
+    }
+  }
+
+  function _drawLinkArcs(phase) {
+    var cnv = _el('dtv-link-canvas');
+    if (!cnv) return;
+    var wrap = _el('dtv-orbital-wrap');
+    if (!wrap) return;
+
+    var W = wrap.clientWidth  || 800;
+    var H = wrap.clientHeight || 500;
+    if (cnv.width !== W || cnv.height !== H) {
+      cnv.width  = W;
+      cnv.height = H;
+    }
+
+    var ctx = cnv.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+
+    /* Build name→pixel lookup */
+    var nodeMap = {};
+    _arcNodes.forEach(function(n) {
+      nodeMap[n.name] = { x: n.x * W, y: n.y * H, color: n.color, type: n.type };
+    });
+
+    _arcLinks.forEach(function(link) {
+      var A = nodeMap[link.a];
+      var B = nodeMap[link.b];
+      if (!A || !B) return;
+
+      var dx = B.x - A.x;
+      var dy = B.y - A.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+
+      /* Arc control point — curve up toward center */
+      var mx = (A.x + B.x) / 2;
+      var my = (A.y + B.y) / 2 - dist * 0.35;
+
+      /* Base arc — very faint */
+      ctx.beginPath();
+      ctx.moveTo(A.x, A.y);
+      ctx.quadraticCurveTo(mx, my, B.x, B.y);
+      ctx.strokeStyle = 'rgba(99,168,255,0.08)';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([]);
+      ctx.stroke();
+
+      /* Animated signal pulse along the arc */
+      var t = ((phase * 0.003 * link.strength) % 1);
+      /* Quadratic bezier point at t */
+      var px = (1-t)*(1-t)*A.x + 2*(1-t)*t*mx + t*t*B.x;
+      var py = (1-t)*(1-t)*A.y + 2*(1-t)*t*my + t*t*B.y;
+
+      /* Pulse dot */
+      var pulseColor = A.type === 'station' ? '#28c840'
+                     : A.type === 'rover'   ? '#ffb347'
+                     : '#63a8ff';
+
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = pulseColor;
+      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(phase * 0.1);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      /* Node dots */
+      [A, B].forEach(function(node) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = node.color;
+        ctx.globalAlpha = 0.5;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════
+     STATUS BAR
+  ════════════════════════════════════════════════════════ */
+  function _updateStatusBar() {
+    var missions  = _getMissions();
+    var assets    = _getAssets();
+    var stations  = _getStations();
+
+    var activeMissions = missions.filter(function(m){
+      return m.status === 'ACTIVE' || m.status === 'IN PROGRESS';
+    });
+    var activeAssets = assets.filter(function(a){
+      return a.status === 'OPERATIONAL' || a.status === 'NOMINAL';
+    });
+    var onlineStations = stations.filter(function(s){
+      return s.status === 'ONLINE' || s.status === 'ACTIVE';
+    });
+
+    var health = 'NOMINAL', hCls = 'nominal';
+    if (onlineStations.length < stations.length) { health = 'DEGRADED'; hCls = 'warning'; }
+    if (onlineStations.length === 0)             { health = 'CRITICAL'; hCls = 'critical'; }
+
+    var hEl = _el('dtv-sb-health');
+    if (hEl) {
+      hEl.className = 'dtv-sb-value ' + hCls;
+      hEl.innerHTML = '<span class="dtv-hb"></span>' + health;
+    }
+    _setSB('dtv-sb-assets',   activeAssets.length  + ' / ' + assets.length,   'accent');
+    _setSB('dtv-sb-stations', onlineStations.length + ' / ' + stations.length, 'nominal');
+    _setSB('dtv-sb-missions', activeMissions.length + ' / ' + missions.length, 'accent');
+    _setSB('dtv-sb-net', onlineStations.length > 0 ? 'OPTIMAL' : 'DEGRADED',
+           onlineStations.length > 0 ? 'nominal' : 'warning');
+
+    /* UTC clock */
+    var utcEl = _el('dtv-sb-utc');
+    if (utcEl) {
+      var now = new Date();
+      var hh  = String(now.getUTCHours()).padStart(2,'0');
+      var mm  = String(now.getUTCMinutes()).padStart(2,'0');
+      var ss  = String(now.getUTCSeconds()).padStart(2,'0');
+      utcEl.textContent = hh + ':' + mm + ':' + ss;
+    }
+  }
+
+  function _setSB(id, val, cls) {
+    var el = _el(id);
+    if (!el) return;
+    if (el.textContent !== val) el.textContent = val;
+    el.className = 'dtv-sb-value ' + (cls || '');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     LEFT COLUMN — Missions · Assets · Launch
+  ════════════════════════════════════════════════════════ */
+  function _updateLeft() {
+    _renderMissions();
+    _renderAssets();
+    _renderLaunch();
+  }
+
+  function _renderMissions() {
+    var body  = _el('dtv-missions-body');
+    var badge = _el('dtv-missions-badge');
+    if (!body) return;
+
+    var missions = _getMissions();
+    var active   = missions.filter(function(m){
+      return m.status === 'ACTIVE' || m.status === 'IN PROGRESS';
+    });
+
+    if (badge) {
+      badge.textContent = active.length + ' ACTIVE';
+      badge.className = 'dtv-block-badge ' + (active.length ? 'nominal' : '');
+    }
+
+    if (!missions.length) {
+      body.innerHTML = '<div class="dtv-placeholder">NO MISSIONS LOADED</div>'; return;
+    }
+
+    body.innerHTML = missions.slice(0,4).map(function(m) {
+      var isActive = m.status === 'ACTIVE' || m.status === 'IN PROGRESS';
+      return '<div class="dtv-mission-item">' +
+        '<div class="dtv-mission-name">' + (m.name || m.id || 'MISSION') + '</div>' +
+        '<div class="dtv-mission-sub">' +
+          '<span class="dtv-row-value ' + (isActive ? 'nominal' : '') + '">' +
+            (m.status || 'UNKNOWN') + '</span>' +
+          (m.phase ? ' · ' + m.phase : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderAssets() {
+    var body  = _el('dtv-assets-body');
+    var badge = _el('dtv-assets-badge');
+    if (!body) return;
+
+    var assets = _getAssets();
+    var active = assets.filter(function(a){
+      return a.status === 'OPERATIONAL' || a.status === 'NOMINAL';
+    });
+
+    if (badge) {
+      badge.textContent = active.length + ' / ' + assets.length;
+      badge.className = 'dtv-block-badge ' + (active.length === assets.length ? 'nominal' : 'warning');
+    }
+
+    if (!assets.length) {
+      /* Fallback: read from existing DOM table */
+      var tbody = _el('ds-assets-tbody');
+      if (tbody && tbody.children.length) {
+        var rows = [];
+        Array.from(tbody.children).slice(0,5).forEach(function(tr) {
+          var cells = tr.querySelectorAll('td');
+          if (cells.length < 2) return;
+          var name = cells[0] ? cells[0].textContent.trim() : '—';
+          var stat = cells[1] ? cells[1].textContent.trim() : '—';
+          rows.push('<div class="dtv-row">' +
+            '<span class="dtv-row-label">' + name + '</span>' +
+            '<span class="dtv-row-value nominal">' + stat + '</span>' +
+          '</div>');
+        });
+        body.innerHTML = rows.join('') || '<div class="dtv-placeholder">NO ASSETS</div>';
+      } else {
+        body.innerHTML = '<div class="dtv-row"><span class="dtv-row-label">ATULSAT-1</span>' +
+          '<span class="dtv-row-value nominal">OPERATIONAL</span></div>';
+      }
+      return;
+    }
+
+    body.innerHTML = assets.slice(0,5).map(function(a) {
+      var cls = (a.status === 'OPERATIONAL' || a.status === 'NOMINAL') ? 'nominal'
+              : (a.status === 'OFFLINE') ? 'critical' : 'warning';
+      return '<div class="dtv-row">' +
+        '<span class="dtv-row-label">' + (a.name || a.id) + '</span>' +
+        '<span class="dtv-row-value ' + cls + '">' + (a.status || '—') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderLaunch() {
+    var body  = _el('dtv-launch-body');
+    var badge = _el('dtv-launch-badge');
+    if (!body) return;
+
+    var launches = _getLaunches();
+    var goLaunch = launches.find(function(l){
+      return l.status === 'GO' || l.status === 'LAUNCH COMMIT' || l.status === 'COUNTDOWN';
+    });
+
+    if (badge) {
+      badge.textContent = goLaunch ? 'GO FOR LAUNCH' : (launches.length ? 'QUEUED' : 'STANDBY');
+      badge.className = 'dtv-block-badge ' + (goLaunch ? 'warning' : '');
+    }
+
+    if (!launches.length) {
+      /* Read countdown from existing DOM */
+      var ctVal = _txt('ds-launch-countdown-value', 'T-000');
+      var ctMis = _txt('ds-launch-countdown-mission', 'STANDBY');
+      body.innerHTML = '<div class="dtv-row"><span class="dtv-row-label">COUNTDOWN</span>' +
+        '<span class="dtv-row-value accent">' + ctVal + '</span></div>' +
+        '<div class="dtv-row"><span class="dtv-row-label">MISSION</span>' +
+        '<span class="dtv-row-value">' + ctMis + '</span></div>';
+      return;
+    }
+
+    body.innerHTML = launches.slice(0,3).map(function(l) {
+      var isGo = l.status === 'GO' || l.status === 'LAUNCH COMMIT';
+      return '<div class="dtv-row">' +
+        '<span class="dtv-row-label">' + (l.name || l.id || 'LAUNCH') + '</span>' +
+        '<span class="dtv-row-value ' + (isGo ? 'warning' : '') + '">' + (l.status || '—') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     RIGHT COLUMN — Stations · Comms · Rovers
+  ════════════════════════════════════════════════════════ */
+  function _updateRight() {
+    _renderStations();
+    _renderComms();
+    _renderRovers();
+  }
+
+  function _renderStations() {
+    var body  = _el('dtv-stations-body');
+    var badge = _el('dtv-stations-badge');
+    if (!body) return;
+
+    var stations = _getStations();
+    var online   = stations.filter(function(s){ return s.status === 'ONLINE' || s.status === 'ACTIVE'; });
+
+    if (badge) {
+      badge.textContent = online.length + ' / ' + stations.length + ' ONLINE';
+      badge.className = 'dtv-block-badge ' + (online.length === stations.length && stations.length > 0 ? 'nominal' : 'warning');
+    }
+
+    if (!stations.length) {
+      /* Fallback: scan existing DOM */
+      var existing = document.querySelectorAll('#ds-gsn-stations .ds-gsn-item, #ds-gsn-stations [class*="station"]');
+      if (existing.length) {
+        body.innerHTML = Array.from(existing).slice(0,4).map(function(el) {
+          var name = el.querySelector('[class*="name"]') || el;
+          return '<div class="dtv-station-item">' +
+            '<span class="dtv-station-dot"></span>' +
+            '<span class="dtv-station-name">' + name.textContent.trim().slice(0,20) + '</span>' +
+            '<span class="dtv-station-sig">ONLINE</span>' +
+          '</div>';
+        }).join('');
+      } else {
+        body.innerHTML = '<div class="dtv-station-item">' +
+          '<span class="dtv-station-dot"></span>' +
+          '<span class="dtv-station-name">BANGALORE-01</span>' +
+          '<span class="dtv-station-sig">ONLINE</span>' +
+        '</div>';
+      }
+      return;
+    }
+
+    body.innerHTML = stations.slice(0,5).map(function(s) {
+      var isOn  = s.status === 'ONLINE' || s.status === 'ACTIVE';
+      var dotCls= isOn ? '' : (s.status === 'OFFLINE' ? 'offline' : 'warn');
+      return '<div class="dtv-station-item">' +
+        '<span class="dtv-station-dot ' + dotCls + '"></span>' +
+        '<span class="dtv-station-name">' + (s.name || s.id) + '</span>' +
+        '<span class="dtv-station-sig">' + (s.status || '—') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderComms() {
+    var body  = _el('dtv-comms-body');
+    var badge = _el('dtv-comms-badge');
+    if (!body) return;
+
+    /* Read live values from existing telemetry DOM elements */
+    var latency = _txt('ds-latency', '1.4 SEC');
+    var packet  = _txt('ds-packet',  '98.7%');
+    var signal  = _txt('ds-signal',  'STRONG');
+
+    if (badge) {
+      badge.textContent = signal;
+      badge.className = 'dtv-block-badge ' + (signal === 'STRONG' || signal === 'NOMINAL' ? 'nominal' : 'warning');
+    }
+
+    body.innerHTML =
+      '<div class="dtv-row"><span class="dtv-row-label">SIGNAL</span>' +
+        '<span class="dtv-row-value nominal">' + signal + '</span></div>' +
+      '<div class="dtv-row"><span class="dtv-row-label">LATENCY</span>' +
+        '<span class="dtv-row-value accent">' + latency + '</span></div>' +
+      '<div class="dtv-row"><span class="dtv-row-label">PACKET RATE</span>' +
+        '<span class="dtv-row-value">' + packet + '</span></div>' +
+      '<div class="dtv-row"><span class="dtv-row-label">DOWNLINK</span>' +
+        '<span class="dtv-row-value">2.048 MBPS</span></div>';
+  }
+
+  function _renderRovers() {
+    var body  = _el('dtv-rovers-body');
+    var badge = _el('dtv-rovers-badge');
+    if (!body) return;
+
+    var rovers = _getRovers();
+    var active = rovers.filter(function(r){ return r.missionStatus === 'ACTIVE'; });
+
+    if (badge) {
+      badge.textContent = active.length + ' / ' + rovers.length + ' ACTIVE';
+      badge.className = 'dtv-block-badge ' + (active.length ? 'nominal' : '');
+    }
+
+    if (!rovers.length) {
+      body.innerHTML = '<div class="dtv-placeholder">NO ROVERS TRACKED</div>'; return;
+    }
+
+    body.innerHTML = rovers.slice(0,4).map(function(r) {
+      var isActive = r.missionStatus === 'ACTIVE';
+      return '<div class="dtv-row">' +
+        '<span class="dtv-row-label">' + (r.name || r.id) + '</span>' +
+        '<span class="dtv-row-value ' + (isActive ? 'nominal' : '') + '">' +
+          (r.missionStatus || r.status || '—') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ORBITAL READOUT SYNC
+  ════════════════════════════════════════════════════════ */
+  function _syncOrbitalReadout() {
+    var alt = _txt('ds-orb-alt', '412 KM');
+    var vel = _txt('ds-orb-vel', '7.68 KM/S');
+    var sig = _txt('ds-orb-sig', 'STRONG');
+    var pkt = _txt('ds-packet',  '98.7%');
+
+    var eAlt = _el('dtv-orb-alt'); if (eAlt) eAlt.textContent = alt;
+    var eVel = _el('dtv-orb-vel'); if (eVel) eVel.textContent = vel;
+    var eSig = _el('dtv-orb-sig'); if (eSig) eSig.textContent = sig;
+    var ePkt = _el('dtv-orb-pkt'); if (ePkt) ePkt.textContent = pkt;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     COMMAND FEED — live injection
+  ════════════════════════════════════════════════════════ */
+  function _injectFeedEvent(text, cls) {
+    var inner = _el('dtv-feed-inner');
+    if (!inner) return;
+    var span = document.createElement('span');
+    span.className = 'dtv-feed-item ' + (cls || '');
+    span.textContent = text;
+    inner.appendChild(span);
+    var span2 = span.cloneNode(true);
+    inner.appendChild(span2);
+    /* Prune */
+    var items = inner.querySelectorAll('.dtv-feed-item');
+    if (items.length > 60) { items[0].remove(); items[1] && items[1].remove(); }
+  }
+
+  function _pullFeedEvents() {
+    /* Try live rover/station log first */
+    var rovers = _getRovers();
+    for (var i = 0; i < rovers.length; i++) {
+      var r = rovers[i];
+      if (r.log && r.log.length) {
+        var last = r.log[r.log.length - 1];
+        if (last && last.msg) {
+          _injectFeedEvent(r.name.toUpperCase() + ' — ' + last.msg.toUpperCase(), 'nominal');
+          return;
+        }
+      }
+    }
+    /* Pool fallback */
+    var item = _feedPool[_feedIdx % _feedPool.length];
+    _injectFeedEvent(item.text, item.cls);
+    _feedIdx++;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ANIMATION LOOP
+  ════════════════════════════════════════════════════════ */
+  function _loop() {
+    if (_view !== 'tactical') { _raf = null; return; }
+    _linkPhase++;
+    _mirrorOrbital();
+    _drawLinkArcs(_linkPhase);
+    _raf = requestAnimationFrame(_loop);
+  }
+
+  /* ════════════════════════════════════════════════════════
+     START / STOP
+  ════════════════════════════════════════════════════════ */
+  function _startTactical() {
+    /* Cancel any stale RAF */
+    if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+
+    /* Enrich arc nodes from live data */
+    _enrichArcNodesFromData();
+
+    /* Immediate render */
+    _updateStatusBar();
+    _updateLeft();
+    _updateRight();
+    _syncOrbitalReadout();
+
+    /* Kick animation loop */
+    _raf = requestAnimationFrame(_loop);
+
+    /* Periodic data refreshes */
+    _timers.push(setInterval(_updateStatusBar,   1000));   // clock + health every 1s
+    _timers.push(setInterval(_updateLeft,        5000));   // left column every 5s
+    _timers.push(setInterval(_updateRight,       5000));   // right column every 5s
+    _timers.push(setInterval(_syncOrbitalReadout,2000));   // readout every 2s
+    _timers.push(setInterval(_pullFeedEvents,   10000));   // feed event every 10s
+    _timers.push(setInterval(_enrichArcNodesFromData, 15000)); // re-enrich arcs every 15s
+  }
+
+  function _stopTactical() {
+    if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+    _timers.forEach(function(id){ clearInterval(id); });
+    _timers = [];
+
+    /* Clear link canvas */
+    var cnv = _el('dtv-link-canvas');
+    if (cnv) { var ctx = cnv.getContext('2d'); if (ctx) ctx.clearRect(0,0,cnv.width,cnv.height); }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     LIFECYCLE — hook switchToDeepSpaceMode / exit
+  ════════════════════════════════════════════════════════ */
+  function _hookLifecycle() {
+    var prev = window.switchToDeepSpaceMode;
+    if (prev && !prev._tacViewPatched) {
+      window.switchToDeepSpaceMode = function() {
+        prev.apply(this, arguments);
+        /* Restore ops view on re-entry */
+        _setView('ops');
+      };
+      window.switchToDeepSpaceMode._tacViewPatched = true;
+    }
+
+    ['switchToOSMode', 'switchToClassicMode'].forEach(function(fn) {
+      var orig = window[fn];
+      if (!orig || orig._tacViewExitPatched) return;
+      window[fn] = function() {
+        _stopTactical();
+        _view = 'ops';
+        return orig.apply(this, arguments);
+      };
+      window[fn]._tacViewExitPatched = true;
+    });
+  }
+
+  setTimeout(_hookLifecycle, 0);
+
+  /* If DeepSpace already active on load, ensure ops view is shown */
+  setTimeout(function() {
+    var ds = _el('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) {
+      _setView('ops');
+    }
+  }, 300);
+
+  console.log('[AtulOS 4.98] DeepSpace Tactical View installed. dsSetView("tactical") to activate.');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.98 — DEEPSPACE TACTICAL VIEW V1
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.99 — DEEPSPACE CELESTIAL VIEW V1
+     Solar system canvas · Region filter · Timeline · Exploration stats
+     PATCH ONLY — no existing modules modified.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── helpers ── */
+  function _el(id)         { return document.getElementById(id); }
+  function _txt(id, fb)    { var e = _el(id); return e ? e.textContent.trim() : (fb || ''); }
+
+  /* ── state ── */
+  var _active        = false;
+  var _raf           = null;
+  var _timers        = [];
+  var _phase         = 0;
+  var _selectedRegion= 'all';
+  var _hoveredAsset  = null;
+  var _mouseX        = 0;
+  var _mouseY        = 0;
+  var _tlSeed        = 0;
+
+  /* ════════════════════════════════════════════════════════
+     SOLAR SYSTEM CONFIGURATION
+     Positions are fractions of canvas (0-1).
+     Future bodies: add to _bodies / _assets arrays.
+  ════════════════════════════════════════════════════════ */
+  var _bodies = [
+    { id:'sun',     label:'SUN',     r:0.062, cx:0.05, cy:0.50, color:'#ffe066', glow:'rgba(255,220,80,0.18)', region:'sun'    },
+    { id:'mercury', label:'MERCURY', r:0.010, cx:0.17, cy:0.50, color:'#a0968c', glow:null,                    region:'inner'  },
+    { id:'venus',   label:'VENUS',   r:0.014, cx:0.26, cy:0.50, color:'#e8c97a', glow:null,                    region:'inner'  },
+    { id:'earth',   label:'EARTH',   r:0.020, cx:0.36, cy:0.50, color:'#3a8fd1', glow:'rgba(58,143,209,0.12)', region:'earth'  },
+    { id:'moon',    label:'MOON',    r:0.007, cx:0.38, cy:0.44, color:'#b0b4bb', glow:null,                    region:'moon'   },
+    { id:'mars',    label:'MARS',    r:0.016, cx:0.52, cy:0.50, color:'#c1440e', glow:'rgba(193,68,14,0.10)',  region:'mars'   },
+    { id:'deep',    label:'DEEP SP.',r:0.000, cx:0.88, cy:0.50, color:'transparent', glow:null,                region:'deep'   },
+  ];
+
+  /* Clickable region zones (ellipses in canvas-fraction space) */
+  var _regions = {
+    earth: { cx:0.36, cy:0.50, rx:0.06, ry:0.12 },
+    moon:  { cx:0.38, cy:0.44, rx:0.04, ry:0.07 },
+    mars:  { cx:0.52, cy:0.50, rx:0.06, ry:0.12 },
+    deep:  { cx:0.80, cy:0.50, rx:0.14, ry:0.40 },
+  };
+
+  /* Mission assets — extensible */
+  var _assets = [
+    /* Earth orbit */
+    { id:'atulsat1',   label:'ATULSAT-1',   region:'earth', orbit:{ cx:0.36,cy:0.50,rx:0.045,ry:0.032 }, speed:0.018, phase:0.0,
+      status:'OPERATIONAL', health:'NOMINAL', signal:'STRONG', type:'satellite', color:'#63a8ff' },
+    { id:'atulsat2',   label:'ATULSAT-2',   region:'earth', orbit:{ cx:0.36,cy:0.50,rx:0.060,ry:0.043 }, speed:0.013, phase:2.1,
+      status:'OPERATIONAL', health:'NOMINAL', signal:'STRONG', type:'satellite', color:'#63a8ff' },
+    /* Moon */
+    { id:'chandra1',   label:'CHANDRA-1',   region:'moon',  orbit:{ cx:0.38,cy:0.44,rx:0.022,ry:0.016 }, speed:0.022, phase:1.2,
+      status:'ACTIVE',      health:'NOMINAL', signal:'GOOD',   type:'spacecraft', color:'#a0d8ff' },
+    /* Mars */
+    { id:'mangalyaan', label:'MANGALYAAN-X',region:'mars',  orbit:{ cx:0.52,cy:0.50,rx:0.048,ry:0.034 }, speed:0.010, phase:0.8,
+      status:'ACTIVE',      health:'NOMINAL', signal:'NOMINAL',type:'spacecraft', color:'#ff8c5a' },
+    { id:'atulrover1', label:'ATULROVER-1', region:'mars',  orbit:null, cx:0.515, cy:0.505,
+      status:'ACTIVE',      health:'NOMINAL', signal:'NOMINAL',type:'rover',      color:'#ffb347' },
+    { id:'marsscout',  label:'MARS-SCOUT',  region:'mars',  orbit:{ cx:0.52,cy:0.50,rx:0.062,ry:0.044 }, speed:0.008, phase:3.5,
+      status:'EN ROUTE',    health:'NOMINAL', signal:'WEAK',   type:'spacecraft', color:'#ff6b6b' },
+    /* Deep space */
+    { id:'voyager',    label:'VOYAGER-SIM', region:'deep',  orbit:null, cx:0.86, cy:0.46,
+      status:'ACTIVE',      health:'NOMINAL', signal:'WEAK',   type:'probe',      color:'#63a8ff' },
+  ];
+
+  /* Trajectory arcs (from → to body center) */
+  var _trajectories = [
+    { from:'earth', to:'moon',  label:'EARTH–MOON', color:'rgba(160,180,255,0.12)' },
+    { from:'earth', to:'mars',  label:'EARTH–MARS', color:'rgba(255,120,60,0.10)'  },
+    { from:'earth', to:'deep',  label:'EARTH–DEEP', color:'rgba(99,168,255,0.07)'  },
+  ];
+
+  /* Timeline seed events — enriched by live data */
+  var _timelineSeed = [
+    { event:'ORBIT NOMINAL',          mission:'ATULSAT-1',   dot:'nominal', ago:'NOW'      },
+    { event:'ORBIT INSERTION COMPLETE',mission:'ATULSAT-2',  dot:'nominal', ago:'2H AGO'   },
+    { event:'LUNAR APPROACH',          mission:'CHANDRA-1',  dot:'accent',  ago:'4H AGO'   },
+    { event:'SIGNAL ACQUIRED',         mission:'MANGALYAAN-X',dot:'nominal',ago:'6H AGO'   },
+    { event:'SURFACE OPS ACTIVE',      mission:'ATULROVER-1',dot:'nominal', ago:'8H AGO'   },
+    { event:'ATMOSPHERIC ENTRY',       mission:'MARS-SCOUT', dot:'warning', ago:'12H AGO'  },
+    { event:'TELEMETRY NOMINAL',       mission:'VOYAGER-SIM',dot:'nominal', ago:'1D AGO'   },
+    { event:'LAUNCH COMPLETE',         mission:'ATULSAT-2',  dot:'nominal', ago:'2D AGO'   },
+    { event:'SCIENCE OPS ACTIVE',      mission:'CHANDRA-1',  dot:'accent',  ago:'3D AGO'   },
+    { event:'ORBIT ACHIEVED',          mission:'MANGALYAAN-X',dot:'nominal',ago:'5D AGO'   },
+  ];
+
+  /* ════════════════════════════════════════════════════════
+     DATA ACCESSORS
+  ════════════════════════════════════════════════════════ */
+  function _getAssets()    { return window._deepspaceAssets    && window._deepspaceAssets.list    ? window._deepspaceAssets.list()    : []; }
+  function _getMissions()  { return window._deepspaceMissions  && window._deepspaceMissions.list  ? window._deepspaceMissions.list()  : []; }
+  function _getStations()  { return window._deepspaceStations  && window._deepspaceStations.list  ? window._deepspaceStations.list()  : []; }
+  function _getRovers()    { return window._deepspaceRovers    && window._deepspaceRovers.list    ? window._deepspaceRovers.list()    : []; }
+
+  /* Merge live asset status into _assets array */
+  function _mergeLiveAssets() {
+    var live = _getAssets();
+    if (!live.length) return;
+    _assets.forEach(function(a) {
+      var match = live.find(function(l) {
+        return l.name && l.name.toUpperCase().indexOf(a.label.split('-')[0]) !== -1;
+      });
+      if (match) {
+        if (match.status)  a.status = match.status.toUpperCase();
+        if (match.health)  a.health = match.health;
+        if (match.signal)  a.signal = match.signal;
+      }
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════
+     CANVAS ENGINE
+  ════════════════════════════════════════════════════════ */
+  var _cnv = null;
+  var _ctx = null;
+  var _W   = 0;
+  var _H   = 0;
+
+  function _initCanvas() {
+    _cnv = _el('dcv-solar-canvas');
+    if (!_cnv) return false;
+    _ctx = _cnv.getContext('2d');
+    _resize();
+    return true;
+  }
+
+  function _resize() {
+    if (!_cnv) return;
+    var wrap = _el('dcv-solar-wrap');
+    if (!wrap) return;
+    _W = wrap.clientWidth  || 800;
+    _H = wrap.clientHeight || 500;
+    _cnv.width  = _W;
+    _cnv.height = _H;
+  }
+
+  /* Convert fraction coords to pixels */
+  function _px(fx, fy) { return { x: fx * _W, y: fy * _H }; }
+
+  /* ── Draw star field (static — drawn once) ── */
+  var _stars = null;
+  function _buildStars() {
+    _stars = [];
+    var rng = 42;
+    function lcg() { rng = (rng * 1664525 + 1013904223) & 0xffffffff; return (rng >>> 0) / 0xffffffff; }
+    for (var i = 0; i < 160; i++) {
+      _stars.push({ x: lcg(), y: lcg(), r: lcg() * 0.8 + 0.3, a: lcg() * 0.25 + 0.05 });
+    }
+  }
+
+  function _drawStars() {
+    if (!_stars) _buildStars();
+    _ctx.save();
+    _stars.forEach(function(s) {
+      _ctx.beginPath();
+      _ctx.arc(s.x * _W, s.y * _H, s.r, 0, Math.PI * 2);
+      _ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
+      _ctx.fill();
+    });
+    _ctx.restore();
+  }
+
+  /* ── Draw orbit rings (ellipses around bodies) ── */
+  function _drawOrbitRings() {
+    _ctx.save();
+    /* Planet orbit lanes */
+    var lanes = [
+      { cx:0.36, cy:0.50, rx:0.280, ry:0.200 }, /* Earth lane */
+      { cx:0.38, cy:0.44, rx:0.040, ry:0.028 }, /* Moon lane */
+      { cx:0.52, cy:0.50, rx:0.420, ry:0.300 }, /* Mars lane */
+      { cx:0.17, cy:0.50, rx:0.100, ry:0.070 }, /* Mercury lane */
+      { cx:0.26, cy:0.50, rx:0.175, ry:0.125 }, /* Venus lane */
+    ];
+    lanes.forEach(function(l) {
+      _ctx.beginPath();
+      _ctx.ellipse(l.cx * _W, l.cy * _H, l.rx * _W, l.ry * _H, 0, 0, Math.PI * 2);
+      _ctx.strokeStyle = 'rgba(99,168,255,0.055)';
+      _ctx.lineWidth   = 0.5;
+      _ctx.setLineDash([3, 8]);
+      _ctx.stroke();
+      _ctx.setLineDash([]);
+    });
+    _ctx.restore();
+  }
+
+  /* ── Draw trajectory arcs ── */
+  function _drawTrajectories() {
+    _ctx.save();
+    _trajectories.forEach(function(t) {
+      var fromBody = _bodies.find(function(b){ return b.region === t.from || b.id === t.from; });
+      var toBody   = _bodies.find(function(b){ return b.region === t.to   || b.id === t.to;   });
+      if (!fromBody || !toBody) return;
+
+      var ax = fromBody.cx * _W, ay = fromBody.cy * _H;
+      var bx = toBody.cx   * _W, by = toBody.cy   * _H;
+      var mx = (ax + bx) / 2,   my = Math.min(ay, by) - Math.abs(bx - ax) * 0.22;
+
+      _ctx.beginPath();
+      _ctx.moveTo(ax, ay);
+      _ctx.quadraticCurveTo(mx, my, bx, by);
+      _ctx.strokeStyle = t.color;
+      _ctx.lineWidth   = 1;
+      _ctx.setLineDash([4, 10]);
+      _ctx.stroke();
+      _ctx.setLineDash([]);
+    });
+    _ctx.restore();
+  }
+
+  /* ── Draw trajectory signal pulses ── */
+  function _drawTrajPulses(phase) {
+    _ctx.save();
+    _trajectories.forEach(function(t, ti) {
+      var fromBody = _bodies.find(function(b){ return b.region === t.from || b.id === t.from; });
+      var toBody   = _bodies.find(function(b){ return b.region === t.to   || b.id === t.to;   });
+      if (!fromBody || !toBody) return;
+
+      var ax = fromBody.cx * _W, ay = fromBody.cy * _H;
+      var bx = toBody.cx   * _W, by = toBody.cy   * _H;
+      var mx = (ax + bx) / 2,   my = Math.min(ay, by) - Math.abs(bx - ax) * 0.22;
+
+      /* Two pulses per trajectory at offset phases */
+      [0, 0.5].forEach(function(offset) {
+        var pf = ((phase * 0.004 + ti * 0.3 + offset) % 1);
+        var px = (1-pf)*(1-pf)*ax + 2*(1-pf)*pf*mx + pf*pf*bx;
+        var py = (1-pf)*(1-pf)*ay + 2*(1-pf)*pf*my + pf*pf*by;
+        _ctx.beginPath();
+        _ctx.arc(px, py, 2, 0, Math.PI*2);
+        _ctx.fillStyle = 'rgba(99,168,255,0.55)';
+        _ctx.globalAlpha = 0.4 + 0.4 * Math.sin(phase * 0.08 + ti);
+        _ctx.fill();
+        _ctx.globalAlpha = 1;
+      });
+    });
+    _ctx.restore();
+  }
+
+  /* ── Draw solar bodies ── */
+  function _drawBodies(phase) {
+    _ctx.save();
+    _bodies.forEach(function(b) {
+      if (b.r === 0) return; /* deep space marker — no dot */
+      var x = b.cx * _W, y = b.cy * _H, r = b.r * Math.min(_W, _H);
+
+      /* Glow */
+      if (b.glow) {
+        var grd = _ctx.createRadialGradient(x, y, r * 0.5, x, y, r * 3.5);
+        grd.addColorStop(0, b.glow);
+        grd.addColorStop(1, 'transparent');
+        _ctx.beginPath();
+        _ctx.arc(x, y, r * 3.5, 0, Math.PI * 2);
+        _ctx.fillStyle = grd;
+        _ctx.fill();
+      }
+
+      /* Body */
+      _ctx.beginPath();
+      _ctx.arc(x, y, r, 0, Math.PI * 2);
+      _ctx.fillStyle = b.color;
+      _ctx.fill();
+
+      /* Sun pulse ring */
+      if (b.id === 'sun') {
+        var pulseR = r * (1.4 + 0.08 * Math.sin(phase * 0.04));
+        _ctx.beginPath();
+        _ctx.arc(x, y, pulseR, 0, Math.PI * 2);
+        _ctx.strokeStyle = 'rgba(255,220,80,0.12)';
+        _ctx.lineWidth = 1;
+        _ctx.stroke();
+      }
+
+      /* Dimmed if filtering and body not in selected region */
+      var inRegion = (_selectedRegion === 'all' || b.region === _selectedRegion ||
+                      b.region === 'sun' || b.region === 'inner');
+      if (!inRegion) { _ctx.globalAlpha = 0.25; }
+
+      /* Label */
+      _ctx.font = '700 7px "Space Mono", monospace, sans-serif';
+      _ctx.fillStyle = 'rgba(154,169,187,0.55)';
+      _ctx.textAlign = 'center';
+      _ctx.fillText(b.label, x, y + r * 1.0 + 9);
+      _ctx.globalAlpha = 1;
+    });
+    _ctx.restore();
+  }
+
+  /* ── Compute live asset position on orbit ── */
+  function _assetPos(a, phase) {
+    if (a.orbit) {
+      var angle = a.phase + phase * a.speed;
+      return {
+        x: (a.orbit.cx + a.orbit.rx * Math.cos(angle)) * _W,
+        y: (a.orbit.cy + a.orbit.ry * Math.sin(angle)) * _H
+      };
+    }
+    return { x: a.cx * _W, y: a.cy * _H };
+  }
+
+  /* ── Draw assets (spacecraft/rovers/probes) ── */
+  function _drawAssets(phase) {
+    _ctx.save();
+    _assets.forEach(function(a) {
+      /* Region filter */
+      var inRegion = (_selectedRegion === 'all' || a.region === _selectedRegion);
+      var pos = _assetPos(a, phase);
+
+      _ctx.globalAlpha = inRegion ? 1 : 0.18;
+
+      /* Rover — square marker */
+      if (a.type === 'rover') {
+        var sz = 4;
+        _ctx.fillStyle = a.color;
+        _ctx.fillRect(pos.x - sz/2, pos.y - sz/2, sz, sz);
+        _ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        _ctx.lineWidth = 0.5;
+        _ctx.strokeRect(pos.x - sz/2, pos.y - sz/2, sz, sz);
+      } else {
+        /* Satellite / spacecraft / probe — diamond */
+        _ctx.beginPath();
+        _ctx.moveTo(pos.x,     pos.y - 4.5);
+        _ctx.lineTo(pos.x + 4, pos.y      );
+        _ctx.lineTo(pos.x,     pos.y + 4.5);
+        _ctx.lineTo(pos.x - 4, pos.y      );
+        _ctx.closePath();
+        _ctx.fillStyle = a.color;
+        _ctx.fill();
+        _ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        _ctx.lineWidth = 0.5;
+        _ctx.stroke();
+      }
+
+      /* Signal ring pulse for active assets */
+      if (a.status === 'OPERATIONAL' || a.status === 'ACTIVE') {
+        var pr = 7 + 2.5 * Math.sin(phase * 0.07 + a.phase);
+        _ctx.beginPath();
+        _ctx.arc(pos.x, pos.y, pr, 0, Math.PI * 2);
+        _ctx.strokeStyle = a.color.replace(')', ',0.22)').replace('rgb','rgba');
+        _ctx.lineWidth = 0.8;
+        _ctx.stroke();
+      }
+
+      /* Hover label */
+      if (_hoveredAsset && _hoveredAsset.id === a.id) {
+        _ctx.font = '700 8px monospace';
+        _ctx.fillStyle = a.color;
+        _ctx.textAlign = 'center';
+        _ctx.fillText(a.label, pos.x, pos.y - 10);
+      }
+
+      _ctx.globalAlpha = 1;
+    });
+    _ctx.restore();
+  }
+
+  /* ── Deep space zone marker ── */
+  function _drawDeepSpaceZone() {
+    _ctx.save();
+    var x = 0.72 * _W, h = _H;
+    _ctx.beginPath();
+    _ctx.moveTo(x, 0);
+    _ctx.lineTo(x, h);
+    _ctx.strokeStyle = 'rgba(99,168,255,0.06)';
+    _ctx.lineWidth   = 1;
+    _ctx.setLineDash([4,12]);
+    _ctx.stroke();
+    _ctx.setLineDash([]);
+
+    _ctx.font = '700 7px monospace';
+    _ctx.fillStyle = 'rgba(99,168,255,0.2)';
+    _ctx.textAlign = 'center';
+    _ctx.fillText('DEEP SPACE', (_W * 0.72 + _W) / 2, 14);
+    _ctx.restore();
+  }
+
+  /* ── Region focus overlay ── */
+  function _drawFocusOverlay() {
+    if (_selectedRegion === 'all') return;
+    var zone = _regions[_selectedRegion];
+    if (!zone) return;
+    _ctx.save();
+    _ctx.beginPath();
+    _ctx.ellipse(zone.cx * _W, zone.cy * _H, zone.rx * _W, zone.ry * _H, 0, 0, Math.PI * 2);
+    _ctx.strokeStyle = 'rgba(99,168,255,0.2)';
+    _ctx.lineWidth   = 1;
+    _ctx.setLineDash([3, 6]);
+    _ctx.stroke();
+    _ctx.setLineDash([]);
+    _ctx.restore();
+  }
+
+  /* ── Main draw ── */
+  function _draw(phase) {
+    if (!_ctx) return;
+    _ctx.clearRect(0, 0, _W, _H);
+    _drawStars();
+    _drawOrbitRings();
+    _drawTrajectories();
+    _drawTrajPulses(phase);
+    _drawDeepSpaceZone();
+    _drawBodies(phase);
+    _drawAssets(phase);
+    _drawFocusOverlay();
+  }
+
+  /* ════════════════════════════════════════════════════════
+     HIT TESTING — hover and click
+  ════════════════════════════════════════════════════════ */
+  function _getAssetAt(mx, my) {
+    for (var i = 0; i < _assets.length; i++) {
+      var a   = _assets[i];
+      var pos = _assetPos(a, _phase);
+      var dx  = mx - pos.x, dy = my - pos.y;
+      if (dx*dx + dy*dy < 144) return a; /* 12px radius */
+    }
+    return null;
+  }
+
+  function _getRegionAt(mx, my) {
+    var keys = Object.keys(_regions);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i], z = _regions[k];
+      var nx = (mx / _W - z.cx) / z.rx;
+      var ny = (my / _H - z.cy) / z.ry;
+      if (nx*nx + ny*ny <= 1) return k;
+    }
+    return 'all';
+  }
+
+  function _onMouseMove(e) {
+    if (!_cnv) return;
+    var rect = _cnv.getBoundingClientRect();
+    var scaleX = _W / rect.width;
+    var scaleY = _H / rect.height;
+    _mouseX = (e.clientX - rect.left) * scaleX;
+    _mouseY = (e.clientY - rect.top)  * scaleY;
+    var hit = _getAssetAt(_mouseX, _mouseY);
+    _hoveredAsset = hit;
+    _updateTooltip(hit, e.clientX, e.clientY);
+  }
+
+  function _onMouseLeave() {
+    _hoveredAsset = null;
+    var tt = _el('dcv-tooltip');
+    if (tt) tt.classList.remove('dcv-tt-visible');
+  }
+
+  function _onClick(e) {
+    if (!_cnv) return;
+    var rect = _cnv.getBoundingClientRect();
+    var scaleX = _W / rect.width;
+    var scaleY = _H / rect.height;
+    var cx = (e.clientX - rect.left) * scaleX;
+    var cy = (e.clientY - rect.top)  * scaleY;
+    var asset = _getAssetAt(cx, cy);
+    if (asset) {
+      _selectRegion(asset.region);
+    } else {
+      var reg = _getRegionAt(cx, cy);
+      _selectRegion(reg);
+    }
+  }
+
+  function _updateTooltip(asset, cx, cy) {
+    var tt = _el('dcv-tooltip');
+    if (!tt) return;
+    if (!asset) { tt.classList.remove('dcv-tt-visible'); return; }
+
+    var sigColor = asset.signal === 'STRONG' ? '#28c840'
+                 : asset.signal === 'GOOD'   ? '#63a8ff'
+                 : asset.signal === 'WEAK'   ? '#ffb347' : 'var(--fg)';
+
+    tt.innerHTML =
+      '<span class="dcv-tt-name">' + asset.label + '</span>' +
+      '<span class="dcv-tt-loc">' + asset.region.toUpperCase() + ' REGION</span><br>' +
+      '<span class="dcv-tt-stat">STATUS: ' + asset.status + '</span><br>' +
+      '<span style="color:' + sigColor + '">SIGNAL: ' + asset.signal + '</span>';
+
+    /* Position tooltip — keep within viewport */
+    var wrap = _el('dcv-solar-wrap');
+    var wRect = wrap ? wrap.getBoundingClientRect() : {left:0,top:0,width:800,height:500};
+    var tx = cx - wRect.left + 14;
+    var ty = cy - wRect.top  - 40;
+    if (tx + 180 > wRect.width)  tx = cx - wRect.left - 180;
+    if (ty < 0)                   ty = cy - wRect.top  + 14;
+    tt.style.left = tx + 'px';
+    tt.style.top  = ty + 'px';
+    tt.classList.add('dcv-tt-visible');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     REGION SELECTION
+  ════════════════════════════════════════════════════════ */
+  function _selectRegion(region) {
+    _selectedRegion = region || 'all';
+
+    /* Update filter buttons */
+    var btns = document.querySelectorAll('.dcv-region-btn');
+    btns.forEach(function(b) {
+      var active = b.dataset.region === _selectedRegion;
+      b.classList.toggle('dcv-region-btn-active', active);
+    });
+
+    /* Update region panel */
+    _renderRegionPanel();
+  }
+
+  function _renderRegionPanel() {
+    var title = _el('dcv-region-title');
+    var badge = _el('dcv-region-badge');
+    var body  = _el('dcv-region-body');
+    if (!title || !badge || !body) return;
+
+    var regionLabels = { all:'SOLAR SYSTEM', earth:'EARTH ORBIT', moon:'LUNAR REGION',
+                         mars:'MARS REGION', deep:'DEEP SPACE' };
+    title.textContent = regionLabels[_selectedRegion] || 'SOLAR SYSTEM';
+
+    var inRegion = _assets.filter(function(a) {
+      return _selectedRegion === 'all' || a.region === _selectedRegion;
+    });
+    badge.textContent = inRegion.length + ' ASSET' + (inRegion.length !== 1 ? 'S' : '');
+    badge.className = 'dcv-panel-badge ' + (inRegion.length > 0 ? 'accent' : '');
+
+    if (!inRegion.length) {
+      body.innerHTML = '<div style="font-size:9px;color:rgba(154,169,187,0.3);padding:8px 0;">NO ASSETS IN REGION</div>';
+      return;
+    }
+
+    body.innerHTML = inRegion.map(function(a) {
+      var statCls = (a.status === 'OPERATIONAL' || a.status === 'ACTIVE') ? 'nominal'
+                  : (a.status === 'EN ROUTE') ? 'accent' : 'warning';
+      var sigCls  = a.signal === 'STRONG' || a.signal === 'GOOD' ? 'nominal'
+                  : a.signal === 'WEAK' ? 'warning' : '';
+      return '<div class="dcv-asset-card">' +
+        '<div class="dcv-asset-name">' + a.label + '</div>' +
+        '<div class="dcv-asset-row"><span class="dcv-asset-key">STATUS</span>' +
+          '<span class="dcv-asset-val ' + statCls + '">' + a.status + '</span></div>' +
+        '<div class="dcv-asset-row"><span class="dcv-asset-key">HEALTH</span>' +
+          '<span class="dcv-asset-val nominal">' + a.health + '</span></div>' +
+        '<div class="dcv-asset-row"><span class="dcv-asset-key">SIGNAL</span>' +
+          '<span class="dcv-asset-val ' + sigCls + '">' + a.signal + '</span></div>' +
+        '<div class="dcv-asset-row"><span class="dcv-asset-key">TYPE</span>' +
+          '<span class="dcv-asset-val">' + a.type.toUpperCase() + '</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     STATS BAR
+  ════════════════════════════════════════════════════════ */
+  function _updateStats() {
+    var missions  = _getMissions();
+    var stations  = _getStations();
+    var rovers    = _getRovers();
+    var liveAssets= _getAssets();
+
+    var activeMissions  = missions.filter(function(m){ return m.status==='ACTIVE'||m.status==='IN PROGRESS'; });
+    var activeSpacecraft= _assets.filter(function(a){ return a.status==='OPERATIONAL'||a.status==='ACTIVE'; });
+    var activeRovers    = _assets.filter(function(a){ return a.type==='rover'&&a.status==='ACTIVE'; });
+    var onlineStations  = stations.filter(function(s){ return s.status==='ONLINE'||s.status==='ACTIVE'; });
+
+    /* Fall back to internal asset counts if live APIs not loaded */
+    var mCount = activeMissions.length  || activeSpacecraft.length;
+    var sCount = activeSpacecraft.length;
+    var rCount = activeRovers.length    || rovers.filter(function(r){ return r.missionStatus==='ACTIVE'; }).length;
+    var gCount = onlineStations.length  || stations.length;
+    if (!gCount) gCount = 4; /* seeded fallback */
+
+    var successRate = '94.2%';
+    if (missions.length) {
+      var done = missions.filter(function(m){ return m.status==='COMPLETE'||m.status==='SUCCESS'; });
+      successRate = Math.round(done.length / missions.length * 100) + '%';
+    }
+
+    _set('dcv-stat-missions',   mCount || '—',   'accent');
+    _set('dcv-stat-spacecraft', sCount || '—',   'accent');
+    _set('dcv-stat-rovers',     rCount || '—',   'accent');
+    _set('dcv-stat-stations',   gCount + ' ONLINE', 'nominal');
+    _set('dcv-stat-success',    successRate,      'nominal');
+    _set('dcv-stat-network',    gCount > 0 ? 'NOMINAL' : 'DEGRADED', gCount > 0 ? 'nominal' : 'warning');
+  }
+
+  function _set(id, val, cls) {
+    var el = _el(id);
+    if (!el) return;
+    el.textContent = val;
+    el.className = 'dcv-stat-value ' + (cls || '');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     DISCOVERY TIMELINE
+  ════════════════════════════════════════════════════════ */
+  function _renderTimeline() {
+    var body = _el('dcv-timeline-body');
+    if (!body) return;
+
+    /* Try to pull live rover/station log events */
+    var liveEvents = [];
+    _getRovers().forEach(function(r) {
+      if (r.log && r.log.length) {
+        r.log.slice(-2).forEach(function(entry) {
+          if (entry && entry.msg) {
+            liveEvents.push({ event: entry.msg.toUpperCase(), mission: (r.name||'ROVER').toUpperCase(),
+                              dot: 'nominal', ago: 'LIVE' });
+          }
+        });
+      }
+    });
+
+    var events = liveEvents.length
+      ? liveEvents.concat(_timelineSeed).slice(0, 10)
+      : _timelineSeed;
+
+    body.innerHTML = events.map(function(e) {
+      return '<div class="dcv-tl-item">' +
+        '<span class="dcv-tl-dot ' + (e.dot || '') + '"></span>' +
+        '<div class="dcv-tl-content">' +
+          '<div class="dcv-tl-event">' + e.event + '</div>' +
+          '<div class="dcv-tl-mission">' + e.mission + '</div>' +
+        '</div>' +
+        '<span class="dcv-tl-time">' + (e.ago || '') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     REGION FILTER BUTTONS (inline onclick handler)
+  ════════════════════════════════════════════════════════ */
+  function _bindFilterButtons() {
+    var container = _el('dcv-region-filter');
+    if (!container) return;
+    container.addEventListener('click', function(e) {
+      var btn = e.target.closest('.dcv-region-btn');
+      if (!btn) return;
+      _selectRegion(btn.dataset.region || 'all');
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ANIMATION LOOP
+  ════════════════════════════════════════════════════════ */
+  function _loop() {
+    if (!_active) { _raf = null; return; }
+    _phase++;
+    _draw(_phase);
+    _raf = requestAnimationFrame(_loop);
+  }
+
+  /* ════════════════════════════════════════════════════════
+     START / STOP
+  ════════════════════════════════════════════════════════ */
+  function _start() {
+    if (_active) return;
+    _active = true;
+
+    if (!_initCanvas()) return;
+    _mergeLiveAssets();
+    _buildStars();
+    _resize();
+
+    /* Bind events */
+    if (_cnv) {
+      _cnv.addEventListener('mousemove',  _onMouseMove);
+      _cnv.addEventListener('mouseleave', _onMouseLeave);
+      _cnv.addEventListener('click',      _onClick);
+    }
+    _bindFilterButtons();
+
+    /* Immediate renders */
+    _updateStats();
+    _renderTimeline();
+    _renderRegionPanel();
+    _draw(_phase);
+
+    /* Start loop */
+    _raf = requestAnimationFrame(_loop);
+
+    /* Periodic updates */
+    _timers.push(setInterval(_updateStats,     5000));
+    _timers.push(setInterval(_renderTimeline, 15000));
+    _timers.push(setInterval(_mergeLiveAssets,10000));
+    _timers.push(setInterval(function() {
+      if (_cnv) _resize();
+    }, 2000));
+  }
+
+  function _stop() {
+    _active = false;
+    if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+    _timers.forEach(function(id){ clearInterval(id); });
+    _timers = [];
+    if (_cnv) {
+      _cnv.removeEventListener('mousemove',  _onMouseMove);
+      _cnv.removeEventListener('mouseleave', _onMouseLeave);
+      _cnv.removeEventListener('click',      _onClick);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     INTEGRATION — patch dsSetView to handle 'celestial'
+  ════════════════════════════════════════════════════════ */
+  function _hookSetView() {
+    var prevSetView = window.dsSetView;
+    if (!prevSetView || prevSetView._celestialPatched) return;
+
+    window.dsSetView = function(v) {
+      /* Handle celestial ourselves; delegate everything else */
+      var celestial = _el('ds-celestial-view');
+      var btnCel    = _el('ds-btn-celestial');
+
+      if (v === 'celestial') {
+        /* Hide other views */
+        var dash    = _el('ds-dashboard');
+        var ribbon  = _el('ds-command-ribbon');
+        var ticker  = _el('ds-telemetry-ticker');
+        var llinks  = _el('ds-live-links-panel') && _el('ds-live-links-panel').closest ? _el('ds-live-links-panel').closest('.ds-row') : null;
+        var tactical= _el('ds-tactical-view');
+
+        if (dash)    { dash.style.display    = 'none'; }
+        if (ribbon)  { ribbon.style.display  = 'none'; }
+        if (ticker)  { ticker.style.display  = 'none'; }
+        if (llinks)  { llinks.style.display  = 'none'; }
+        if (tactical){ tactical.hidden = true; tactical.style.display = 'none'; }
+        if (celestial){ celestial.hidden = false; celestial.style.display = 'flex'; }
+
+        /* Deactivate all other toggle buttons */
+        document.querySelectorAll('.ds-view-btn').forEach(function(b){ b.classList.remove('ds-view-btn-active'); b.setAttribute('aria-selected','false'); });
+        if (btnCel) { btnCel.classList.add('ds-view-btn-active'); btnCel.setAttribute('aria-selected','true'); }
+
+        _start();
+      } else {
+        /* Leaving celestial */
+        if (celestial) { celestial.hidden = true; celestial.style.display = 'none'; }
+        if (btnCel)    { btnCel.classList.remove('ds-view-btn-active'); btnCel.setAttribute('aria-selected','false'); }
+        _stop();
+        prevSetView(v);
+      }
+    };
+    window.dsSetView._celestialPatched = true;
+  }
+
+  /* Hook after both 4.97 and 4.98 have run */
+  setTimeout(_hookSetView, 100);
+
+  /* Patch exit functions */
+  setTimeout(function() {
+    ['switchToOSMode','switchToClassicMode'].forEach(function(fn) {
+      var orig = window[fn];
+      if (!orig || orig._celExitPatched) return;
+      window[fn] = function() {
+        _stop();
+        return orig.apply(this, arguments);
+      };
+      window[fn]._celExitPatched = true;
+    });
+  }, 150);
+
+  /* ResizeObserver for canvas */
+  setTimeout(function() {
+    var wrap = _el('dcv-solar-wrap');
+    if (wrap && window.ResizeObserver) {
+      new ResizeObserver(function() { if (_active) _resize(); }).observe(wrap);
+    }
+  }, 200);
+
+  console.log('[AtulOS 4.99] DeepSpace Celestial View installed. dsSetView("celestial") to activate.');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.99 — DEEPSPACE CELESTIAL VIEW V1
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.100 — DEEPSPACE EXPEDITION LAYER V1
+     Mission journey · Route canvas · Phase timeline · Objectives
+     PATCH ONLY — no existing modules modified.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── helpers ── */
+  function _el(id) { return document.getElementById(id); }
+
+  /* ── state ── */
+  var _active    = false;
+  var _timers    = [];
+  var _raf       = null;
+  var _phase     = 0;
+  var _selMission= null;   /* currently selected expedition */
+  var _feedIdx   = 0;
+  var _cnv       = null;
+  var _ctx       = null;
+  var _W         = 0;
+  var _H         = 0;
+
+  /* ════════════════════════════════════════════════════════
+     EXPEDITION DATABASE
+     Extensible: add new expeditions to this array.
+     Phases: array ordered past → future.
+     objectives: [primary, secondary, longterm]
+  ════════════════════════════════════════════════════════ */
+  var _expeditions = [
+    {
+      id: 'atulsat1',
+      name: 'ATULSAT-1',
+      goal: 'Earth observation and communications relay in low Earth orbit',
+      from: 'EARTH', to: 'LEO',
+      duration: '180 DAYS',
+      completion: 72,
+      currentPhase: 3,
+      route: ['EARTH', 'LEO'],
+      phases: [
+        { name: 'LAUNCH',           status: 'done',    time: '180D AGO'  },
+        { name: 'ORBIT INSERTION',  status: 'done',    time: '178D AGO'  },
+        { name: 'COMMISSIONING',    status: 'done',    time: '170D AGO'  },
+        { name: 'SCIENCE OPS',      status: 'current', time: 'ACTIVE'    },
+        { name: 'RELAY OPERATIONS', status: 'future',  time: 'T+30D'     },
+        { name: 'MISSION EXTENSION',status: 'future',  time: 'T+90D'     },
+      ],
+      objectives: [
+        { tier: 'primary',   text: 'Earth surface imaging at 2m resolution' },
+        { tier: 'secondary', text: 'Communications relay for ATULROVER-1' },
+        { tier: 'longterm',  text: 'Constellation expansion with ATULSAT-2' },
+      ],
+      milestones: [
+        { event: 'LAUNCH COMPLETE',       status: 'done',    time: '180D AGO' },
+        { event: 'ORBIT ACHIEVED',        status: 'done',    time: '178D AGO' },
+        { event: 'SIGNAL ACQUIRED',       status: 'done',    time: '177D AGO' },
+        { event: 'SCIENCE OPS ACTIVE',    status: 'current', time: 'NOW'      },
+        { event: 'RELAY DEPLOYMENT',      status: 'upcoming',time: 'T+30D'    },
+        { event: 'MISSION EXTENSION',     status: 'upcoming',time: 'T+90D'    },
+      ],
+      nextMilestone: 'RELAY DEPLOYMENT — Activate communications link to ATULROVER-1 surface relay node',
+    },
+    {
+      id: 'atulsat2',
+      name: 'ATULSAT-2',
+      goal: 'Constellation partner to ATULSAT-1 for continuous Earth coverage',
+      from: 'EARTH', to: 'LEO',
+      duration: '12 DAYS',
+      completion: 18,
+      currentPhase: 1,
+      route: ['EARTH', 'LEO'],
+      phases: [
+        { name: 'LAUNCH',          status: 'done',    time: '12D AGO' },
+        { name: 'ORBIT INSERTION', status: 'current', time: 'ACTIVE'  },
+        { name: 'COMMISSIONING',   status: 'future',  time: 'T+7D'    },
+        { name: 'SCIENCE OPS',     status: 'future',  time: 'T+21D'   },
+        { name: 'RELAY HANDSHAKE', status: 'future',  time: 'T+35D'   },
+      ],
+      objectives: [
+        { tier: 'primary',   text: 'Orbit insertion and checkout' },
+        { tier: 'secondary', text: 'Formation flying with ATULSAT-1' },
+        { tier: 'longterm',  text: 'Continuous 24/7 Earth observation coverage' },
+      ],
+      milestones: [
+        { event: 'LAUNCH COMPLETE',       status: 'done',    time: '12D AGO' },
+        { event: 'ORBIT INSERTION',       status: 'current', time: 'NOW'     },
+        { event: 'COMMISSIONING BEGIN',   status: 'upcoming',time: 'T+7D'    },
+        { event: 'FORMATION ACHIEVED',    status: 'upcoming',time: 'T+14D'   },
+        { event: 'SCIENCE OPS ACTIVE',    status: 'upcoming',time: 'T+21D'   },
+      ],
+      nextMilestone: 'COMMISSIONING — Systems checkout and payload activation sequence',
+    },
+    {
+      id: 'chandra1',
+      name: 'CHANDRA-1',
+      goal: 'Lunar polar orbit insertion and south pole surface mapping',
+      from: 'EARTH', to: 'MOON',
+      duration: '45 DAYS',
+      completion: 55,
+      currentPhase: 2,
+      route: ['EARTH', 'LUNAR TRANSFER', 'MOON'],
+      phases: [
+        { name: 'LAUNCH',             status: 'done',    time: '45D AGO' },
+        { name: 'TRANS-LUNAR CRUISE', status: 'done',    time: '40D AGO' },
+        { name: 'LUNAR APPROACH',     status: 'current', time: 'ACTIVE'  },
+        { name: 'ORBIT INSERTION',    status: 'future',  time: 'T+2D'    },
+        { name: 'SURFACE MAPPING',    status: 'future',  time: 'T+10D'   },
+        { name: 'SCIENCE COLLECTION', status: 'future',  time: 'T+30D'   },
+      ],
+      objectives: [
+        { tier: 'primary',   text: 'Lunar south pole high-resolution mapping' },
+        { tier: 'secondary', text: 'Water ice detection in permanently shadowed regions' },
+        { tier: 'longterm',  text: 'Site selection for future lunar lander' },
+      ],
+      milestones: [
+        { event: 'LAUNCH COMPLETE',       status: 'done',    time: '45D AGO' },
+        { event: 'TRANS-LUNAR INJECTION', status: 'done',    time: '44D AGO' },
+        { event: 'SIGNAL ACQUIRED',       status: 'done',    time: '43D AGO' },
+        { event: 'LUNAR APPROACH',        status: 'current', time: 'NOW'     },
+        { event: 'ORBIT INSERTION',       status: 'upcoming',time: 'T+2D'    },
+        { event: 'MAPPING BEGINS',        status: 'upcoming',time: 'T+10D'   },
+      ],
+      nextMilestone: 'LUNAR ORBIT INSERTION — 100km polar orbit capture burn — T+2 DAYS',
+    },
+    {
+      id: 'mangalyaan',
+      name: 'MANGALYAAN-X',
+      goal: 'Mars orbit insertion and atmospheric study mission',
+      from: 'EARTH', to: 'MARS',
+      duration: '210 DAYS',
+      completion: 41,
+      currentPhase: 2,
+      route: ['EARTH', 'HELIOCENTRIC CRUISE', 'MARS'],
+      phases: [
+        { name: 'LAUNCH',              status: 'done',    time: '210D AGO' },
+        { name: 'EARTH ESCAPE',        status: 'done',    time: '209D AGO' },
+        { name: 'CRUISE PHASE',        status: 'current', time: 'ACTIVE'   },
+        { name: 'MARS APPROACH',       status: 'future',  time: 'T+45D'    },
+        { name: 'ORBIT INSERTION',     status: 'future',  time: 'T+50D'    },
+        { name: 'SCIENCE OPERATIONS',  status: 'future',  time: 'T+60D'    },
+      ],
+      objectives: [
+        { tier: 'primary',   text: 'Mars orbit insertion and initial checkout' },
+        { tier: 'secondary', text: 'Atmospheric methane and dust storm monitoring' },
+        { tier: 'longterm',  text: 'Communications relay for ATULROVER-1 surface ops' },
+      ],
+      milestones: [
+        { event: 'LAUNCH COMPLETE',       status: 'done',    time: '210D AGO' },
+        { event: 'EARTH ESCAPE ACHIEVED', status: 'done',    time: '209D AGO' },
+        { event: 'HELIOCENTRIC CRUISE',   status: 'current', time: 'NOW'      },
+        { event: 'MID-COURSE CORRECTION', status: 'upcoming',time: 'T+20D'    },
+        { event: 'MARS APPROACH',         status: 'upcoming',time: 'T+45D'    },
+        { event: 'ORBIT INSERTION',       status: 'upcoming',time: 'T+50D'    },
+      ],
+      nextMilestone: 'MID-COURSE CORRECTION BURN — Trajectory refinement for Mars approach — T+20 DAYS',
+    },
+    {
+      id: 'atulrover1',
+      name: 'ATULROVER-1',
+      goal: 'Mars surface exploration and soil sample collection',
+      from: 'EARTH', to: 'MARS SURFACE',
+      duration: '380 DAYS',
+      completion: 62,
+      currentPhase: 3,
+      route: ['EARTH', 'CRUISE', 'MARS ORBIT', 'MARS SURFACE'],
+      phases: [
+        { name: 'LAUNCH',              status: 'done',    time: '380D AGO' },
+        { name: 'CRUISE',              status: 'done',    time: '370D AGO' },
+        { name: 'ENTRY & DESCENT',     status: 'done',    time: '187D AGO' },
+        { name: 'SURFACE OPS',         status: 'current', time: 'ACTIVE'   },
+        { name: 'SAMPLE COLLECTION',   status: 'future',  time: 'T+15D'    },
+        { name: 'EXTENDED MISSION',    status: 'future',  time: 'T+90D'    },
+      ],
+      objectives: [
+        { tier: 'primary',   text: 'Terrain traverse and geological survey — Jezero region' },
+        { tier: 'secondary', text: 'Soil and rock sample collection for return mission' },
+        { tier: 'longterm',  text: 'Identify habitable ancient lake bed environment' },
+      ],
+      milestones: [
+        { event: 'LAUNCH COMPLETE',       status: 'done',    time: '380D AGO' },
+        { event: 'MARS ORBIT ACHIEVED',   status: 'done',    time: '195D AGO' },
+        { event: 'LANDING CONFIRMED',     status: 'done',    time: '187D AGO' },
+        { event: 'SURFACE OPS ACTIVE',    status: 'current', time: 'NOW'      },
+        { event: 'SAMPLE COLLECTION',     status: 'upcoming',time: 'T+15D'    },
+        { event: 'MISSION EXTENSION',     status: 'upcoming',time: 'T+90D'    },
+      ],
+      nextMilestone: 'SAMPLE COLLECTION — Core drill sequence at Site Delta-7 — T+15 DAYS',
+    },
+    {
+      id: 'voyager',
+      name: 'VOYAGER-SIM',
+      goal: 'Deep space trajectory and interstellar medium study',
+      from: 'EARTH', to: 'DEEP SPACE',
+      duration: '1,840 DAYS',
+      completion: 88,
+      currentPhase: 4,
+      route: ['EARTH', 'INNER SOLAR SYSTEM', 'OUTER SOLAR SYSTEM', 'DEEP SPACE'],
+      phases: [
+        { name: 'LAUNCH',              status: 'done',    time: '1840D AGO' },
+        { name: 'INNER CRUISE',        status: 'done',    time: '1600D AGO' },
+        { name: 'OUTER SOLAR SYSTEM',  status: 'done',    time: '900D AGO'  },
+        { name: 'HELIOPAUSE APPROACH', status: 'done',    time: '200D AGO'  },
+        { name: 'DEEP SPACE CRUISE',   status: 'current', time: 'ACTIVE'    },
+        { name: 'INTERSTELLAR MEDIUM', status: 'future',  time: 'T+180D'    },
+      ],
+      objectives: [
+        { tier: 'primary',   text: 'Deep space communication relay and telemetry study' },
+        { tier: 'secondary', text: 'Interstellar medium particle and field measurements' },
+        { tier: 'longterm',  text: 'Demonstrate long-range deep space communication' },
+      ],
+      milestones: [
+        { event: 'LAUNCH COMPLETE',       status: 'done',    time: '1840D AGO' },
+        { event: 'JUPITER FLYBY',         status: 'done',    time: '1400D AGO' },
+        { event: 'HELIOPAUSE CROSSED',    status: 'done',    time: '200D AGO'  },
+        { event: 'DEEP SPACE CRUISE',     status: 'current', time: 'NOW'       },
+        { event: 'INTERSTELLAR MEDIUM',   status: 'upcoming',time: 'T+180D'    },
+      ],
+      nextMilestone: 'INTERSTELLAR MEDIUM ENTRY — Particle density threshold crossing — T+180 DAYS',
+    },
+  ];
+
+  /* ════════════════════════════════════════════════════════
+     DATA ACCESSORS
+  ════════════════════════════════════════════════════════ */
+  function _getMissions()  { return window._deepspaceMissions  && window._deepspaceMissions.list  ? window._deepspaceMissions.list()  : []; }
+  function _getStations()  { return window._deepspaceStations  && window._deepspaceStations.list  ? window._deepspaceStations.list()  : []; }
+  function _getRovers()    { return window._deepspaceRovers    && window._deepspaceRovers.list    ? window._deepspaceRovers.list()    : []; }
+
+  /* Merge live data into expedition completion / phase */
+  function _mergeLive() {
+    var missions = _getMissions();
+    _expeditions.forEach(function(exp) {
+      var match = missions.find(function(m) {
+        return m.name && m.name.toUpperCase().indexOf(exp.id.toUpperCase().split('-')[0]) !== -1;
+      });
+      if (match) {
+        if (match.completion !== undefined) exp.completion = parseInt(match.completion) || exp.completion;
+        if (match.phase)                   exp.phases[exp.currentPhase].name = match.phase.toUpperCase();
+      }
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════
+     EXPLORATION STATS BAR
+  ════════════════════════════════════════════════════════ */
+  function _updateStats() {
+    var total     = _expeditions.length;
+    var completed = _expeditions.filter(function(e){ return e.completion >= 100; }).length;
+    var active    = _expeditions.filter(function(e){ return e.completion < 100; }).length;
+    var worlds    = new Set(_expeditions.map(function(e){ return e.to; })).size;
+    var avgComp   = Math.round(_expeditions.reduce(function(s,e){ return s + e.completion; },0) / total);
+
+    /* Furthest mission */
+    var voyager   = _expeditions.find(function(e){ return e.id === 'voyager'; });
+    var distLabel = voyager ? '21.8B KM' : '—';
+
+    _setStat('dex-st-total',    total,               '');
+    _setStat('dex-st-completed',completed,           'nominal');
+    _setStat('dex-st-active',   active,              'accent');
+    _setStat('dex-st-worlds',   worlds,              'accent');
+    _setStat('dex-st-distance', distLabel,           '');
+    _setStat('dex-st-success',  avgComp + '% AVG',  'nominal');
+  }
+
+  function _setStat(id, val, cls) {
+    var el = _el(id);
+    if (!el) return;
+    el.textContent = val;
+    el.className = 'dex-stat-value ' + cls;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     MISSION SELECTOR PILLS
+  ════════════════════════════════════════════════════════ */
+  function _buildSelector() {
+    var container = _el('dex-mission-selector');
+    if (!container) return;
+    container.innerHTML = _expeditions.map(function(exp) {
+      return '<button type="button" class="dex-ms-btn" data-id="' + exp.id + '">' +
+        exp.name + '</button>';
+    }).join('');
+    container.addEventListener('click', function(e) {
+      var btn = e.target.closest('.dex-ms-btn');
+      if (!btn) return;
+      _selectMission(btn.dataset.id);
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════
+     MISSION DETAIL PANEL
+  ════════════════════════════════════════════════════════ */
+  function _selectMission(id) {
+    var exp = _expeditions.find(function(e){ return e.id === id; });
+    if (!exp) return;
+    _selMission = exp;
+
+    /* Update selector buttons */
+    document.querySelectorAll('.dex-ms-btn').forEach(function(b) {
+      b.classList.toggle('dex-ms-active', b.dataset.id === id);
+    });
+
+    /* Detail header */
+    var dTitle = _el('dex-detail-title');
+    var dBadge = _el('dex-detail-badge');
+    if (dTitle) dTitle.textContent = exp.name;
+    if (dBadge) {
+      dBadge.textContent = exp.completion < 100 ? 'ACTIVE' : 'COMPLETE';
+      dBadge.className = 'dex-col-badge ' + (exp.completion < 100 ? 'accent' : 'nominal');
+    }
+
+    /* Mission card */
+    _setText('dex-mc-name',  exp.name);
+    _setText('dex-mc-goal',  exp.goal);
+    _setText('dex-mc-from',  exp.from);
+    _setText('dex-mc-to',    exp.to);
+    _setText('dex-mc-dur',   exp.duration);
+    var currentPhaseName = exp.phases[exp.currentPhase] ? exp.phases[exp.currentPhase].name : '—';
+    _setText('dex-mc-phase', currentPhaseName);
+
+    /* Progress */
+    _setText('dex-progress-pct', exp.completion + '%');
+    var fill = _el('dex-progress-fill');
+    if (fill) fill.style.width = Math.min(exp.completion, 100) + '%';
+
+    /* Phase list */
+    var phaseList = _el('dex-phase-list');
+    if (phaseList) {
+      phaseList.innerHTML = exp.phases.map(function(ph, i) {
+        var isLast = i === exp.phases.length - 1;
+        return '<div class="dex-phase-item">' +
+          (!isLast ? '<div class="dex-phase-line ' + ph.status + '"></div>' : '') +
+          '<div class="dex-phase-dot ' + ph.status + '"></div>' +
+          '<span class="dex-phase-name ' + ph.status + '">' + ph.name + '</span>' +
+          '<span class="dex-phase-status ' + ph.status + '">' + ph.time + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    /* Objectives */
+    var objList = _el('dex-obj-list');
+    if (objList) {
+      objList.innerHTML = exp.objectives.map(function(obj) {
+        return '<div class="dex-obj-item">' +
+          '<span class="dex-obj-tier ' + obj.tier + '">' + obj.tier.toUpperCase() + '</span>' +
+          '<span class="dex-obj-text">' + obj.text + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    /* Milestone timeline */
+    _renderMilestones(exp);
+
+    /* Next milestone */
+    var nextBody = _el('dex-next-body');
+    if (nextBody) nextBody.textContent = exp.nextMilestone || '—';
+
+    /* Route canvas */
+    _drawRoute(exp);
+
+    /* Route badge */
+    var routeBadge = _el('dex-route-badge');
+    if (routeBadge) routeBadge.textContent = exp.from + ' → ' + exp.to;
+  }
+
+  function _setText(id, val) {
+    var el = _el(id);
+    if (el) el.textContent = val || '—';
+  }
+
+  /* ════════════════════════════════════════════════════════
+     MILESTONE TIMELINE
+  ════════════════════════════════════════════════════════ */
+  function _renderMilestones(exp) {
+    var list = _el('dex-milestone-list');
+    if (!list) return;
+    list.innerHTML = exp.milestones.map(function(ms) {
+      return '<div class="dex-ms-item">' +
+        '<span class="dex-ms-dot ' + ms.status + '"></span>' +
+        '<div class="dex-ms-content">' +
+          '<div class="dex-ms-event ' + ms.status + '">' + ms.event + '</div>' +
+          '<div class="dex-ms-mission">' + exp.name + '</div>' +
+        '</div>' +
+        '<span class="dex-ms-time">' + ms.time + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ROUTE CANVAS
+  ════════════════════════════════════════════════════════ */
+  function _initRouteCanvas() {
+    _cnv = _el('dex-route-canvas');
+    if (!_cnv) return false;
+    _ctx = _cnv.getContext('2d');
+    _resizeCanvas();
+    return true;
+  }
+
+  function _resizeCanvas() {
+    if (!_cnv) return;
+    var wrap = _el('dex-route-wrap');
+    if (!wrap) return;
+    _W = wrap.clientWidth  || 200;
+    _H = wrap.clientHeight || 400;
+    _cnv.width  = _W;
+    _cnv.height = _H;
+  }
+
+  function _drawRoute(exp) {
+    if (!_ctx) return;
+    _resizeCanvas();
+    _ctx.clearRect(0, 0, _W, _H);
+
+    var stops = exp.route;
+    var N     = stops.length;
+    if (!N) return;
+
+    var pad   = 32;
+    var stepH = (_H - pad * 2) / Math.max(N - 1, 1);
+    var cx    = _W / 2;
+
+    /* Determine progress stops */
+    var completedStops = Math.floor((exp.completion / 100) * (N - 1));
+
+    /* Draw connecting lines */
+    for (var i = 0; i < N - 1; i++) {
+      var y1 = pad + i * stepH;
+      var y2 = pad + (i + 1) * stepH;
+      var done = i < completedStops;
+      var isActive = i === completedStops;
+
+      _ctx.beginPath();
+      _ctx.moveTo(cx, y1);
+      _ctx.lineTo(cx, y2);
+      _ctx.strokeStyle = done ? 'rgba(40,200,64,0.4)'
+                       : isActive ? 'rgba(99,168,255,0.3)'
+                       : 'rgba(99,168,255,0.1)';
+      _ctx.lineWidth = done ? 2 : 1;
+      _ctx.setLineDash(done ? [] : [3, 6]);
+      _ctx.stroke();
+      _ctx.setLineDash([]);
+    }
+
+    /* Draw stop nodes */
+    for (var j = 0; j < N; j++) {
+      var ys   = pad + j * stepH;
+      var isDone    = j < completedStops;
+      var isCurrent = j === completedStops;
+      var isFuture  = j > completedStops;
+
+      /* Outer ring */
+      _ctx.beginPath();
+      _ctx.arc(cx, ys, isCurrent ? 9 : 6, 0, Math.PI * 2);
+      _ctx.strokeStyle = isDone ? 'rgba(40,200,64,0.6)'
+                       : isCurrent ? 'rgba(99,168,255,0.8)'
+                       : 'rgba(99,168,255,0.2)';
+      _ctx.lineWidth = 1.5;
+      _ctx.stroke();
+
+      /* Fill */
+      _ctx.beginPath();
+      _ctx.arc(cx, ys, isCurrent ? 5 : 3, 0, Math.PI * 2);
+      _ctx.fillStyle = isDone ? '#28c840'
+                     : isCurrent ? 'var(--accent, #63a8ff)'
+                     : 'rgba(99,168,255,0.12)';
+      _ctx.fill();
+
+      /* Animated pulse on current node */
+      if (isCurrent) {
+        var pr = 11 + 3 * Math.sin(_phase * 0.08);
+        _ctx.beginPath();
+        _ctx.arc(cx, ys, pr, 0, Math.PI * 2);
+        _ctx.strokeStyle = 'rgba(99,168,255,0.18)';
+        _ctx.lineWidth = 1;
+        _ctx.stroke();
+      }
+
+      /* Label */
+      _ctx.font = '700 8px monospace';
+      _ctx.fillStyle = isDone ? 'rgba(40,200,64,0.7)'
+                     : isCurrent ? 'rgba(99,168,255,0.9)'
+                     : 'rgba(154,169,187,0.3)';
+      _ctx.textAlign = 'center';
+      _ctx.fillText(stops[j], cx, ys + (isCurrent ? 9 : 6) + 12);
+    }
+
+    /* Progress label */
+    _ctx.font = '700 9px monospace';
+    _ctx.fillStyle = 'rgba(99,168,255,0.4)';
+    _ctx.textAlign = 'center';
+    _ctx.fillText(exp.completion + '%', cx, _H - 8);
+  }
+
+  /* ════════════════════════════════════════════════════════
+     EXPEDITION-LEVEL MILESTONE FEED (all missions)
+  ════════════════════════════════════════════════════════ */
+  var _feedPool = [
+    { text: 'NEW REGION MAPPED — ATULROVER-1 · MARS SURFACE',            cls: 'nominal' },
+    { text: 'SURFACE ANALYSIS COMPLETE — SOIL SAMPLE CONFIRMED',          cls: ''        },
+    { text: 'MISSION PHASE ADVANCED — ATULSAT-1 SCIENCE OPS ACTIVE',      cls: 'nominal' },
+    { text: 'COMMUNICATION LINK ESTABLISHED — VOYAGER-SIM DEEP SPACE',    cls: ''        },
+    { text: 'SIGNAL VERIFIED — CHANDRA-1 LUNAR APPROACH NOMINAL',         cls: 'nominal' },
+    { text: 'SCIENCE PAYLOAD ACTIVATED — MANGALYAAN-X MARS ORBIT',        cls: ''        },
+    { text: 'ATMOSPHERIC ANALYSIS COMPLETE — MARS-SCOUT ENTRY NOMINAL',   cls: 'nominal' },
+    { text: 'ORBIT INSERTION CONFIRMED — ATULSAT-2 LEO STABLE',           cls: ''        },
+    { text: 'TERRAIN MAPPING — 847 KM² SURVEYED',                         cls: 'nominal' },
+    { text: 'RELAY DEPLOYMENT SUCCESSFUL — NETWORK EXTENDED',             cls: ''        },
+    { text: 'SAMPLE COLLECTION SEQUENCE INITIATED — ATULROVER-1',         cls: 'nominal' },
+    { text: 'DEEP SPACE COMMUNICATION NOMINAL — VOYAGER-SIM 21.8B KM',    cls: ''        },
+  ];
+
+  function _injectFeedEvent() {
+    /* Try live rover logs first */
+    var rovers = window._deepspaceRovers && window._deepspaceRovers.list ? window._deepspaceRovers.list() : [];
+    for (var i = 0; i < rovers.length; i++) {
+      var r = rovers[i];
+      if (r.log && r.log.length) {
+        var last = r.log[r.log.length - 1];
+        if (last && last.msg) {
+          _inject(r.name.toUpperCase() + ' — ' + last.msg.toUpperCase(), 'nominal');
+          return;
+        }
+      }
+    }
+    var item = _feedPool[_feedIdx % _feedPool.length];
+    _inject(item.text, item.cls);
+    _feedIdx++;
+  }
+
+  function _inject(text, cls) {
+    var inner = _el('dex-feed-inner');
+    if (!inner) return;
+    var s = document.createElement('span');
+    s.className = 'dex-feed-item ' + (cls || '');
+    s.textContent = text;
+    inner.appendChild(s);
+    var s2 = s.cloneNode(true);
+    inner.appendChild(s2);
+    var items = inner.querySelectorAll('.dex-feed-item');
+    if (items.length > 60) { items[0].remove(); items[1] && items[1].remove(); }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     ANIMATION LOOP — route canvas pulse
+  ════════════════════════════════════════════════════════ */
+  function _loop() {
+    if (!_active) { _raf = null; return; }
+    _phase++;
+    if (_selMission && _phase % 4 === 0) _drawRoute(_selMission);
+    _raf = requestAnimationFrame(_loop);
+  }
+
+  /* ════════════════════════════════════════════════════════
+     START / STOP
+  ════════════════════════════════════════════════════════ */
+  function _start() {
+    if (_active) return;
+    _active = true;
+
+    if (!_initRouteCanvas()) return;
+    _mergeLive();
+    _updateStats();
+    _buildSelector();
+
+    /* Select first expedition by default */
+    if (!_selMission) _selectMission(_expeditions[0].id);
+
+    _raf = requestAnimationFrame(_loop);
+
+    _timers.push(setInterval(_updateStats,    6000));
+    _timers.push(setInterval(_injectFeedEvent,12000));
+    _timers.push(setInterval(_mergeLive,      15000));
+    _timers.push(setInterval(function() {
+      if (_cnv) _resizeCanvas();
+      if (_selMission) _drawRoute(_selMission);
+    }, 3000));
+  }
+
+  function _stop() {
+    _active = false;
+    if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+    _timers.forEach(function(id){ clearInterval(id); });
+    _timers = [];
+  }
+
+  /* ════════════════════════════════════════════════════════
+     CELESTIAL VIEW INTEGRATION
+     When Celestial View selects a region, if Expedition View
+     is open it updates the mission selector to match.
+     Also hooks dsSetView to handle 'expedition'.
+  ════════════════════════════════════════════════════════ */
+  var _REGION_TO_MISSIONS = {
+    earth: ['atulsat1','atulsat2'],
+    moon:  ['chandra1'],
+    mars:  ['mangalyaan','atulrover1','marsscout'],
+    deep:  ['voyager'],
+  };
+
+  /* Called by Celestial View when user selects a region */
+  window.dexFocusRegion = function(region) {
+    if (!_active) return;
+    var mids = _REGION_TO_MISSIONS[region];
+    if (mids && mids.length) _selectMission(mids[0]);
+  };
+
+  function _hookSetView() {
+    var prevSetView = window.dsSetView;
+    if (!prevSetView || prevSetView._expeditionPatched) return;
+
+    window.dsSetView = function(v) {
+      var expView = _el('ds-expedition-view');
+      var btnExp  = _el('ds-btn-expedition');
+
+      if (v === 'expedition') {
+        /* Hide all other views */
+        ['ds-dashboard','ds-command-ribbon','ds-telemetry-ticker'].forEach(function(id) {
+          var el = _el(id); if (el) el.style.display = 'none';
+        });
+        var llinks = _el('ds-live-links-panel');
+        if (llinks) { var row = llinks.closest ? llinks.closest('.ds-row') : null; if (row) row.style.display = 'none'; }
+        var tactical  = _el('ds-tactical-view');
+        var celestial = _el('ds-celestial-view');
+        if (tactical)  { tactical.hidden  = true; tactical.style.display  = 'none'; }
+        if (celestial) { celestial.hidden = true; celestial.style.display = 'none'; }
+        if (expView)   { expView.hidden   = false; expView.style.display  = 'flex'; }
+
+        document.querySelectorAll('.ds-view-btn').forEach(function(b) {
+          b.classList.remove('ds-view-btn-active'); b.setAttribute('aria-selected','false');
+        });
+        if (btnExp) { btnExp.classList.add('ds-view-btn-active'); btnExp.setAttribute('aria-selected','true'); }
+
+        _start();
+      } else {
+        if (expView) { expView.hidden = true; expView.style.display = 'none'; }
+        if (btnExp)  { btnExp.classList.remove('ds-view-btn-active'); btnExp.setAttribute('aria-selected','false'); }
+        _stop();
+        prevSetView(v);
+      }
+    };
+    window.dsSetView._expeditionPatched = true;
+  }
+
+  setTimeout(_hookSetView, 200);
+
+  /* Exit cleanup */
+  setTimeout(function() {
+    ['switchToOSMode','switchToClassicMode'].forEach(function(fn) {
+      var orig = window[fn];
+      if (!orig || orig._expExitPatched) return;
+      window[fn] = function() { _stop(); return orig.apply(this, arguments); };
+      window[fn]._expExitPatched = true;
+    });
+  }, 250);
+
+  /* ResizeObserver */
+  setTimeout(function() {
+    var wrap = _el('dex-route-wrap');
+    if (wrap && window.ResizeObserver) {
+      new ResizeObserver(function() { if (_active) { _resizeCanvas(); if (_selMission) _drawRoute(_selMission); } }).observe(wrap);
+    }
+  }, 300);
+
+  console.log('[AtulOS 4.100] DeepSpace Expedition Layer installed. dsSetView("expedition") to activate.');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.100 — DEEPSPACE EXPEDITION LAYER V1
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.101 — ATLAS MISSION DIRECTOR V1
+     Autonomous Telemetry & Launch Assistance System
+     Reads: _deepspaceAssets · _deepspaceMissions · _deepspaceStations
+            _deepspaceRovers · _deepspaceLaunches
+     Outputs: Dashboard panel · Terminal commands · Alert system
+              Recommendation engine · Public API window.ATLAS
+     PATCH ONLY — no existing modules modified.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── helpers ── */
+  function _el(id) { return document.getElementById(id); }
+  function _setText(id, val) { var e = _el(id); if (e) e.textContent = val || '—'; }
+  function _setHtml(id, val) { var e = _el(id); if (e) e.innerHTML = val || ''; }
+
+  /* ── state ── */
+  var _timers    = [];
+  var _collapsed = false;
+
+  /* ════════════════════════════════════════════════════════
+     DATA LAYER — reads existing registries, no duplication
+  ════════════════════════════════════════════════════════ */
+  function _assets()    { return (window._deepspaceAssets    && window._deepspaceAssets.list)    ? window._deepspaceAssets.list()    : []; }
+  function _missions()  { return (window._deepspaceMissions  && window._deepspaceMissions.list)  ? window._deepspaceMissions.list()  : []; }
+  function _stations()  { return (window._deepspaceStations  && window._deepspaceStations.list)  ? window._deepspaceStations.list()  : []; }
+  function _rovers()    { return (window._deepspaceRovers    && window._deepspaceRovers.list)    ? window._deepspaceRovers.list()    : []; }
+  function _launches()  { return (window._deepspaceLaunches  && window._deepspaceLaunches.list)  ? window._deepspaceLaunches.list()  : []; }
+
+  /* ════════════════════════════════════════════════════════
+     ATLAS ANALYSIS ENGINE
+  ════════════════════════════════════════════════════════ */
+
+  /* ── Alert generator ── */
+  function _generateAlerts() {
+    var alerts = [];
+    var assets   = _assets();
+    var stations = _stations();
+    var missions = _missions();
+    var rovers   = _rovers();
+    var launches = _launches();
+
+    /* Asset alerts */
+    assets.forEach(function(a) {
+      if (a.health === 'CRITICAL' || a.status === 'OFFLINE') {
+        alerts.push({ level:'critical', msg: a.name + ' OFFLINE — health critical, signal lost' });
+      } else if (a.health === 'DEGRADED' || (a.telemetry && a.telemetry.signal < 50)) {
+        alerts.push({ level:'warning', msg: a.name + ' DEGRADED — signal ' + (a.telemetry ? Math.round(a.telemetry.signal) + '%' : 'low') });
+      } else if (a.telemetry && a.telemetry.signal < 70) {
+        alerts.push({ level:'info', msg: a.name + ' — low signal (' + Math.round(a.telemetry.signal) + '%), monitor closely' });
+      }
+    });
+
+    /* Station alerts */
+    stations.forEach(function(s) {
+      if (s.status === 'OFFLINE' || s.status === 'ERROR') {
+        alerts.push({ level:'critical', msg: s.name + ' OFFLINE — ground contact lost' });
+      } else if (s.status === 'MAINTENANCE' || (s.signal && s.signal < 60)) {
+        alerts.push({ level:'warning', msg: s.name + ' — degraded link quality, signal ' + (s.signal ? Math.round(s.signal) + '%' : 'low') });
+      }
+    });
+
+    /* Mission alerts */
+    missions.forEach(function(m) {
+      if (m.priority === 'CRITICAL' && m.status !== 'ACTIVE') {
+        alerts.push({ level:'critical', msg: 'CRITICAL MISSION ' + m.name + ' — status ' + m.status + ', requires immediate review' });
+      } else if (m.priority === 'HIGH' && (m.status === 'PLANNED' || m.status === 'ANALYZING')) {
+        alerts.push({ level:'warning', msg: m.name + ' — high-priority mission pending activation' });
+      }
+    });
+
+    /* Rover alerts */
+    rovers.forEach(function(r) {
+      if (r.missionStatus === 'CRITICAL' || r.status === 'OFFLINE') {
+        alerts.push({ level:'critical', msg: r.name + ' — surface contact lost' });
+      } else if (r.battery !== undefined && r.battery < 20) {
+        alerts.push({ level:'warning', msg: r.name + ' — battery critical (' + Math.round(r.battery) + '%), charging required' });
+      }
+    });
+
+    /* Launch alerts */
+    var goLaunch = launches.find(function(l) { return l.status === 'GO' || l.status === 'LAUNCH COMMIT'; });
+    if (goLaunch) {
+      alerts.push({ level:'info', msg: 'LAUNCH COMMIT — ' + goLaunch.name + ' is GO for launch' });
+    }
+
+    /* Fallback */
+    if (!alerts.length && !assets.length && !stations.length) {
+      alerts.push({ level:'info', msg: 'ATLAS online — awaiting DeepSpace registry data' });
+    }
+
+    return alerts;
+  }
+
+  /* ── Assessment text ── */
+  function _generateAssessment(alerts) {
+    var assets   = _assets();
+    var stations = _stations();
+    var missions = _missions();
+
+    var critCount = alerts.filter(function(a){ return a.level === 'critical'; }).length;
+    var warnCount = alerts.filter(function(a){ return a.level === 'warning';  }).length;
+    var activeAssets    = assets.filter(function(a){ return a.status === 'ACTIVE' || a.status === 'OPERATIONAL'; });
+    var onlineStations  = stations.filter(function(s){ return s.status === 'ONLINE' || s.status === 'ACTIVE'; });
+    var activeMissions  = missions.filter(function(m){ return m.status === 'ACTIVE' || m.status === 'IN PROGRESS'; });
+
+    if (critCount > 0) {
+      return 'CRITICAL CONDITIONS DETECTED. ' + critCount + ' asset' + (critCount>1?'s':'' ) +
+             ' require immediate attention. Recommend suspending non-critical operations and prioritizing recovery.';
+    }
+    if (warnCount > 1) {
+      return 'DEGRADED NETWORK STATE. ' + warnCount + ' systems operating below nominal parameters. ' +
+             'Review ground station links and asset signal quality. Mission continuity maintained.';
+    }
+    if (warnCount === 1) {
+      return 'MINOR ANOMALY DETECTED. One system degraded but network integrity maintained. ' +
+             activeAssets.length + ' assets nominal, ' + onlineStations.length + ' stations online.';
+    }
+    /* All nominal */
+    var parts = [];
+    if (activeMissions.length)  parts.push(activeMissions.length + ' active mission' + (activeMissions.length>1?'s':''));
+    if (activeAssets.length)    parts.push(activeAssets.length + ' asset' + (activeAssets.length>1?'s':'') + ' nominal');
+    if (onlineStations.length)  parts.push(onlineStations.length + ' station' + (onlineStations.length>1?'s':'') + ' online');
+    if (!parts.length)          parts.push('monitoring systems initializing');
+    return 'ALL SYSTEMS NOMINAL. ' + parts.join(', ') + '. Network health optimal. No action required.';
+  }
+
+  /* ── Priority mission selector ── */
+  function _priorityMission() {
+    var missions = _missions();
+    if (!missions.length) return null;
+    var order = { CRITICAL:0, HIGH:1, NORMAL:2, LOW:3 };
+    var active = missions.filter(function(m){ return m.status === 'ACTIVE' || m.status === 'IN PROGRESS'; });
+    var pool   = active.length ? active : missions;
+    pool.sort(function(a,b){
+      return (order[a.priority]||9) - (order[b.priority]||9);
+    });
+    return pool[0] || null;
+  }
+
+  /* ── Recommendation engine ── */
+  function _generateRecommendations(alerts) {
+    var recs     = [];
+    var assets   = _assets();
+    var stations = _stations();
+    var missions = _missions();
+    var rovers   = _rovers();
+    var launches = _launches();
+
+    /* Critical alerts → high-priority recs */
+    alerts.filter(function(a){ return a.level==='critical'; }).forEach(function(a) {
+      recs.push({ text: 'Immediate: ' + a.msg, priority: 'high' });
+    });
+
+    /* Low signal assets → switch station */
+    var lowSig = assets.filter(function(a){ return a.telemetry && a.telemetry.signal < 65 && a.status !== 'OFFLINE'; });
+    if (lowSig.length) {
+      var altStation = stations.find(function(s){ return s.status === 'ONLINE' && s.signal > 80; });
+      if (altStation) {
+        recs.push({ text: 'Switch ' + lowSig[0].name + ' link to ' + altStation.name + ' — higher signal quality available', priority: 'high' });
+      } else {
+        recs.push({ text: 'Monitor ' + lowSig[0].name + ' signal — below 65%, consider next comm window adjustment', priority: 'normal' });
+      }
+    }
+
+    /* High-priority pending missions */
+    var pending = missions.filter(function(m){ return (m.priority==='HIGH'||m.priority==='CRITICAL') && m.status==='PLANNED'; });
+    if (pending.length) {
+      recs.push({ text: 'Activate mission ' + pending[0].name + ' — high priority, currently planned', priority: 'high' });
+    }
+
+    /* Launch window */
+    var staged = launches.filter(function(l){ return l.status === 'GO' || l.status === 'READY'; });
+    if (staged.length) {
+      recs.push({ text: 'Prepare launch window for ' + staged[0].name + ' — vehicle is GO', priority: 'high' });
+    }
+
+    /* Low battery rovers */
+    var lowBat = rovers.filter(function(r){ return r.battery !== undefined && r.battery < 30; });
+    if (lowBat.length) {
+      recs.push({ text: lowBat[0].name + ' — initiate charging cycle, battery at ' + Math.round(lowBat[0].battery) + '%', priority: 'high' });
+    }
+
+    /* Offline station */
+    var offline = stations.filter(function(s){ return s.status === 'OFFLINE'; });
+    if (offline.length) {
+      recs.push({ text: 'Restore ' + offline[0].name + ' — ground contact required for orbital coverage', priority: 'high' });
+    }
+
+    /* General recommendations when all is nominal */
+    if (recs.length === 0) {
+      recs.push({ text: 'Network nominal — schedule next maintenance window for asset health checks', priority: 'normal' });
+      if (missions.filter(function(m){ return m.status==='ACTIVE'; }).length > 0) {
+        recs.push({ text: 'Review active mission telemetry for long-term trending analysis', priority: 'normal' });
+      }
+    }
+
+    return recs.slice(0, 4); /* max 4 recommendations */
+  }
+
+  /* ════════════════════════════════════════════════════════
+     DASHBOARD PANEL RENDERER
+  ════════════════════════════════════════════════════════ */
+  function _renderPanel() {
+    var alerts  = _generateAlerts();
+    var recs    = _generateRecommendations(alerts);
+    var mission = _priorityMission();
+    var assets  = _assets();
+    var stations= _stations();
+
+    var critCount = alerts.filter(function(a){ return a.level==='critical'; }).length;
+    var warnCount = alerts.filter(function(a){ return a.level==='warning';  }).length;
+
+    /* Status dot + badge */
+    var dot   = _el('atlas-dot');
+    var badge = _el('atlas-status-badge');
+    if (dot && badge) {
+      if (critCount)      { dot.className = 'atlas-status-dot critical'; badge.textContent = 'CRITICAL'; badge.className = 'ds-panel-badge critical'; }
+      else if (warnCount) { dot.className = 'atlas-status-dot warn';     badge.textContent = 'WARNING';  badge.className = 'ds-panel-badge warning'; }
+      else                { dot.className = 'atlas-status-dot';           badge.textContent = 'NOMINAL';  badge.className = 'ds-panel-badge nominal'; }
+    }
+
+    /* Assessment */
+    _setText('atlas-assessment', _generateAssessment(alerts));
+
+    /* Priority mission */
+    if (mission) {
+      _setText('atlas-priority-name', mission.name);
+      _setText('atlas-priority-meta',
+        'STATUS: ' + mission.status + ' · PRIORITY: ' + (mission.priority||'NORMAL') +
+        (mission.objective ? '\n' + mission.objective.slice(0,60) : ''));
+    } else {
+      _setText('atlas-priority-name', 'NO ACTIVE MISSIONS');
+      _setText('atlas-priority-meta', 'All missions completed or no missions registered.');
+    }
+
+    /* Network */
+    var activeAssets   = assets.filter(function(a){ return a.status==='ACTIVE'||a.status==='OPERATIONAL'; });
+    var onlineStations = stations.filter(function(s){ return s.status==='ONLINE'||s.status==='ACTIVE'; });
+    _setText('atlas-net-stations', onlineStations.length + ' / ' + stations.length);
+    _setText('atlas-net-assets',   activeAssets.length   + ' / ' + assets.length);
+    var netEl = _el('atlas-net-uplink');
+    if (netEl) {
+      var upOk = onlineStations.length > 0;
+      netEl.textContent = upOk ? 'NOMINAL' : 'DEGRADED';
+      netEl.className   = 'atlas-net-val ' + (upOk ? 'nominal' : 'warning');
+    }
+
+    /* Alert count badge */
+    var countEl = _el('atlas-alert-count');
+    if (countEl) {
+      var total = critCount + warnCount;
+      countEl.textContent = total;
+      countEl.className   = 'atlas-alert-count' + (total === 0 ? ' zero' : '');
+    }
+
+    /* Alerts list */
+    var alertsList = _el('atlas-alerts-list');
+    if (alertsList) {
+      if (!alerts.filter(function(a){ return a.level!=='info'; }).length && critCount===0 && warnCount===0) {
+        alertsList.innerHTML = '<div class="atlas-no-alerts">◉ ALL SYSTEMS NOMINAL — NO ACTIVE ALERTS</div>';
+      } else {
+        var displayAlerts = alerts.filter(function(a){ return a.level==='critical'||a.level==='warning'; });
+        if (!displayAlerts.length) displayAlerts = alerts;
+        alertsList.innerHTML = displayAlerts.slice(0,4).map(function(a) {
+          return '<div class="atlas-alert-item ' + a.level + '">' +
+            '<span class="atlas-alert-level">' + a.level.toUpperCase() + '</span>' +
+            '<span class="atlas-alert-msg">' + a.msg + '</span>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    /* Recommendations list */
+    var recsList = _el('atlas-recs-list');
+    if (recsList) {
+      recsList.innerHTML = recs.map(function(r) {
+        return '<div class="atlas-rec-item">' +
+          '<span class="atlas-rec-text">' + r.text + '</span>' +
+          '<span class="atlas-rec-priority ' + (r.priority||'normal') + '">' + (r.priority||'NORMAL').toUpperCase() + '</span>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     TERMINAL COMMANDS  — prefix: "atlas"
+  ════════════════════════════════════════════════════════ */
+  var SEP = '──────────────────────────────────────────';
+
+  var _ATLAS_CMDS = {
+
+    'atlas summary': function() {
+      var alerts  = _generateAlerts();
+      var mission = _priorityMission();
+      var assets  = _assets();
+      var stations= _stations();
+      var critCount = alerts.filter(function(a){ return a.level==='critical'; }).length;
+      var warnCount = alerts.filter(function(a){ return a.level==='warning';  }).length;
+      var activeA = assets.filter(function(a){ return a.status==='ACTIVE'||a.status==='OPERATIONAL'; });
+      var onlineS = stations.filter(function(s){ return s.status==='ONLINE'||s.status==='ACTIVE'; });
+      return [
+        '─── ATLAS MISSION SUMMARY ────────────────',
+        'Assessment   : ' + _generateAssessment(alerts),
+        '',
+        'Priority Msn : ' + (mission ? mission.name + ' [' + mission.priority + ']' : 'None'),
+        'Active Assets: ' + activeA.length + ' / ' + assets.length,
+        'Online Stns  : ' + onlineS.length + ' / ' + stations.length,
+        'Alerts       : ' + critCount + ' critical, ' + warnCount + ' warnings',
+        SEP
+      ].join('\n');
+    },
+
+    'atlas missions': function() {
+      var missions = _missions();
+      if (!missions.length) return '─── ATLAS MISSIONS ───────────────────────\nNo missions registered.\n' + SEP;
+      var counts = {};
+      missions.forEach(function(m){ counts[m.status] = (counts[m.status]||0) + 1; });
+      var lines = ['─── ATLAS MISSIONS ───────────────────────'];
+      missions.forEach(function(m) {
+        lines.push(m.name.padEnd(16) + m.status.padEnd(12) + (m.priority||'NORMAL').padEnd(10) + (m.objective||'').slice(0,30));
+      });
+      lines.push('');
+      lines.push('Total: ' + missions.length + '  |  ' + Object.keys(counts).map(function(k){ return k+': '+counts[k]; }).join(', '));
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    'atlas assets': function() {
+      var assets = _assets();
+      if (!assets.length) return '─── ATLAS ASSETS ─────────────────────────\nNo assets tracked.\n' + SEP;
+      var lines = ['─── ATLAS ASSETS ─────────────────────────'];
+      assets.forEach(function(a) {
+        var t = a.telemetry || {};
+        var sig = t.signal !== undefined ? Math.round(t.signal) + '%' : '—';
+        var health = a.health || '—';
+        lines.push(
+          a.name.padEnd(15) + a.status.padEnd(13) + health.padEnd(10) +
+          'SIG: ' + sig.padStart(4) +
+          (t.altitude !== undefined ? '  ALT: ' + t.altitude.toFixed(0) + ' KM' : '')
+        );
+      });
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    'atlas network': function() {
+      var stations = _stations();
+      var assets   = _assets();
+      if (!stations.length && !assets.length) return '─── ATLAS NETWORK ────────────────────────\nNetwork offline.\n' + SEP;
+      var online  = stations.filter(function(s){ return s.status==='ONLINE'||s.status==='ACTIVE'; });
+      var offline = stations.filter(function(s){ return s.status==='OFFLINE'||s.status==='ERROR'; });
+      var lines   = ['─── ATLAS NETWORK STATUS ─────────────────'];
+      lines.push('Ground Stations : ' + stations.length + ' total, ' + online.length + ' online, ' + offline.length + ' offline');
+      lines.push('Active Assets   : ' + assets.filter(function(a){ return a.status==='ACTIVE'||a.status==='OPERATIONAL'; }).length + ' / ' + assets.length);
+      lines.push('');
+      stations.forEach(function(s) {
+        var sig = s.signal !== undefined ? Math.round(s.signal) + '%' : '—';
+        var lat = s.latency !== undefined ? s.latency.toFixed(0) + ' ms' : '—';
+        lines.push('  ' + s.name.padEnd(18) + s.status.padEnd(12) + 'SIG: ' + sig.padEnd(7) + 'LAT: ' + lat);
+      });
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    'atlas launches': function() {
+      var launches = _launches();
+      if (!launches.length) return '─── ATLAS LAUNCHES ───────────────────────\nNo launches queued.\n' + SEP;
+      var lines = ['─── ATLAS LAUNCH STATUS ──────────────────'];
+      launches.forEach(function(l) {
+        lines.push((l.name||'LAUNCH').padEnd(16) + (l.status||'—').padEnd(14) + (l.vehicle||'—'));
+        if (l.countdown) lines.push('  Countdown: ' + l.countdown);
+      });
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    'atlas rovers': function() {
+      var rovers = _rovers();
+      if (!rovers.length) return '─── ATLAS ROVERS ─────────────────────────\nNo rovers tracked.\n' + SEP;
+      var lines = ['─── ATLAS ROVER STATUS ───────────────────'];
+      rovers.forEach(function(r) {
+        var bat = r.battery !== undefined ? Math.round(r.battery) + '%' : '—';
+        lines.push(
+          (r.name||r.id||'ROVER').padEnd(14) +
+          (r.missionStatus||r.status||'—').padEnd(12) +
+          'BAT: ' + bat.padEnd(7) +
+          (r.location ? r.location : '')
+        );
+      });
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    'atlas alerts': function() {
+      var alerts = _generateAlerts();
+      if (!alerts.length) return '─── ATLAS ALERTS ─────────────────────────\n◉ NO ACTIVE ALERTS — ALL SYSTEMS NOMINAL\n' + SEP;
+      var lines = ['─── ATLAS ALERTS ─────────────────────────'];
+      ['critical','warning','info'].forEach(function(level) {
+        var subset = alerts.filter(function(a){ return a.level===level; });
+        subset.forEach(function(a) {
+          lines.push('[' + a.level.toUpperCase().padEnd(8) + '] ' + a.msg);
+        });
+      });
+      lines.push('');
+      lines.push('Total: ' + alerts.length + ' alert' + (alerts.length!==1?'s':''));
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    'atlas recommend': function() {
+      var alerts = _generateAlerts();
+      var recs   = _generateRecommendations(alerts);
+      var lines  = ['─── ATLAS RECOMMENDATIONS ────────────────'];
+      if (!recs.length) {
+        lines.push('No recommendations at this time. All systems nominal.');
+      } else {
+        recs.forEach(function(r, i) {
+          lines.push((i+1) + '. [' + (r.priority||'NORMAL').toUpperCase() + '] ' + r.text);
+        });
+      }
+      lines.push(SEP);
+      return lines.join('\n');
+    },
+
+    'atlas help': function() {
+      return [
+        '─── ATLAS COMMANDS ───────────────────────',
+        'atlas summary    — Full operational assessment',
+        'atlas missions   — Mission registry overview',
+        'atlas assets     — All tracked spacecraft',
+        'atlas network    — Ground station network status',
+        'atlas launches   — Launch queue and status',
+        'atlas rovers     — Rover fleet status',
+        'atlas alerts     — Active alert feed',
+        'atlas recommend  — Operational recommendations',
+        'atlas help       — This menu',
+        '',
+        'ATLAS v1.0 — Autonomous Telemetry & Launch Assistance System',
+        'Reads: _deepspaceAssets · _deepspaceMissions · _deepspaceStations',
+        '       _deepspaceRovers · _deepspaceLaunches',
+        SEP
+      ].join('\n');
+    },
+
+  };
+
+  /* ── Route atlas commands ── */
+  function _route(raw) {
+    var cmd = raw.trim().toLowerCase().replace(/\s+/g,' ');
+    if (_ATLAS_CMDS[cmd]) return _ATLAS_CMDS[cmd]();
+    if (/^atlas\b/.test(cmd)) {
+      return '⚠ Unknown ATLAS command: "' + cmd.replace(/^atlas\s*/,'') + '"\nType "atlas help" for available commands.';
+    }
+    return null; /* not an atlas command — pass through */
+  }
+
+  /* ── Output to terminal ── */
+  function _out(text) {
+    if (typeof window.termPrintLine === 'function') {
+      window.termPrintLine('AI', text, 'jarvis-line', false);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     PATCH INTO COMMAND CHAIN
+  ════════════════════════════════════════════════════════ */
+  function _installCommandPatch() {
+    /* Patch _jarvisProcessInternal */
+    var origJarvis = window._jarvisProcessInternal;
+    if (typeof origJarvis === 'function' && !origJarvis._atlasPatched) {
+      window._jarvisProcessInternal = function atlasAwareJarvis(raw) {
+        var result = _route(raw);
+        if (result !== null) { _out(result); return result; }
+        return origJarvis(raw);
+      };
+      window._jarvisProcessInternal._atlasPatched = true;
+    }
+
+    /* Patch executeCommand */
+    var origExec = window.executeCommand;
+    if (typeof origExec === 'function' && !origExec._atlasPatched) {
+      window.executeCommand = function atlasAwareExecuteCommand(raw) {
+        if (!raw) return origExec(raw);
+        var result = _route(raw);
+        if (result !== null) { _out(result); return result; }
+        return origExec(raw);
+      };
+      window.executeCommand._atlasPatched = true;
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     TOGGLE COLLAPSE
+  ════════════════════════════════════════════════════════ */
+  window.atlasToggle = function() {
+    _collapsed = !_collapsed;
+    var body = _el('atlas-body');
+    var btn  = _el('atlas-collapse-btn');
+    if (body) body.classList.toggle('atlas-collapsed', _collapsed);
+    if (btn)  btn.classList.toggle('collapsed', _collapsed);
+  };
+
+  /* ════════════════════════════════════════════════════════
+     PUBLIC API — window.ATLAS
+  ════════════════════════════════════════════════════════ */
+  window.ATLAS = {
+    version:    '1.0',
+    summary:    function() { return _generateAssessment(_generateAlerts()); },
+    alerts:     _generateAlerts,
+    recommend:  function() { return _generateRecommendations(_generateAlerts()); },
+    priority:   _priorityMission,
+    refresh:    _renderPanel,
+    /* Future hardware telemetry injection point */
+    ingestTelemetry: function(assetName, telemetryObj) {
+      var assets = _assets();
+      var target = assets.find(function(a){ return a.name === assetName; });
+      if (target && target.telemetry) {
+        Object.assign(target.telemetry, telemetryObj);
+        _renderPanel();
+      }
+    }
+  };
+
+  /* ════════════════════════════════════════════════════════
+     LIFECYCLE — hooks into DeepSpace mode switches
+  ════════════════════════════════════════════════════════ */
+  function _start() {
+    _renderPanel();
+    /* Refresh every 8s — staggered from other modules */
+    if (!_timers.length) {
+      _timers.push(setInterval(_renderPanel, 8000));
+    }
+  }
+
+  function _stop() {
+    _timers.forEach(function(id){ clearInterval(id); });
+    _timers = [];
+  }
+
+  function _hookLifecycle() {
+    var prev = window.switchToDeepSpaceMode;
+    if (prev && !prev._atlasPatched) {
+      window.switchToDeepSpaceMode = function() {
+        prev.apply(this, arguments);
+        _start();
+      };
+      window.switchToDeepSpaceMode._atlasPatched = true;
+    }
+    ['switchToOSMode','switchToClassicMode'].forEach(function(fn) {
+      var orig = window[fn];
+      if (!orig || orig._atlasExitPatched) return;
+      window[fn] = function() { _stop(); return orig.apply(this, arguments); };
+      window[fn]._atlasExitPatched = true;
+    });
+  }
+
+  /* Install */
+  setTimeout(_hookLifecycle, 0);
+  setTimeout(_installCommandPatch, 50);
+
+  /* Auto-start if DeepSpace already active */
+  setTimeout(function() {
+    var ds = _el('deepspace-container');
+    if (ds && ds.classList.contains('ds-active')) _start();
+  }, 400);
+
+  console.log('[AtulOS 4.101] ATLAS Mission Director installed. Commands: atlas help | window.ATLAS');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.101 — ATLAS MISSION DIRECTOR V1
 ════════════════════════════════════════════════════════════════ -->
 </body>
 </html>
