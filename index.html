@@ -35505,5 +35505,1990 @@ window.safeAppend = function safeAppend(parent, child) {
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.106 — FLIGHT VISUALIZATION ENGINE V1
 ════════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.107 — ATULAI LIVING PRESENCE ENGINE
+     Purely additive overlay. Does not modify #ai-orb, systemState,
+     VoiceState, JARVIS pipelines, DeepSpace, Firebase, or any
+     existing module. Reads body classList via MutationObserver only.
+════════════════════════════════════════════════════════════════ -->
+<style>
+/* ── LPE canvas overlay — sits around #ai-orb, never intercepts clicks ── */
+#ai-orb-lpe-canvas {
+  position: fixed;
+  z-index: 8499; /* one below #ai-orb (8500) so the orb stays on top and clickable */
+  pointer-events: none;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  #ai-orb-lpe-canvas { display: none; }
+}
+</style>
+
+<canvas id="ai-orb-lpe-canvas" aria-hidden="true"></canvas>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI LIVING PRESENCE ENGINE  (Module 4.107)
+   Additive-only. Guarded against double-init.
+   Sections: Presence Engine / State Machine / Energy Engine /
+             Particle Engine / Behaviour Scheduler / Rendering
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._livingPresenceEnginePatched) return;
+  window._livingPresenceEnginePatched = true;
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ───────────────────────────────────────────────────────────
+     PRESENCE ENGINE — bootstraps canvas, tracks orb position
+  ─────────────────────────────────────────────────────────── */
+  var PresenceEngine = {
+    canvas: null,
+    ctx: null,
+    dpr: Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
+    size: 220,          // CSS px footprint of the field around the orb
+    center: { x: 0, y: 0 },
+    orbEl: null,
+    ready: false,
+
+    init: function () {
+      this.orbEl = document.getElementById('ai-orb');
+      this.canvas = document.getElementById('ai-orb-lpe-canvas');
+      if (!this.orbEl || !this.canvas) return false;
+      this.ctx = this.canvas.getContext('2d');
+      this._sizeCanvas();
+      this._syncPosition();
+      window.addEventListener('resize', this._debounce(this._onResize.bind(this), 150));
+      this.ready = true;
+      return true;
+    },
+
+    _debounce: function (fn, ms) {
+      var t = null;
+      return function () {
+        clearTimeout(t);
+        t = setTimeout(fn, ms);
+      };
+    },
+
+    _sizeCanvas: function () {
+      var s = this.size;
+      this.canvas.style.width = s + 'px';
+      this.canvas.style.height = s + 'px';
+      this.canvas.width = Math.round(s * this.dpr);
+      this.canvas.height = Math.round(s * this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    },
+
+    _syncPosition: function () {
+      if (!this.orbEl) return;
+      var r = this.orbEl.getBoundingClientRect();
+      var orbCenterX = r.left + r.width / 2;
+      var orbCenterY = r.top + r.height / 2;
+      var half = this.size / 2;
+      this.canvas.style.left = Math.round(orbCenterX - half) + 'px';
+      this.canvas.style.top = Math.round(orbCenterY - half) + 'px';
+      this.center.x = half;
+      this.center.y = half;
+    },
+
+    _onResize: function () {
+      this._syncPosition();
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     STATE MACHINE — mirrors the orb's body-class states.
+     Only 'idle' drives active behaviour today; the rest are
+     fully defined so future modules can flip them on for free.
+  ─────────────────────────────────────────────────────────── */
+  var StateMachine = {
+    current: 'idle',
+    defs: {
+      idle:      { hue: 195, particleSpeed: 1.0, fieldPulse: 1.0,  density: 1.0 },
+      listening: { hue: 187, particleSpeed: 1.25, fieldPulse: 1.3, density: 1.1 },
+      thinking:  { hue: 197, particleSpeed: 1.6, fieldPulse: 1.5,  density: 1.25 },
+      speaking:  { hue: 193, particleSpeed: 1.8, fieldPulse: 1.8,  density: 1.3 },
+      executing: { hue: 205, particleSpeed: 1.5, fieldPulse: 1.4,  density: 1.2 },
+      success:   { hue: 165, particleSpeed: 1.2, fieldPulse: 1.6,  density: 1.15 },
+      warning:   { hue: 45,  particleSpeed: 1.3, fieldPulse: 1.4,  density: 1.15 },
+      error:     { hue: 14,  particleSpeed: 1.1, fieldPulse: 1.3,  density: 1.05 }
+    },
+
+    read: function () {
+      var b = document.body.classList;
+      if (b.contains('ai-speaking'))  return 'speaking';
+      if (b.contains('ai-thinking'))  return 'thinking';
+      if (b.contains('ai-listening')) return 'listening';
+      if (b.contains('ai-success'))   return 'success';
+      if (b.contains('ai-error'))     return 'error';
+      return 'idle';
+    },
+
+    def: function () {
+      return this.defs[this.current] || this.defs.idle;
+    },
+
+    watch: function () {
+      var self = this;
+      self.current = self.read();
+      var obs = new MutationObserver(function () {
+        var next = self.read();
+        if (next !== self.current) self.current = next;
+      });
+      obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     ENERGY ENGINE — the ambient presence field (soft breathing
+     glow that lives independently of the orb's own CSS glow).
+  ─────────────────────────────────────────────────────────── */
+  var EnergyEngine = {
+    phase: Math.random() * Math.PI * 2,
+    wobblePhase: Math.random() * Math.PI * 2,
+    tick: function (dt) {
+      this.phase += dt * 0.00055;
+      this.wobblePhase += dt * 0.00021;
+    },
+    radius: function (baseRadius) {
+      var def = StateMachine.def();
+      var breathe = Math.sin(this.phase) * 0.5 + 0.5;      // 0..1
+      var wobble = Math.sin(this.wobblePhase * 1.7) * 0.06; // tiny organic jitter
+      return baseRadius * (0.82 + breathe * 0.22 * def.fieldPulse + wobble);
+    },
+    draw: function (ctx, cx, cy) {
+      var def = StateMachine.def();
+      var r = this.radius(96);
+      var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      var hue = def.hue;
+      var alphaCore = 0.10 * def.fieldPulse;
+      var alphaMid = 0.045 * def.fieldPulse;
+      g.addColorStop(0, 'hsla(' + hue + ', 100%, 65%, ' + alphaCore + ')');
+      g.addColorStop(0.55, 'hsla(' + hue + ', 100%, 55%, ' + alphaMid + ')');
+      g.addColorStop(1, 'hsla(' + hue + ', 100%, 50%, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     PARTICLE ENGINE — small independent-lifetime particles.
+     Types: orbit (slow circling), drift (gentle float),
+     spark (brief bright flash), dust (very faint, very slow).
+  ─────────────────────────────────────────────────────────── */
+  var ParticleEngine = {
+    pool: [],
+    maxParticles: 20,
+
+    init: function () {
+      var types = ['orbit', 'orbit', 'orbit', 'drift', 'drift', 'drift', 'drift', 'dust', 'dust', 'dust'];
+      for (var i = 0; i < this.maxParticles; i++) {
+        this.pool.push(this._spawn(types[i % types.length]));
+      }
+    },
+
+    _spawn: function (type, atCenter) {
+      var angle = Math.random() * Math.PI * 2;
+      var p = {
+        type: type,
+        angle: angle,
+        speedJitter: 0.7 + Math.random() * 0.6,
+        radius: type === 'orbit' ? (26 + Math.random() * 42)
+               : type === 'dust'  ? (10 + Math.random() * 90)
+               : (18 + Math.random() * 60),
+        radiusDrift: (Math.random() - 0.5) * 0.02,
+        size: type === 'spark' ? (0.6 + Math.random() * 1.0)
+             : type === 'dust'  ? (0.5 + Math.random() * 0.8)
+             : (0.8 + Math.random() * 1.4),
+        baseOpacity: type === 'dust' ? (0.08 + Math.random() * 0.10)
+                    : type === 'spark' ? (0.5 + Math.random() * 0.4)
+                    : (0.18 + Math.random() * 0.22),
+        life: Math.random(),
+        lifeSpeed: (0.00006 + Math.random() * 0.00009) * (type === 'spark' ? 4 : 1),
+        driftX: (Math.random() - 0.5) * 0.008,
+        driftY: (Math.random() - 0.5) * 0.008,
+        offX: atCenter ? 0 : 0,
+        offY: atCenter ? 0 : 0
+      };
+      return p;
+    },
+
+    _reincarnate: function (p) {
+      var fresh = this._spawn(p.type);
+      for (var k in fresh) p[k] = fresh[k];
+      p.life = 0;
+    },
+
+    tick: function (dt) {
+      var def = StateMachine.def();
+      for (var i = 0; i < this.pool.length; i++) {
+        var p = this.pool[i];
+        p.life += p.lifeSpeed * dt * def.particleSpeed;
+        if (p.life >= 1) this._reincarnate(p);
+
+        if (p.type === 'orbit') {
+          p.angle += (0.00028 * p.speedJitter * def.particleSpeed) * dt;
+          p.radius += p.radiusDrift;
+        } else if (p.type === 'drift') {
+          p.offX += p.driftX * dt * def.particleSpeed;
+          p.offY += p.driftY * dt * def.particleSpeed;
+          // gentle pull back toward the presence field so drifters don't wander off
+          p.offX *= 0.999;
+          p.offY *= 0.999;
+        } else if (p.type === 'dust') {
+          p.angle += 0.00004 * dt;
+        }
+      }
+    },
+
+    draw: function (ctx, cx, cy) {
+      var def = StateMachine.def();
+      var hue = def.hue;
+      for (var i = 0; i < this.pool.length; i++) {
+        var p = this.pool[i];
+        var lifeFade = Math.sin(p.life * Math.PI); // 0 -> 1 -> 0 across its life
+        var x, y;
+        if (p.type === 'orbit') {
+          x = cx + Math.cos(p.angle) * p.radius;
+          y = cy + Math.sin(p.angle) * p.radius * 0.94;
+        } else if (p.type === 'drift') {
+          x = cx + Math.cos(p.angle + p.life * 2) * p.radius * 0.4 + p.offX * 40;
+          y = cy + Math.sin(p.angle + p.life * 2) * p.radius * 0.4 + p.offY * 40;
+        } else {
+          x = cx + Math.cos(p.angle) * p.radius;
+          y = cy + Math.sin(p.angle) * p.radius;
+        }
+        var alpha = p.baseOpacity * lifeFade * def.fieldPulse;
+        if (alpha <= 0.003) continue;
+        ctx.beginPath();
+        ctx.fillStyle = 'hsla(' + hue + ', 95%, ' + (p.type === 'dust' ? 70 : 78) + '%, ' + alpha + ')';
+        ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+
+    /* momentary reorganize burst used by the Behaviour Scheduler */
+    reorganize: function () {
+      for (var i = 0; i < this.pool.length; i += 3) {
+        this.pool[i].life = 0.02;
+      }
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BEHAVIOUR SCHEDULER — one small, non-repeating idle
+     behaviour every ~20-60s. Never fires outside 'idle'.
+  ─────────────────────────────────────────────────────────── */
+  var BehaviourScheduler = {
+    ripple: { active: false, t: 0, duration: 900 },
+    surgeUntil: 0,
+
+    behaviours: [
+      function () { BehaviourScheduler._ripple(); },
+      function () { BehaviourScheduler._surge(); },
+      function () { ParticleEngine.reorganize(); }
+    ],
+
+    _ripple: function () {
+      this.ripple.active = true;
+      this.ripple.t = 0;
+    },
+
+    _surge: function () {
+      this.surgeUntil = performance.now() + 700;
+    },
+
+    drawRipple: function (ctx, cx, cy, dt) {
+      if (!this.ripple.active) return;
+      this.ripple.t += dt;
+      var p = Math.min(1, this.ripple.t / this.ripple.duration);
+      var r = 14 + p * 70;
+      var alpha = (1 - p) * 0.22;
+      ctx.beginPath();
+      ctx.strokeStyle = 'hsla(' + StateMachine.def().hue + ', 100%, 70%, ' + alpha + ')';
+      ctx.lineWidth = 1;
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      if (p >= 1) this.ripple.active = false;
+    },
+
+    surgeMultiplier: function () {
+      if (this.surgeUntil && performance.now() < this.surgeUntil) return 1.6;
+      return 1;
+    },
+
+    schedule: function () {
+      var self = this;
+      var next = 20000 + Math.random() * 40000; // 20-60s
+      setTimeout(function () {
+        if (StateMachine.current === 'idle' && !document.hidden) {
+          var fn = self.behaviours[Math.floor(Math.random() * self.behaviours.length)];
+          fn();
+        }
+        self.schedule();
+      }, next);
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     RENDERING — the single requestAnimationFrame loop.
+     Pauses entirely when the tab is hidden (CPU friendly).
+  ─────────────────────────────────────────────────────────── */
+  var Renderer = {
+    lastT: 0,
+    rafId: null,
+
+    frame: function (t) {
+      var dt = Math.min(48, t - (this.lastT || t)); // clamp to avoid huge jumps
+      this.lastT = t;
+
+      // [4.109 compat] keep the canvas centered on the orb even while it travels.
+      PresenceEngine._syncPosition();
+
+      var ctx = PresenceEngine.ctx;
+      var s = PresenceEngine.size;
+      ctx.clearRect(0, 0, s, s);
+
+      var cx = PresenceEngine.center.x;
+      var cy = PresenceEngine.center.y;
+
+      EnergyEngine.tick(dt * BehaviourScheduler.surgeMultiplier());
+      ParticleEngine.tick(dt * BehaviourScheduler.surgeMultiplier());
+
+      EnergyEngine.draw(ctx, cx, cy);
+      ParticleEngine.draw(ctx, cx, cy);
+      BehaviourScheduler.drawRipple(ctx, cx, cy, dt);
+
+      this.rafId = requestAnimationFrame(this.frame.bind(this));
+    },
+
+    start: function () {
+      if (this.rafId) return;
+      this.lastT = 0;
+      this.rafId = requestAnimationFrame(this.frame.bind(this));
+    },
+
+    stop: function () {
+      if (this.rafId) cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BOOT
+  ─────────────────────────────────────────────────────────── */
+  function boot() {
+    if (!PresenceEngine.init()) {
+      // #ai-orb not in DOM yet — retry briefly, then give up quietly.
+      var tries = 0;
+      var retry = setInterval(function () {
+        tries++;
+        if (PresenceEngine.init() || tries > 20) clearInterval(retry);
+        if (PresenceEngine.ready) {
+          clearInterval(retry);
+          finishBoot();
+        }
+      }, 250);
+      return;
+    }
+    finishBoot();
+  }
+
+  function finishBoot() {
+    StateMachine.watch();
+    ParticleEngine.init();
+    BehaviourScheduler.schedule();
+
+    if (!reduceMotion) {
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) Renderer.stop();
+        else Renderer.start();
+      });
+      Renderer.start();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    setTimeout(boot, 0);
+  }
+
+  /* Minimal public API for future modules — read-only introspection,
+     no control surface that could fight with existing state logic. */
+  window.LivingPresenceEngine = {
+    getState: function () { return StateMachine.current; },
+    // [4.110 hook] reuses the existing private surge+ripple cues — no new
+    // visual logic, just a named entry point for "notice" / "settle" beats.
+    pulse: function () { BehaviourScheduler._surge(); BehaviourScheduler._ripple(); }
+  };
+
+  console.log('[AtulOS 4.107] Living Presence Engine online. AtulAI orb now has continuous ambient life. API: window.LivingPresenceEngine');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.107 — ATULAI LIVING PRESENCE ENGINE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.108 — ATULAI CONTEXT AWARENESS ENGINE
+     Purely additive. Reads existing state via events/MutationObservers
+     only (openWindow/closeWindow/setTheme/#deepspace-container/
+     AI_MEMORY/systemState are read-only touchpoints, never modified).
+     Renders on its own canvas layer — does not alter Module 4.107.
+════════════════════════════════════════════════════════════════ -->
+<style>
+#ai-orb-ctx-canvas {
+  position: fixed;
+  z-index: 8498; /* below LPE (8499) and the orb itself (8500) */
+  pointer-events: none;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  #ai-orb-ctx-canvas { display: none; }
+}
+</style>
+
+<canvas id="ai-orb-ctx-canvas" aria-hidden="true"></canvas>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI CONTEXT AWARENESS ENGINE  (Module 4.108)
+   Sections: Context Manager / Activity Analyzer / Focus Controller /
+             Attention System / Behaviour Controller / State Blending /
+             Future Hooks / Rendering
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._contextAwarenessEnginePatched) return;
+  window._contextAwarenessEnginePatched = true;
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ───────────────────────────────────────────────────────────
+     CONTEXT MANAGER — centralized, event-driven. No polling.
+     Future modules register additional context without touching
+     this engine via AtulContext.registerSource(name, fn).
+  ─────────────────────────────────────────────────────────── */
+  var AtulContext = {
+    data: {
+      mouseX: null, mouseY: null,
+      mouseSpeed: 0,
+      lastActivity: Date.now(),
+      focusedWindowId: null,
+      deepspaceActive: false,
+      terminalActive: false,
+      friendsActive: false,
+      theme: document.documentElement.getAttribute('data-theme') || 'dark',
+      fullscreen: !!document.fullscreenElement,
+      firebaseConnected: false,
+      systemTime: Date.now(),
+      performanceLevel: 1 // 0..1, derived from measured frame time
+    },
+    sources: {},
+
+    registerSource: function (name, fn) {
+      if (typeof fn === 'function') this.sources[name] = fn;
+    },
+
+    get: function (key) {
+      return this.data[key];
+    },
+
+    _touch: function () {
+      this.data.lastActivity = Date.now();
+    },
+
+    _friendWindowIds: ['friend-profile-window', 'nancy-studio-window', 'dashboard-window'],
+
+    _onMouseMove: function (e) {
+      var d = AtulContext.data;
+      var now = performance.now();
+      if (d._lastMoveT) {
+        var dt = Math.max(1, now - d._lastMoveT);
+        var dx = e.clientX - (d.mouseX || e.clientX);
+        var dy = e.clientY - (d.mouseY || e.clientY);
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        d.mouseSpeed = d.mouseSpeed * 0.7 + (dist / dt) * 0.3; // smoothed px/ms
+      }
+      d._lastMoveT = now;
+      d.mouseX = e.clientX;
+      d.mouseY = e.clientY;
+      AtulContext._touch();
+    },
+
+    _onKeyDown: function () {
+      AtulContext._touch();
+    },
+
+    _resolveFocusedWindow: function (target) {
+      var win = target && target.closest ? target.closest('.app-window') : null;
+      if (!win) return;
+      var id = win.dataset ? win.dataset.windowId : null;
+      if (!id) return;
+      var d = AtulContext.data;
+      d.focusedWindowId = id;
+      d.terminalActive = (id === 'terminal');
+      d.friendsActive = AtulContext._friendWindowIds.indexOf(id) !== -1;
+      AtulContext._touch();
+    },
+
+    _watchDeepSpace: function () {
+      var ds = document.getElementById('deepspace-container');
+      if (!ds) return;
+      AtulContext.data.deepspaceActive = ds.classList.contains('ds-active');
+      var obs = new MutationObserver(function () {
+        AtulContext.data.deepspaceActive = ds.classList.contains('ds-active');
+      });
+      obs.observe(ds, { attributes: true, attributeFilter: ['class'] });
+    },
+
+    _watchTheme: function () {
+      var obs = new MutationObserver(function () {
+        AtulContext.data.theme = document.documentElement.getAttribute('data-theme') || 'dark';
+      });
+      obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    },
+
+    _watchTaskbar: function () {
+      var bar = document.getElementById('taskbar');
+      if (!bar) return;
+      // Lightweight — taskbar only mutates on minimize/restore, not per-frame.
+      var obs = new MutationObserver(function () {
+        AtulContext._touch();
+      });
+      obs.observe(bar, { childList: true });
+    },
+
+    init: function () {
+      document.addEventListener('mousemove', this._onMouseMove, { passive: true });
+      document.addEventListener('keydown', this._onKeyDown, { passive: true });
+      document.addEventListener('focusin', function (e) { AtulContext._resolveFocusedWindow(e.target); }, { passive: true });
+      document.addEventListener('mousedown', function (e) { AtulContext._resolveFocusedWindow(e.target); }, { passive: true });
+      document.addEventListener('fullscreenchange', function () {
+        AtulContext.data.fullscreen = !!document.fullscreenElement;
+      }, { passive: true });
+      this._watchDeepSpace();
+      this._watchTheme();
+      this._watchTaskbar();
+    }
+  };
+  window.AtulContext = AtulContext;
+
+  /* ───────────────────────────────────────────────────────────
+     ACTIVITY ANALYZER — derives a discrete activity level from
+     the raw signals above. Computed once per frame (cheap reads
+     of already-updated fields — no DOM scanning of its own).
+  ─────────────────────────────────────────────────────────── */
+  var ActivityAnalyzer = {
+    LEVELS: ['sleeping', 'idle', 'relaxed', 'focused', 'busy', 'high-activity', 'emergency'],
+    targetIndex: 1,
+
+    evaluate: function () {
+      var d = AtulContext.data;
+      var idleFor = Date.now() - d.lastActivity;
+      var speed = d.mouseSpeed || 0;
+
+      if (idleFor > 300000) this.targetIndex = 0;       // > 5 min → sleeping
+      else if (idleFor > 60000) this.targetIndex = 1;   // > 1 min → idle
+      else if (speed < 0.05 && idleFor > 10000) this.targetIndex = 2; // relaxed
+      else if (speed < 0.4) this.targetIndex = 3;        // focused
+      else if (speed < 1.1) this.targetIndex = 4;        // busy
+      else this.targetIndex = 5;                         // high-activity
+      // 'emergency' (index 6) is reserved for future hook use (e.g. onError) — never auto-set here.
+
+      return this.LEVELS[this.targetIndex];
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     FOCUS CONTROLLER — "eye contact simulation". Chooses a gaze
+     target and exposes a slowly-smoothed angle (radians) toward
+     it, measured from the orb's own center. Never snaps.
+  ─────────────────────────────────────────────────────────── */
+  var FocusController = {
+    angle: 0,       // current smoothed gaze angle
+    targetAngle: 0,
+    hasTarget: false,
+
+    _targetPoint: function (orbCenter) {
+      var d = AtulContext.data;
+      // Priority: focused window center > deepspace direction > cursor > idle drift
+      if (d.deepspaceActive) {
+        var ds = document.getElementById('deepspace-container');
+        if (ds) {
+          var r = ds.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+      }
+      if (d.focusedWindowId) {
+        var win = document.getElementById(d.focusedWindowId);
+        if (win && win.style.display !== 'none') {
+          var wr = win.getBoundingClientRect();
+          if (wr.width > 0) return { x: wr.left + wr.width / 2, y: wr.top + wr.height / 2 };
+        }
+      }
+      if (d.mouseX !== null && d.mouseY !== null) {
+        var dx = d.mouseX - orbCenter.x, dy = d.mouseY - orbCenter.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        // Only "notice" the cursor within a generous but bounded radius —
+        // beyond that the orb settles into idle drift instead of tracking
+        // something far across the screen (keeps it calm, not creepy).
+        if (dist < 640) return { x: d.mouseX, y: d.mouseY };
+      }
+      return null; // idle drift
+    },
+
+    update: function (orbCenter, dt, idleDriftAngle) {
+      var target = this._targetPoint(orbCenter);
+      if (target) {
+        this.hasTarget = true;
+        this.targetAngle = Math.atan2(target.y - orbCenter.y, target.x - orbCenter.x);
+      } else {
+        this.hasTarget = false;
+        this.targetAngle = idleDriftAngle;
+      }
+      // Shortest-path angle lerp, slow and organic.
+      var delta = Math.atan2(Math.sin(this.targetAngle - this.angle), Math.cos(this.targetAngle - this.angle));
+      var lerpSpeed = Math.min(1, dt * 0.0011);
+      this.angle += delta * lerpSpeed;
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     STATE BLENDING — every analog value the renderer draws with
+     is smoothed here so activity-level changes never snap.
+  ─────────────────────────────────────────────────────────── */
+  var Blend = {
+    activityIndex: 1,
+    glow: 0.4,
+    energetic: 0,     // 0..1, rises with rapid mouse movement
+    commRing: 0,       // 0..1, rises when friends context active
+
+    tick: function (dt) {
+      var targetActivity = ActivityAnalyzer.targetIndex;
+      this.activityIndex += (targetActivity - this.activityIndex) * Math.min(1, dt * 0.0008);
+
+      var targetGlow = 0.3 + (this.activityIndex / 6) * 0.55;
+      this.glow += (targetGlow - this.glow) * Math.min(1, dt * 0.0015);
+
+      var speed = AtulContext.data.mouseSpeed || 0;
+      var targetEnergetic = Math.max(0, Math.min(1, (speed - 0.6) / 1.4));
+      this.energetic += (targetEnergetic - this.energetic) * Math.min(1, dt * 0.003);
+
+      var targetComm = AtulContext.data.friendsActive ? 1 : 0;
+      this.commRing += (targetComm - this.commRing) * Math.min(1, dt * 0.002);
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BEHAVIOUR CONTROLLER — natural curiosity. Every few minutes,
+     one small, contained visual gesture near the orb (never a
+     screen-spanning beam — kept subtle per spec).
+  ─────────────────────────────────────────────────────────── */
+  var BehaviourController = {
+    sweep: { active: false, t: 0, duration: 1400 },
+
+    _curiosity: function () {
+      this.sweep.active = true;
+      this.sweep.t = 0;
+    },
+
+    drawSweep: function (ctx, cx, cy, dt, angle) {
+      if (!this.sweep.active) return;
+      this.sweep.t += dt;
+      var p = Math.min(1, this.sweep.t / this.sweep.duration);
+      var len = 34 + Math.sin(p * Math.PI) * 26;
+      var alpha = Math.sin(p * Math.PI) * 0.20;
+      var x1 = cx + Math.cos(angle) * 20;
+      var y1 = cy + Math.sin(angle) * 20;
+      var x2 = cx + Math.cos(angle) * (20 + len);
+      var y2 = cy + Math.sin(angle) * (20 + len);
+      var grad = ctx.createLinearGradient(x1, y1, x2, y2);
+      grad.addColorStop(0, 'hsla(195,100%,70%,' + alpha + ')');
+      grad.addColorStop(1, 'hsla(195,100%,70%,0)');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      if (p >= 1) this.sweep.active = false;
+    },
+
+    schedule: function () {
+      var self = this;
+      var next = 120000 + Math.random() * 180000; // every 2-5 minutes
+      setTimeout(function () {
+        if (!document.hidden && ActivityAnalyzer.targetIndex <= 3) self._curiosity();
+        self.schedule();
+      }, next);
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE HOOKS — architecture only. Never invoked by this
+     module. Later modules can call AtulContext.hooks.onX(...).
+  ─────────────────────────────────────────────────────────── */
+  AtulContext.hooks = {
+    onVoiceStart:   function () {},
+    onCommand:      function () {},
+    onMissionStart: function () {},
+    onFriendMessage:function () {},
+    onNotification: function () {},
+    onError:        function () {},
+    onAchievement:  function () {}
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     RENDERING — single small canvas around the orb. Draws the
+     gaze marker, ambient environment glow, comm ring, and the
+     occasional curiosity sweep. Pauses when tab hidden.
+  ─────────────────────────────────────────────────────────── */
+  var Renderer = {
+    canvas: null, ctx: null,
+    dpr: Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
+    size: 220,
+    center: { x: 0, y: 0 },
+    orbEl: null,
+    idleDrift: Math.random() * Math.PI * 2,
+    lastT: 0, rafId: null,
+
+    init: function () {
+      this.orbEl = document.getElementById('ai-orb');
+      this.canvas = document.getElementById('ai-orb-ctx-canvas');
+      if (!this.orbEl || !this.canvas) return false;
+      this.ctx = this.canvas.getContext('2d');
+      var s = this.size;
+      this.canvas.style.width = s + 'px';
+      this.canvas.style.height = s + 'px';
+      this.canvas.width = Math.round(s * this.dpr);
+      this.canvas.height = Math.round(s * this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      this._syncPosition();
+      var self = this;
+      window.addEventListener('resize', function () {
+        clearTimeout(self._rT);
+        self._rT = setTimeout(function () { self._syncPosition(); }, 150);
+      });
+      return true;
+    },
+
+    _syncPosition: function () {
+      var r = this.orbEl.getBoundingClientRect();
+      var half = this.size / 2;
+      this.canvas.style.left = Math.round(r.left + r.width / 2 - half) + 'px';
+      this.canvas.style.top = Math.round(r.top + r.height / 2 - half) + 'px';
+      this.center.x = half;
+      this.center.y = half;
+      this._orbScreenCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    },
+
+    _drawEnvironmentGlow: function (cx, cy) {
+      var g = this.ctx.createRadialGradient(cx, cy, 8, cx, cy, 100);
+      var alpha = 0.05 + Blend.energetic * 0.05;
+      g.addColorStop(0, 'hsla(200,100%,70%,' + (Blend.glow * alpha) + ')');
+      g.addColorStop(1, 'hsla(200,100%,60%,0)');
+      this.ctx.fillStyle = g;
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, 100, 0, Math.PI * 2);
+      this.ctx.fill();
+    },
+
+    _drawGaze: function (cx, cy, angle) {
+      if (!FocusController.hasTarget) return; // idle drift stays undirected/ambient only
+      var gx = cx + Math.cos(angle) * 24;
+      var gy = cy + Math.sin(angle) * 24;
+      this.ctx.beginPath();
+      this.ctx.fillStyle = 'hsla(195,100%,80%,0.35)';
+      this.ctx.arc(gx, gy, 1.6, 0, Math.PI * 2);
+      this.ctx.fill();
+    },
+
+    _drawCommRing: function (cx, cy) {
+      if (Blend.commRing < 0.02) return;
+      var t = performance.now() * 0.0016;
+      var r = 30 + Math.sin(t) * 3;
+      this.ctx.beginPath();
+      this.ctx.strokeStyle = 'hsla(150,90%,65%,' + (0.18 * Blend.commRing) + ')';
+      this.ctx.lineWidth = 1;
+      this.ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      this.ctx.stroke();
+    },
+
+    frame: function (t) {
+      var dt = Math.min(48, t - (this.lastT || t));
+      this.lastT = t;
+
+      // [4.109 compat] keep the canvas centered on the orb even while it travels.
+      this._syncPosition();
+
+      this.idleDrift += dt * 0.00012;
+      ActivityAnalyzer.evaluate();
+      Blend.tick(dt);
+      FocusController.update(this._orbScreenCenter, dt, this.idleDrift);
+
+      var ctx = this.ctx, s = this.size, cx = this.center.x, cy = this.center.y;
+      ctx.clearRect(0, 0, s, s);
+      this._drawEnvironmentGlow(cx, cy);
+      this._drawCommRing(cx, cy);
+      this._drawGaze(cx, cy, FocusController.angle);
+      BehaviourController.drawSweep(ctx, cx, cy, dt, FocusController.angle);
+
+      // Cheap rolling estimate of headroom — feeds performanceLevel for future modules.
+      AtulContext.data.performanceLevel = dt <= 20 ? 1 : Math.max(0.3, 1 - (dt - 20) / 60);
+      AtulContext.data.systemTime = t;
+      if (typeof window.systemState !== 'undefined') {
+        AtulContext.data.firebaseConnected = !!window.systemState.firebaseConnected;
+      }
+
+      this.rafId = requestAnimationFrame(this.frame.bind(this));
+    },
+
+    start: function () {
+      if (this.rafId) return;
+      this.lastT = 0;
+      this.rafId = requestAnimationFrame(this.frame.bind(this));
+    },
+    stop: function () {
+      if (this.rafId) cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BOOT
+  ─────────────────────────────────────────────────────────── */
+  function boot() {
+    AtulContext.init();
+    if (!Renderer.init()) {
+      var tries = 0;
+      var retry = setInterval(function () {
+        tries++;
+        if (Renderer.init() || tries > 20) clearInterval(retry);
+        if (Renderer.ctx) { clearInterval(retry); finishBoot(); }
+      }, 250);
+      return;
+    }
+    finishBoot();
+  }
+
+  function finishBoot() {
+    BehaviourController.schedule();
+    if (!reduceMotion) {
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) Renderer.stop(); else Renderer.start();
+      });
+      Renderer.start();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    setTimeout(boot, 0);
+  }
+
+  console.log('[AtulOS 4.108] Context Awareness Engine online. AtulAI now observes app focus, DeepSpace, theme, activity, and cursor proximity. API: window.AtulContext');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.108 — ATULAI CONTEXT AWARENESS ENGINE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.109 — ATULAI SPATIAL PRESENCE ENGINE
+     Purely additive. Moves #ai-orb via CSS transform only (its base
+     position/left/right/bottom rule is untouched — transform simply
+     offsets from that anchor). Reads window.AtulContext (Module 4.108)
+     as a consumer only; does not modify it. Does not touch window
+     manager, DeepSpace, Firebase, Gemini, or terminal logic.
+════════════════════════════════════════════════════════════════ -->
+<style>
+#ai-orb-spatial-field {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 8497; /* below Context (8498), Presence (8499), and the orb (8500) */
+  pointer-events: none;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  #ai-orb-spatial-field { display: none; }
+}
+/* Subtle acknowledgement glow for windows the orb is currently near.
+   Additive class only — never touches a window's existing styling. */
+.app-window.aware-proximity-glow {
+  box-shadow: 0 0 0 1px rgba(120,200,255,0.14), 0 0 26px rgba(80,180,255,0.10);
+  transition: box-shadow 0.6s ease;
+}
+</style>
+
+<canvas id="ai-orb-spatial-field" aria-hidden="true"></canvas>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI SPATIAL PRESENCE ENGINE  (Module 4.109)
+   Sections: Spatial Manager / Physics Engine / Movement Controller /
+             Influence Radius / Environmental Coupling /
+             Spatial Behaviours / Future Navigation Hooks
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._spatialPresenceEnginePatched) return;
+  window._spatialPresenceEnginePatched = true;
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ───────────────────────────────────────────────────────────
+     SPATIAL BEHAVIOURS — movement profiles. Only 'resting' and
+     'observing' are ever assigned to Spatial.state; the rest are
+     architecture only, ready for future phases to activate.
+  ─────────────────────────────────────────────────────────── */
+  var STATES = {
+    resting:    { freq: 0.55, zeta: 0.72, hover: 3.2 },
+    following:  { freq: 0.90, zeta: 0.80, hover: 1.0 },
+    inspecting: { freq: 0.70, zeta: 0.75, hover: 2.0 },
+    observing:  { freq: 0.50, zeta: 0.62, hover: 4.0 },
+    preparing:  { freq: 1.00, zeta: 0.85, hover: 0.0 },
+    executing:  { freq: 1.20, zeta: 0.90, hover: 0.0 },
+    returning:  { freq: 0.60, zeta: 0.72, hover: 2.0 }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     SPATIAL MANAGER — owns the orb's home anchor, current spring
+     position/velocity, and the full-viewport ambient field canvas.
+  ─────────────────────────────────────────────────────────── */
+  var Spatial = {
+    orbEl: null,
+    canvas: null, ctx: null,
+    dpr: Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
+    homeCenter: { x: 0, y: 0 },   // the orb's natural (transform:none) screen center
+    pos: { x: 0, y: 0 },          // current translate offset from homeCenter
+    vel: { x: 0, y: 0 },
+    target: { x: 0, y: 0 },       // desired translate offset
+    state: 'resting',
+    hoverPhase: Math.random() * Math.PI * 2,
+    windowEls: [],
+    proximityRadius: 150,
+    lastT: 0, rafId: null,
+
+    init: function () {
+      this.orbEl = document.getElementById('ai-orb');
+      this.canvas = document.getElementById('ai-orb-spatial-field');
+      if (!this.orbEl || !this.canvas) return false;
+      this.ctx = this.canvas.getContext('2d');
+      this._sizeCanvas();
+      window.addEventListener('resize', this._debounce(this._onResize.bind(this), 150));
+
+      // #ai-orb has no transform of its own — this is a safe, one-time read
+      // of its natural (untransformed) position before we ever touch it.
+      var r = this.orbEl.getBoundingClientRect();
+      this.homeCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+
+      this.windowEls = Array.prototype.slice.call(document.querySelectorAll('.app-window'));
+      return true;
+    },
+
+    _debounce: function (fn, ms) {
+      var t = null;
+      return function () { clearTimeout(t); t = setTimeout(fn, ms); };
+    },
+
+    _sizeCanvas: function () {
+      var w = window.innerWidth, h = window.innerHeight;
+      this.canvas.width = Math.round(w * this.dpr);
+      this.canvas.height = Math.round(h * this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    },
+
+    _onResize: function () {
+      this._sizeCanvas();
+      // Home is anchored to the orb's own fixed CSS (bottom/right), so its
+      // natural position also shifts on resize. Recompute with transform
+      // held at the *current* value momentarily undone.
+      var prevTransform = this.orbEl.style.transform;
+      this.orbEl.style.transform = 'none';
+      var r = this.orbEl.getBoundingClientRect();
+      this.homeCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      this.orbEl.style.transform = prevTransform;
+    },
+
+    currentAbsolute: function () {
+      return { x: this.homeCenter.x + this.pos.x, y: this.homeCenter.y + this.pos.y };
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     PHYSICS ENGINE — critically-adjacent spring/damper per axis.
+     Produces acceleration → momentum → slight overshoot → settle,
+     never linear interpolation.
+  ─────────────────────────────────────────────────────────── */
+  var Physics = {
+    step: function (pos, vel, target, dtSec, freq, zeta) {
+      var omega = 2 * Math.PI * freq;
+      var ax = -2 * zeta * omega * vel.x - omega * omega * (pos.x - target.x);
+      var ay = -2 * zeta * omega * vel.y - omega * omega * (pos.y - target.y);
+      vel.x += ax * dtSec;
+      vel.y += ay * dtSec;
+      pos.x += vel.x * dtSec;
+      pos.y += vel.y * dtSec;
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     MOVEMENT CONTROLLER — intelligent repositioning. Reads
+     window.AtulContext (Module 4.108) as a plain consumer and
+     decides where "home" should be right now. When nothing
+     contextually relevant is happening, home is simply the
+     orb's natural resting spot — satisfying "always returns
+     home" and "moves toward activity" as one continuous system.
+  ─────────────────────────────────────────────────────────── */
+  var MovementController = {
+    margin: 90,
+    taskbarClearance: 70,
+
+    _clamp: function (pt) {
+      var vw = window.innerWidth, vh = window.innerHeight;
+      return {
+        x: Math.max(this.margin, Math.min(vw - this.margin, pt.x)),
+        y: Math.max(this.margin, Math.min(vh - this.margin - this.taskbarClearance, pt.y))
+      };
+    },
+
+    contextualHomeAbsolute: function () {
+      var ctx = window.AtulContext;
+      if (!ctx || !ctx.data) return null;
+      var d = ctx.data;
+
+      if (d.deepspaceActive) {
+        var topbar = document.getElementById('ds-topbar');
+        if (topbar) {
+          var tr = topbar.getBoundingClientRect();
+          if (tr.width > 0) return this._clamp({ x: tr.left + 70, y: tr.bottom + 46 });
+        }
+      }
+      if (d.terminalActive) {
+        var term = document.getElementById('terminal');
+        if (term && term.style.display !== 'none') {
+          var r = term.getBoundingClientRect();
+          if (r.width > 0) return this._clamp({ x: r.left - 46, y: r.top + 40 });
+        }
+      }
+      if (d.friendsActive && d.focusedWindowId) {
+        var fw = document.getElementById(d.focusedWindowId);
+        if (fw && fw.style.display !== 'none') {
+          var fr = fw.getBoundingClientRect();
+          if (fr.width > 0) return this._clamp({ x: fr.right + 46, y: fr.top + 50 });
+        }
+      }
+      if (d.focusedWindowId === 'dashboard-window') {
+        return this._clamp({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.4 });
+      }
+      return null; // no strong contextual pull — go home
+    },
+
+    updateTarget: function () {
+      // [4.110 hook] if the Intent Engine has an active override, it owns
+      // the target/state entirely for its duration — existing fallback
+      // logic below is untouched and simply skipped while one is active.
+      if (Spatial.intentOverride) {
+        if (Spatial.intentOverride.expiresAt && performance.now() > Spatial.intentOverride.expiresAt) {
+          Spatial.intentOverride = null;
+        } else {
+          Spatial.target.x = Spatial.intentOverride.point.x - Spatial.homeCenter.x;
+          Spatial.target.y = Spatial.intentOverride.point.y - Spatial.homeCenter.y;
+          Spatial.state = Spatial.intentOverride.state;
+          return;
+        }
+      }
+      if (Spatial.state === 'observing') return; // excursion owns the target for its duration
+      var abs = this.contextualHomeAbsolute();
+      if (abs) {
+        Spatial.target.x = abs.x - Spatial.homeCenter.x;
+        Spatial.target.y = abs.y - Spatial.homeCenter.y;
+        Spatial.state = 'resting'; // still "resting" — just at a context-shifted home
+      } else {
+        Spatial.target.x = 0;
+        Spatial.target.y = 0;
+        Spatial.state = 'resting';
+      }
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     SPATIAL BEHAVIOURS (micro navigation) — during long idle
+     periods, a single deliberate excursion toward an open window,
+     never aimless wandering, always returning home after.
+  ─────────────────────────────────────────────────────────── */
+  var Excursion = {
+    active: false,
+    endAt: 0,
+
+    _pickWindow: function () {
+      var open = Spatial.windowEls.filter(function (w) { return w.style.display !== 'none'; });
+      if (!open.length) return null;
+      return open[Math.floor(Math.random() * open.length)];
+    },
+
+    maybeBegin: function () {
+      // [4.110 hook] once the Intent Engine is loaded, it owns curiosity
+      // decisions (with its own priority system) — this scheduler stands
+      // down rather than duplicating that behaviour. Standalone (without
+      // 4.110) this engine remains fully self-sufficient, unchanged.
+      if (window.AtulIntent) return;
+      var ctx = window.AtulContext;
+      if (!ctx || this.active) return;
+      var idx = ctx.data && ctx.data.performanceLevel !== undefined; // sanity, ctx wired
+      if (!idx) return;
+      var win = this._pickWindow();
+      if (!win) return;
+      var r = win.getBoundingClientRect();
+      if (!r.width) return;
+      var abs = MovementController._clamp({ x: r.left + r.width * 0.5, y: r.top - 36 });
+      Spatial.target.x = abs.x - Spatial.homeCenter.x;
+      Spatial.target.y = abs.y - Spatial.homeCenter.y;
+      Spatial.state = 'observing';
+      this.active = true;
+      this.endAt = performance.now() + 4500 + Math.random() * 2000;
+    },
+
+    tick: function () {
+      if (this.active && performance.now() >= this.endAt) {
+        this.active = false;
+        Spatial.state = 'resting'; // hands control back to MovementController next tick
+      }
+    },
+
+    schedule: function () {
+      var self = this;
+      var next = 180000 + Math.random() * 240000; // every 3-7 minutes
+      setTimeout(function () {
+        var ctx = window.AtulContext;
+        var calmEnough = !ctx || !ctx.data || (Date.now() - ctx.data.lastActivity) > 90000;
+        if (!document.hidden && calmEnough) self.maybeBegin();
+        self.schedule();
+      }, next);
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     INFLUENCE RADIUS + ENVIRONMENTAL COUPLING — a soft field
+     that travels with the orb, and a subtle acknowledgement glow
+     on nearby windows. Deeper coupling (particles curving around
+     the orb, glass distortion) is left as an explicit future hook
+     rather than reaching into arbitrary window internals.
+  ─────────────────────────────────────────────────────────── */
+  var Environment = {
+    hooks: {
+      onGlassDistort: function (/* windowEl, intensity */) {},
+      onParticleCurve: function (/* px, py, orbx, orby */) {}
+    },
+
+    drawField: function (ctx, abs) {
+      var g = ctx.createRadialGradient(abs.x, abs.y, 10, abs.x, abs.y, Spatial.proximityRadius);
+      g.addColorStop(0, 'hsla(198,100%,68%,0.045)');
+      g.addColorStop(1, 'hsla(198,100%,60%,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(abs.x, abs.y, Spatial.proximityRadius, 0, Math.PI * 2);
+      ctx.fill();
+    },
+
+    updateProximityGlow: function (abs) {
+      for (var i = 0; i < Spatial.windowEls.length; i++) {
+        var w = Spatial.windowEls[i];
+        if (w.style.display === 'none') {
+          if (w.classList.contains('aware-proximity-glow')) w.classList.remove('aware-proximity-glow');
+          continue;
+        }
+        var r = w.getBoundingClientRect();
+        if (!r.width) continue;
+        var cx = Math.max(r.left, Math.min(r.right, abs.x));
+        var cy = Math.max(r.top, Math.min(r.bottom, abs.y));
+        var dx = abs.x - cx, dy = abs.y - cy;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var near = dist < Spatial.proximityRadius;
+        if (near && !w.classList.contains('aware-proximity-glow')) w.classList.add('aware-proximity-glow');
+        else if (!near && w.classList.contains('aware-proximity-glow')) w.classList.remove('aware-proximity-glow');
+      }
+    }
+  };
+  Spatial.environmentHooks = Environment.hooks; // exposed for future modules
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE NAVIGATION HOOKS — architecture only, never invoked.
+  ─────────────────────────────────────────────────────────── */
+  window.AtulSpatial = window.AtulSpatial || {};
+  window.AtulSpatial.hooks = {
+    onNavigateTo: function (/* {x,y} */) {},
+    onArrive:     function () {},
+    onDepart:     function () {}
+  };
+  window.AtulSpatial.getState = function () { return Spatial.state; };
+  // [4.110 hooks] read-only position getters + a single override slot, so
+  // the Intent Engine can decide WHERE/WHEN without this engine duplicating
+  // any of its own destination math, and without Intent Engine ever having
+  // to touch the DOM or physics directly.
+  window.AtulSpatial.getCurrentAbsolute = function () { return Spatial.currentAbsolute(); };
+  window.AtulSpatial.getHomeAbsolute = function () { return { x: Spatial.homeCenter.x, y: Spatial.homeCenter.y }; };
+  window.AtulSpatial.getContextualHomeAbsolute = function () { return MovementController.contextualHomeAbsolute(); };
+  window.AtulSpatial.setIntent = function (point, state, ttlMs) {
+    if (!point) { Spatial.intentOverride = null; return; }
+    Spatial.intentOverride = { point: point, state: state || 'resting', expiresAt: ttlMs ? performance.now() + ttlMs : null };
+  };
+  window.AtulSpatial.clearIntent = function () { Spatial.intentOverride = null; };
+
+  /* ───────────────────────────────────────────────────────────
+     RENDERING — single rAF loop. Applies spring physics, moves
+     the orb via transform, draws the influence field, updates
+     proximity glow, and pauses fully when the tab is hidden.
+  ─────────────────────────────────────────────────────────── */
+  function frame(t) {
+    var dt = Math.min(48, t - (Spatial.lastT || t));
+    Spatial.lastT = t;
+    var dtSec = dt / 1000;
+
+    MovementController.updateTarget();
+    Excursion.tick();
+
+    var profile = STATES[Spatial.state] || STATES.resting;
+    Physics.step(Spatial.pos, Spatial.vel, Spatial.target, dtSec, profile.freq, profile.zeta);
+
+    Spatial.hoverPhase += dt * 0.0013;
+    var hoverX = Math.sin(Spatial.hoverPhase) * profile.hover * 0.3;
+    var hoverY = Math.cos(Spatial.hoverPhase * 0.83) * profile.hover;
+
+    var finalX = Spatial.pos.x + hoverX;
+    var finalY = Spatial.pos.y + hoverY;
+    Spatial.orbEl.style.transform = 'translate3d(' + finalX.toFixed(2) + 'px,' + finalY.toFixed(2) + 'px,0)';
+
+    var w = window.innerWidth, h = window.innerHeight;
+    Spatial.ctx.clearRect(0, 0, w, h);
+    var abs = { x: Spatial.homeCenter.x + finalX, y: Spatial.homeCenter.y + finalY };
+    Environment.drawField(Spatial.ctx, abs);
+    Environment.updateProximityGlow(abs);
+
+    Spatial.rafId = requestAnimationFrame(frame);
+  }
+
+  function start() {
+    if (Spatial.rafId) return;
+    Spatial.lastT = 0;
+    Spatial.rafId = requestAnimationFrame(frame);
+  }
+  function stop() {
+    if (Spatial.rafId) cancelAnimationFrame(Spatial.rafId);
+    Spatial.rafId = null;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     BOOT
+  ─────────────────────────────────────────────────────────── */
+  function boot() {
+    if (!Spatial.init()) {
+      var tries = 0;
+      var retry = setInterval(function () {
+        tries++;
+        if (Spatial.init() || tries > 20) clearInterval(retry);
+        if (Spatial.ctx) { clearInterval(retry); finishBoot(); }
+      }, 250);
+      return;
+    }
+    finishBoot();
+  }
+
+  function finishBoot() {
+    Excursion.schedule();
+    if (!reduceMotion) {
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stop(); else start();
+      });
+      start();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    setTimeout(boot, 0);
+  }
+
+  console.log('[AtulOS 4.109] Spatial Presence Engine online. AtulAI now travels toward relevant context and returns home via spring physics. API: window.AtulSpatial');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.109 — ATULAI SPATIAL PRESENCE ENGINE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.110 — ATULAI INTENT ENGINE
+     Purely additive. Never touches the DOM, canvases, or physics
+     directly — it only calls the small public hooks already exposed
+     by window.AtulSpatial (4.109) and window.LivingPresenceEngine
+     (4.107), and reads window.AtulContext (4.108). All destination
+     math is reused from AtulSpatial.getContextualHomeAbsolute() —
+     nothing here recomputes window rects on its own.
+════════════════════════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI INTENT ENGINE  (Module 4.110)
+   Sections: Intent Manager / Decision Layer / Priority Resolver /
+             Attention Controller / Curiosity Generator /
+             Behaviour Queue / Transition Resolver / Future Intent Hooks
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._intentEnginePatched) return;
+  window._intentEnginePatched = true;
+
+  /* ───────────────────────────────────────────────────────────
+     PRIORITY RESOLVER — numeric ranking + stable tie-breaking.
+     "Only the highest priority intention should execute."
+  ─────────────────────────────────────────────────────────── */
+  var PRIORITY = { emergency: 4, high: 3, medium: 2, low: 1, background: 0 };
+
+  function pickBest(candidates, current) {
+    if (!candidates.length) return null;
+    var best = null;
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      var val = PRIORITY[c.priority] || 0;
+      if (!best || val > PRIORITY[best.priority]) {
+        best = c;
+      } else if (val === PRIORITY[best.priority] && current && c.type === current.type) {
+        best = c; // prefer staying the course on exact ties — avoids flapping
+      }
+    }
+    return best;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     CURIOSITY GENERATOR — rare, cooldown-gated, always with a
+     visible reason (an actually-open window), never aimless.
+  ─────────────────────────────────────────────────────────── */
+  var Curiosity = {
+    lastAt: 0,
+    cooldownMs: 180000,     // at least 3 minutes between curiosity events
+    idleThresholdMs: 150000, // only after ~2.5 minutes of genuine calm
+
+    _pickOpenWindow: function () {
+      var wins = Array.prototype.slice.call(document.querySelectorAll('.app-window'))
+        .filter(function (w) { return w.style.display !== 'none'; });
+      if (!wins.length) return null;
+      return wins[Math.floor(Math.random() * wins.length)];
+    },
+
+    consider: function (idleFor) {
+      if (idleFor < this.idleThresholdMs) return null;
+      if (Date.now() - this.lastAt < this.cooldownMs) return null;
+      var win = this._pickOpenWindow();
+      if (!win) return null;
+      var r = win.getBoundingClientRect();
+      if (!r.width) return null;
+      this.lastAt = Date.now();
+      return { type: 'IdleReflection', priority: 'low', targetPoint: { x: r.left + r.width * 0.5, y: r.top - 36 } };
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     DECISION LAYER — observes Context (4.108) and Spatial (4.109)
+     and produces a small set of candidate intentions. Destination
+     points are never computed here — always reused from 4.109.
+  ─────────────────────────────────────────────────────────── */
+  function classifyContextualIntent(d) {
+    if (d.deepspaceActive) return 'WatchActiveModule';
+    if (d.terminalActive) return 'ObserveWindow';
+    if (d.friendsActive) return 'ObserveWindow';
+    if (d.focusedWindowId === 'dashboard-window') return 'WatchActiveModule';
+    return null;
+  }
+
+  function generateCandidates() {
+    var out = [];
+    var ctx = window.AtulContext, spatial = window.AtulSpatial;
+    if (!ctx || !ctx.data || !spatial) {
+      out.push({ type: 'RemainStill', priority: 'background', targetPoint: null });
+      return out;
+    }
+    var d = ctx.data;
+    var idleFor = Date.now() - d.lastActivity;
+
+    var ctxType = classifyContextualIntent(d);
+    if (ctxType && spatial.getContextualHomeAbsolute) {
+      var pt = spatial.getContextualHomeAbsolute(); // reused, not recomputed
+      if (pt) out.push({ type: ctxType, priority: 'medium', targetPoint: pt });
+    }
+
+    if (!ctxType) {
+      if (idleFor > 25000 && (d.mouseSpeed || 0) < 0.05) {
+        out.push({ type: 'InspectActivity', priority: 'low', targetPoint: null });
+      }
+      var curious = Curiosity.consider(idleFor);
+      if (curious) out.push(curious);
+      if ((d.mouseSpeed || 0) > 0.55 && d.mouseX !== null) {
+        out.push({ type: 'WatchCursor', priority: 'low', targetPoint: null });
+      }
+    }
+
+    out.push({ type: 'RemainStill', priority: 'background', targetPoint: null });
+    return out;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE INTENT DEFINITIONS — architecture only. Never added
+     to generateCandidates(), never scored, never executed.
+  ─────────────────────────────────────────────────────────── */
+  var FUTURE_INTENTS = {
+    VoiceConversation:      { priority: 'high' },
+    MissionSupport:         { priority: 'high' },
+    FriendInteraction:      { priority: 'medium' },
+    IoTAssistance:          { priority: 'medium' },
+    NotificationReview:     { priority: 'medium' },
+    AchievementCelebration: { priority: 'low' },
+    ErrorInvestigation:     { priority: 'emergency' }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     ATTENTION CONTROLLER — "notice → pause → pulse → move" and
+     "arrive → pause → observe → stabilize → decide". Owns the
+     only two setTimeout chains in this engine (decision delay,
+     observe dwell) — no separate polling timers beyond those.
+  ─────────────────────────────────────────────────────────── */
+  var Attention = {
+    _decisionTimer: null,
+
+    notice: function () {
+      if (window.LivingPresenceEngine && window.LivingPresenceEngine.pulse) {
+        window.LivingPresenceEngine.pulse();
+      }
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     INTENT MANAGER + BEHAVIOUR QUEUE + TRANSITION RESOLVER
+     Behaviour Queue is intentionally depth-1: the Priority
+     Resolver guarantees only one intention is ever "active",
+     per the spec's own mandate. `current` IS the queue.
+  ─────────────────────────────────────────────────────────── */
+  var Intent = {
+    current: null,       // { type, priority, targetPoint, phase, observeUntil }
+    lastEvalT: 0,
+    evalInterval: 900    // throttled re-evaluation cadence, reused rAF — no new timer/poll
+  };
+
+  function beginDecision(candidate, wasMoving) {
+    clearTimeout(Attention._decisionTimer);
+    Intent.current = {
+      type: candidate.type,
+      priority: candidate.priority,
+      targetPoint: candidate.targetPoint,
+      phase: 'deciding'
+    };
+
+    Attention.notice();
+
+    var spatial = window.AtulSpatial;
+    if (spatial && spatial.getCurrentAbsolute) {
+      var here = spatial.getCurrentAbsolute();
+      if (here) spatial.setIntent(here, 'preparing'); // brief compression/hold — Transition Resolver's hesitation
+    }
+
+    // Natural, varying anticipation — shorter when redirecting mid-travel
+    // (an interruption), longer when deciding fresh from stillness.
+    var delay = (wasMoving ? 380 : 550) + Math.random() * (wasMoving ? 520 : 950);
+
+    Attention._decisionTimer = setTimeout(function () { commitIntent(candidate); }, delay);
+  }
+
+  function commitIntent(candidate) {
+    if (!Intent.current || Intent.current.type !== candidate.type) return; // superseded while deciding
+    var spatial = window.AtulSpatial;
+    if (!candidate.targetPoint) {
+      // RemainStill / WatchCursor / InspectActivity — nothing to travel to.
+      // Hand control back to 4.109's own resting/home fallback.
+      if (spatial) spatial.clearIntent();
+      Intent.current.phase = 'holding';
+      return;
+    }
+    if (spatial) spatial.setIntent(candidate.targetPoint, 'following');
+    Intent.current.phase = 'moving';
+  }
+
+  function evaluate(t) {
+    var candidates = generateCandidates();
+    var cur = Intent.current;
+
+    if (!cur) {
+      var fresh = pickBest(candidates, null);
+      if (fresh) beginDecision(fresh, false);
+      return;
+    }
+
+    if (cur.phase === 'deciding') return; // the setTimeout in beginDecision owns this phase
+
+    if (cur.phase === 'moving') {
+      var best = pickBest(candidates, cur);
+      if (best && best.type !== cur.type && PRIORITY[best.priority] > PRIORITY[cur.priority]) {
+        beginDecision(best, true); // Transition Resolver: hesitate, then redirect
+        return;
+      }
+      if (best && best.type === cur.type && best.targetPoint) {
+        cur.targetPoint = best.targetPoint; // track a moving/resizing window smoothly
+        var spatial = window.AtulSpatial;
+        if (spatial) spatial.setIntent(cur.targetPoint, 'following');
+      }
+      var spatial2 = window.AtulSpatial;
+      var here = spatial2 && spatial2.getCurrentAbsolute && spatial2.getCurrentAbsolute();
+      if (here && cur.targetPoint) {
+        var dx = here.x - cur.targetPoint.x, dy = here.y - cur.targetPoint.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 16) {
+          cur.phase = 'observing';
+          cur.observeUntil = t + 2200 + Math.random() * 1800;
+          if (spatial2) spatial2.setIntent(cur.targetPoint, 'observing');
+          Attention.notice(); // small scan pulse + energy stabilize on arrival
+        }
+      }
+      return;
+    }
+
+    if (cur.phase === 'observing') {
+      if (t >= cur.observeUntil) {
+        Intent.current = null; // release — next tick decides whether to remain or leave
+      }
+      return;
+    }
+
+    if (cur.phase === 'holding') {
+      var best2 = pickBest(candidates, cur);
+      if (best2 && best2.type !== cur.type && PRIORITY[best2.priority] > PRIORITY[cur.priority]) {
+        beginDecision(best2, false);
+      }
+      return;
+    }
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE INTENT HOOKS — architecture only, never invoked.
+  ─────────────────────────────────────────────────────────── */
+  window.AtulIntent = {
+    getCurrent: function () { return Intent.current ? Intent.current.type : 'RemainStill'; },
+    getPhase: function () { return Intent.current ? Intent.current.phase : 'holding'; },
+    futureIntents: FUTURE_INTENTS,
+    hooks: {
+      onVoiceConversation:      function () {},
+      onMissionSupport:         function () {},
+      onFriendInteraction:      function () {},
+      onIoTAssistance:          function () {},
+      onNotificationReview:     function () {},
+      onAchievementCelebration: function () {},
+      onErrorInvestigation:     function () {}
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BOOT — reuses a single rAF loop, throttled, matching the
+     cadence pattern already established by prior modules. Pauses
+     fully when the tab is hidden.
+  ─────────────────────────────────────────────────────────── */
+  var rafId = null;
+
+  function frame(t) {
+    if (!document.hidden && t - Intent.lastEvalT >= Intent.evalInterval) {
+      Intent.lastEvalT = t;
+      evaluate(t);
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function boot() {
+    if (!window.AtulSpatial || !window.AtulContext) {
+      var tries = 0;
+      var retry = setInterval(function () {
+        tries++;
+        if ((window.AtulSpatial && window.AtulContext) || tries > 20) {
+          clearInterval(retry);
+          if (window.AtulSpatial && window.AtulContext) start();
+        }
+      }, 250);
+      return;
+    }
+    start();
+  }
+
+  function start() {
+    if (rafId) return;
+    rafId = requestAnimationFrame(frame);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    setTimeout(boot, 0);
+  }
+
+  console.log('[AtulOS 4.110] Intent Engine online. AtulAI now decides why before Spatial/Presence engines decide how. API: window.AtulIntent');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.110 — ATULAI INTENT ENGINE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.111 — ATULAI ENVIRONMENTAL COUPLING ENGINE
+     Purely additive, purely a consumer. Reads only the existing
+     public APIs — window.AtulSpatial.getCurrentAbsolute()/getState(),
+     window.AtulIntent.getCurrent()/getPhase(), and
+     window.LivingPresenceEngine.getState() — all already exposed by
+     Modules 4.107-4.110. No compatibility patch to any prior module
+     was needed for this one: every read used here was already public.
+     Direction of control is one-way: AtulAI → this engine → visuals.
+     This engine never sets anything on AtulSpatial/AtulIntent/LPE.
+════════════════════════════════════════════════════════════════ -->
+<style>
+#atulai-environment-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 8496; /* below Spatial's field (8497), Context (8498), Presence (8499), orb (8500) */
+  pointer-events: none;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  #atulai-environment-canvas { display: none; }
+}
+/* Glass Coupling — an additive richness layer applied ONLY to windows
+   Module 4.109 has already determined are nearby (.aware-proximity-glow).
+   This never re-derives proximity itself; it just reads that existing
+   class so distance is computed exactly once, in exactly one place. */
+.app-window.aware-proximity-glow.aware-env-rich {
+  box-shadow:
+    0 0 0 1px rgba(140,205,255,0.16),
+    0 0 34px rgba(90,190,255,0.09),
+    inset 0 0 22px rgba(80,180,255,0.03);
+}
+</style>
+
+<canvas id="atulai-environment-canvas" aria-hidden="true"></canvas>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI ENVIRONMENTAL COUPLING ENGINE  (Module 4.111)
+   Sections: Environment Manager / Influence Field / Light Coupling /
+             Glass Coupling / Particle Coupling / Ambient Breathing /
+             Movement Aftereffects / Future Environment Hooks
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._environmentalCouplingEnginePatched) return;
+  window._environmentalCouplingEnginePatched = true;
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ───────────────────────────────────────────────────────────
+     STATE COUPLING — per-state richness profile. Only the states
+     reachable today (resting/idle, preparing, following, observing)
+     ever actually apply; executing/speaking/emergency are wired up
+     but their source states are never emitted by prior modules yet,
+     so they remain dormant exactly as the spec requires.
+  ─────────────────────────────────────────────────────────── */
+  var STATE_PROFILES = {
+    idle:      { richness: 0.55, warmth: 0.0,  breatheAmp: 1.0 },
+    preparing: { richness: 0.80, warmth: 0.10, breatheAmp: 0.6 },
+    following: { richness: 0.80, warmth: 0.10, breatheAmp: 0.6 }, // grouped with 'preparing' — spec has no distinct bucket for active travel
+    observing: { richness: 1.00, warmth: 0.16, breatheAmp: 0.4 },
+    executing: { richness: 1.15, warmth: 0.22, breatheAmp: 0.3 }, // architecture only — 'executing' is never emitted today
+    speaking:  { richness: 1.10, warmth: 0.14, breatheAmp: 0.3 }, // architecture only
+    emergency: { richness: 1.30, warmth: 0.35, breatheAmp: 0.2 }  // architecture only
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     ENVIRONMENT MANAGER — observes, never controls. Every value
+     here is either read directly from an existing public getter
+     or derived (velocity) from that same reading — nothing about
+     AtulAI's position/state is recomputed independently.
+  ─────────────────────────────────────────────────────────── */
+  var Env = {
+    pos: null,            // last known absolute {x,y}
+    prevPos: null,
+    velocity: 0,           // derived px/ms, not duplicated from Spatial internals
+    state: 'idle',
+    trail: [],             // small fixed-size position history for aftereffects
+    trailMax: 10,
+
+    resolveState: function () {
+      var spState = window.AtulSpatial && window.AtulSpatial.getState ? window.AtulSpatial.getState() : 'resting';
+      if (spState === 'preparing') return 'preparing';
+      if (spState === 'following') return 'following';
+      if (spState === 'observing') return 'observing';
+      // LivingPresenceEngine's own state (idle/listening/thinking/speaking/
+      // executing/success/warning/error) is read only for the three
+      // architecture-only buckets that might one day be active elsewhere.
+      var lpState = window.LivingPresenceEngine && window.LivingPresenceEngine.getState
+        ? window.LivingPresenceEngine.getState() : 'idle';
+      if (lpState === 'executing') return 'executing';
+      if (lpState === 'speaking') return 'speaking';
+      if (lpState === 'error') return 'emergency';
+      return 'idle';
+    },
+
+    update: function (dt) {
+      var abs = window.AtulSpatial && window.AtulSpatial.getCurrentAbsolute
+        ? window.AtulSpatial.getCurrentAbsolute() : null;
+      if (!abs) return false;
+
+      this.prevPos = this.pos;
+      this.pos = abs;
+      if (this.prevPos && dt > 0) {
+        var dx = this.pos.x - this.prevPos.x, dy = this.pos.y - this.prevPos.y;
+        var instSpeed = Math.sqrt(dx * dx + dy * dy) / dt;
+        this.velocity = this.velocity * 0.8 + instSpeed * 0.2; // smoothed, not raw jitter
+      }
+      this.state = this.resolveState();
+
+      // Fixed-size ring buffer — no per-frame allocation growth.
+      this.trail.push({ x: this.pos.x, y: this.pos.y, age: 0 });
+      if (this.trail.length > this.trailMax) this.trail.shift();
+      for (var i = 0; i < this.trail.length; i++) this.trail[i].age += dt;
+
+      return true;
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     AMBIENT BREATHING — very low frequency, multiple incommensurate
+     phases so it never reads as a fixed loop. Loosely biased by
+     state (via breatheAmp) rather than hard-synchronized to it.
+  ─────────────────────────────────────────────────────────── */
+  var Breathing = {
+    phaseA: Math.random() * Math.PI * 2,
+    phaseB: Math.random() * Math.PI * 2,
+    tick: function (dt) {
+      this.phaseA += dt * 0.000023; // ~45s-scale period
+      this.phaseB += dt * 0.0000091; // ~110s-scale period — deliberately non-integer ratio to A
+    },
+    value: function (amp) {
+      var a = Math.sin(this.phaseA) * 0.5 + 0.5;
+      var b = Math.sin(this.phaseB * 1.3) * 0.5 + 0.5;
+      return (a * 0.65 + b * 0.35) * amp;
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     INFLUENCE FIELD + LIGHT COUPLING — two concentric soft glows
+     that travel with AtulAI: a tighter "richness" core and a much
+     larger, fainter "ambient light follow" wash.
+  ─────────────────────────────────────────────────────────── */
+  var InfluenceField = {
+    draw: function (ctx, pos, richness, warmth, breathe) {
+      var coreR = 210 * (0.85 + breathe * 0.25);
+      var hue = 200 - warmth * 60; // shifts slightly warmer (toward amber) with richer states
+      var coreAlpha = 0.05 * richness;
+      var g1 = ctx.createRadialGradient(pos.x, pos.y, 14, pos.x, pos.y, coreR);
+      g1.addColorStop(0, 'hsla(' + hue + ',95%,68%,' + coreAlpha + ')');
+      g1.addColorStop(1, 'hsla(' + hue + ',95%,60%,0)');
+      ctx.fillStyle = g1;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, coreR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Light Follow — larger, much fainter bounce; never a visible spotlight.
+      var wideR = 460 * (0.9 + breathe * 0.15);
+      var wideAlpha = 0.016 * richness;
+      var g2 = ctx.createRadialGradient(pos.x, pos.y, coreR * 0.6, pos.x, pos.y, wideR);
+      g2.addColorStop(0, 'hsla(' + hue + ',90%,65%,' + wideAlpha + ')');
+      g2.addColorStop(1, 'hsla(' + hue + ',90%,60%,0)');
+      ctx.fillStyle = g2;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, wideR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     MOVEMENT AFTEREFFECTS — faint fading trail, only visible once
+     AtulAI is actually moving at some velocity; static when still.
+  ─────────────────────────────────────────────────────────── */
+  var Aftereffects = {
+    draw: function (ctx, trail, velocity) {
+      if (velocity < 0.02) return; // no residual trail while essentially still
+      for (var i = 0; i < trail.length - 1; i++) {
+        var p = trail[i];
+        var fade = 1 - (i / trail.length);
+        var alpha = Math.min(0.05, velocity * 0.03) * fade;
+        if (alpha <= 0.002) continue;
+        ctx.beginPath();
+        ctx.fillStyle = 'hsla(198,90%,70%,' + alpha + ')';
+        ctx.arc(p.x, p.y, 2.2 * fade, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     GLASS COUPLING — additive richness class layered ONLY on top
+     of windows Module 4.109 already flagged as nearby. Distance
+     is read via classList, never recomputed here.
+  ─────────────────────────────────────────────────────────── */
+  var GlassCoupling = {
+    windowEls: [],
+    init: function () {
+      this.windowEls = Array.prototype.slice.call(document.querySelectorAll('.app-window'));
+    },
+    update: function (richness) {
+      var active = richness > 0.7; // only "rich" states bother enhancing further
+      for (var i = 0; i < this.windowEls.length; i++) {
+        var w = this.windowEls[i];
+        var near = w.classList.contains('aware-proximity-glow');
+        var should = near && active;
+        var has = w.classList.contains('aware-env-rich');
+        if (should && !has) w.classList.add('aware-env-rich');
+        else if (!should && has) w.classList.remove('aware-env-rich');
+      }
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     PARTICLE COUPLING — Module 4.107's particle system has no
+     public per-particle hook, and reaching into its private
+     ParticleEngine would mean invading existing rendering
+     internals (explicitly disallowed). So: architecture only —
+     a documented, dormant interface a future, cooperating version
+     of 4.107 could choose to call.
+  ─────────────────────────────────────────────────────────── */
+  var ParticleCoupling = {
+    hooks: {
+      curveToward: function (/* particleX, particleY, fieldX, fieldY, strength */) {},
+      orbitField:  function (/* particleAngle, fieldRadius */) {},
+      energyBoost: function (/* currentEnergy */) { return 0; }
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE ENVIRONMENT HOOKS — public interfaces only, no
+     implementation, all dormant.
+  ─────────────────────────────────────────────────────────── */
+  var futureHooks = {
+    weatherLayer:    { enabled: false, register: function () {} },
+    fogLayer:        { enabled: false, register: function () {} },
+    audioLayer:      { enabled: false, register: function () {} },
+    reflectionLayer: { enabled: false, register: function () {} },
+    shadowLayer:     { enabled: false, register: function () {} },
+    hologramLayer:   { enabled: false, register: function () {} },
+    missionLighting: { enabled: false, register: function () {} },
+    roomLighting:    { enabled: false, register: function () {} },
+    seasonEngine:    { enabled: false, register: function () {} }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     RENDERING — single rAF loop, own canvas, pauses when hidden.
+  ─────────────────────────────────────────────────────────── */
+  var Renderer = {
+    canvas: null, ctx: null,
+    dpr: Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
+    lastT: 0, rafId: null,
+
+    init: function () {
+      this.canvas = document.getElementById('atulai-environment-canvas');
+      if (!this.canvas) return false;
+      this.ctx = this.canvas.getContext('2d');
+      this._size();
+      var self = this;
+      window.addEventListener('resize', function () {
+        clearTimeout(self._rT);
+        self._rT = setTimeout(function () { self._size(); }, 150);
+      });
+      GlassCoupling.init();
+      return true;
+    },
+
+    _size: function () {
+      this.canvas.width = Math.round(window.innerWidth * this.dpr);
+      this.canvas.height = Math.round(window.innerHeight * this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    },
+
+    frame: function (t) {
+      var dt = Math.min(48, t - (this.lastT || t));
+      this.lastT = t;
+
+      Breathing.tick(dt);
+      var ok = Env.update(dt);
+
+      var w = window.innerWidth, h = window.innerHeight;
+      this.ctx.clearRect(0, 0, w, h);
+
+      if (ok) {
+        var profile = STATE_PROFILES[Env.state] || STATE_PROFILES.idle;
+        var breathe = Breathing.value(profile.breatheAmp);
+        InfluenceField.draw(this.ctx, Env.pos, profile.richness, profile.warmth, breathe);
+        Aftereffects.draw(this.ctx, Env.trail, Env.velocity);
+        GlassCoupling.update(profile.richness);
+      }
+
+      this.rafId = requestAnimationFrame(this.frame.bind(this));
+    },
+
+    start: function () {
+      if (this.rafId) return;
+      this.lastT = 0;
+      this.rafId = requestAnimationFrame(this.frame.bind(this));
+    },
+    stop: function () {
+      if (this.rafId) cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     PUBLIC API
+  ─────────────────────────────────────────────────────────── */
+  window.AtulEnvironment = {
+    getState: function () { return Env.state; },
+    getVelocity: function () { return Env.velocity; },
+    particleCoupling: ParticleCoupling.hooks,
+    hooks: futureHooks
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BOOT
+  ─────────────────────────────────────────────────────────── */
+  function boot() {
+    if (!window.AtulSpatial) {
+      var tries = 0;
+      var retry = setInterval(function () {
+        tries++;
+        if (window.AtulSpatial || tries > 20) clearInterval(retry);
+        if (window.AtulSpatial) { clearInterval(retry); finishBoot(); }
+      }, 250);
+      return;
+    }
+    finishBoot();
+  }
+
+  function finishBoot() {
+    if (!Renderer.init()) return;
+    if (!reduceMotion) {
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) Renderer.stop(); else Renderer.start();
+      });
+      Renderer.start();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    setTimeout(boot, 0);
+  }
+
+  console.log('[AtulOS 4.111] Environmental Coupling Engine online. The room now softly acknowledges AtulAI\'s position and state. API: window.AtulEnvironment');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.111 — ATULAI ENVIRONMENTAL COUPLING ENGINE
+════════════════════════════════════════════════════════════════ -->
+
 </body>
 </html>
