@@ -39067,7 +39067,15 @@ window.safeAppend = function safeAppend(parent, child) {
     return ids.map(function (id) { return window.AtulKnowledge.getModule(id); }).filter(Boolean);
   }
 
-  function handleCapabilities() {
+  // COMPATIBILITY HOOK (Module 4.117): prefer the narration engine's
+  // prose over this raw listing when it's available; the original
+  // listing is kept completely intact as the fallback if 4.117 isn't
+  // loaded or returns nothing.
+  function handleCapabilities(rawInput) {
+    if (window.AtulNarration && typeof window.AtulNarration.describeCapability === 'function') {
+      var narrated = window.AtulNarration.describeCapability(rawInput);
+      if (narrated) return narrated;
+    }
     if (!window.AtulKnowledge) return null;
     var caps = window.AtulKnowledge.listCapabilities();
     var lines = Object.keys(caps || {}).map(function (id) {
@@ -39076,14 +39084,22 @@ window.safeAppend = function safeAppend(parent, child) {
     return lines.length ? ("Here's what I can do:\n" + lines.join('\n')) : null;
   }
 
-  function handleApplications() {
+  function handleApplications(rawInput) {
+    if (window.AtulNarration && typeof window.AtulNarration.describeApplications === 'function') {
+      var narrated = window.AtulNarration.describeApplications(rawInput);
+      if (narrated) return narrated;
+    }
     var mods = listAllModules().filter(function (m) { return m.category === 'application'; });
     if (!mods.length) return null;
     var lines = mods.map(function (m) { return m.name + ' (' + stateLabel(m.state) + ')'; });
     return 'Available applications: ' + lines.join(', ') + '.';
   }
 
-  function handleModules() {
+  function handleModules(rawInput) {
+    if (window.AtulNarration && typeof window.AtulNarration.describeModules === 'function') {
+      var narrated = window.AtulNarration.describeModules(rawInput);
+      if (narrated) return narrated;
+    }
     var mods = listAllModules();
     if (!mods.length) return null;
     var lines = mods.map(function (m) { return m.name + ' — ' + stateLabel(m.state); });
@@ -39091,13 +39107,21 @@ window.safeAppend = function safeAppend(parent, child) {
   }
 
   function handleWindowsOpen() {
+    if (window.AtulNarration && typeof window.AtulNarration.describeOpenWindows === 'function') {
+      var narrated = window.AtulNarration.describeOpenWindows();
+      if (narrated) return narrated;
+    }
     if (!window.AtulKnowledge) return null;
     var snap = window.AtulKnowledge.getSnapshot();
     var wins = (snap && snap.openWindows) || [];
     return wins.length ? ('Currently open: ' + wins.join(', ') + '.') : 'Nothing is open right now.';
   }
 
-  function handleArchitecture() {
+  function handleArchitecture(rawInput) {
+    if (window.AtulNarration && typeof window.AtulNarration.describeSelf === 'function') {
+      var narrated = window.AtulNarration.describeSelf(rawInput);
+      if (narrated) return narrated;
+    }
     var mods = listAllModules();
     if (!mods.length) return null;
     var byCategory = {};
@@ -39107,6 +39131,10 @@ window.safeAppend = function safeAppend(parent, child) {
   }
 
   function handleWorkspace() {
+    if (window.AtulNarration && typeof window.AtulNarration.describeWorkspace === 'function') {
+      var narrated = window.AtulNarration.describeWorkspace();
+      if (narrated) return narrated;
+    }
     if (!window.AtulKnowledge) return null;
     var snap = window.AtulKnowledge.getSnapshot();
     if (!snap) return null;
@@ -39148,6 +39176,62 @@ window.safeAppend = function safeAppend(parent, child) {
     return topicHit && selfHit;
   }
 
+  /* ───────────────────────────────────────────────────────────
+     IDENTITY CLASSIFIER (4.117.1) — extends the classifier above
+     to cover Purpose ("what is your role/mission"), Difference
+     ("how are you different from a chatbot"), and Philosophy
+     ("what philosophy guides you") questions, using the same
+     token-overlap approach: a self-referential word plus a topic
+     word from the relevant set, or one of a few explicit idioms.
+     IDENTITY_EXPLICIT_RE deliberately mirrors INTENT_MAP.identity's
+     own keywords/phrases (~line 11005) — the exact set of inputs
+     that legacy intent would otherwise swallow as a "known command"
+     and answer with a canned RESPONSE_BANK.identity string — so the
+     pre-check below knows precisely which inputs need to bypass it.
+  ─────────────────────────────────────────────────────────── */
+  var IDENTITY_EXPLICIT_RE = /\b(who are you|what are you|introduce yourself|tell me about yourself|your name|are you an ai|are you atulai)\b/i;
+  var PURPOSE_WORDS = ['purpose', 'exist', 'existence', 'role', 'mission', 'responsibility', 'responsible'];
+  var DIFFERENCE_WORDS = ['chatbot', 'chatgpt', 'assistant'];
+  var DIFFERENCE_QUALIFIER_WORDS = ['different', 'difference', 'just', 'compare', 'unlike'];
+  var PHILOSOPHY_WORDS = ['philosophy', 'designed', 'design', 'guide', 'guides', 'guided'];
+
+  function isIdentityQuestion(text) {
+    if (isSelfDescriptionRequest(text)) return true;
+    var t = (text || '').toLowerCase();
+    if (IDENTITY_EXPLICIT_RE.test(t)) return true;
+
+    var tokens = tokenizeSimple(t);
+    var hasSelfRef = tokens.indexOf('you') !== -1 || tokens.indexOf('your') !== -1 || tokens.indexOf('yourself') !== -1;
+
+    if (hasSelfRef && PURPOSE_WORDS.some(function (w) { return tokens.indexOf(w) !== -1; })) return true;
+    if (hasSelfRef && PHILOSOPHY_WORDS.some(function (w) { return tokens.indexOf(w) !== -1; })) return true;
+
+    var hasDifferenceQualifier = DIFFERENCE_QUALIFIER_WORDS.some(function (w) { return t.indexOf(w) !== -1; });
+    var hasDifferenceWord = DIFFERENCE_WORDS.some(function (w) { return tokens.indexOf(w) !== -1; });
+    if (hasDifferenceQualifier && (hasDifferenceWord || hasSelfRef)) return true;
+
+    if (/\bkind of ai\b/.test(t)) return true;
+    if (/\bthink about you\b/.test(t)) return true;
+
+    return false;
+  }
+
+  // COMPATIBILITY HOOK (Module 4.117.1): identity, purpose, difference,
+  // and philosophy questions must resolve through AtulNarration, never
+  // the legacy 'identity' intent (Module 5 / NLU Intent Engine, ~line
+  // 13737, INTENT_MAP.identity ~line 11005) or its canned
+  // RESPONSE_BANK.identity strings (~line 13411) — including the literal
+  // "AtulAI v3, powered by a unified speech engine..." version string.
+  // Falls back to handleArchitecture's existing behavior only if 4.117
+  // is unavailable or has nothing to say.
+  function handleIdentity(rawInput) {
+    if (window.AtulNarration && typeof window.AtulNarration.describeIdentity === 'function') {
+      var narrated = window.AtulNarration.describeIdentity(rawInput);
+      if (narrated) return narrated;
+    }
+    return handleArchitecture(rawInput);
+  }
+
   var ALIASES = [
     { test: /what (can|could|do) you (do|offer)|your capabilit|what capabilit/i, handle: handleCapabilities },
     { test: /(application|app)s?.{0,25}(available|installed|exist)/i,            handle: handleApplications },
@@ -39156,7 +39240,7 @@ window.safeAppend = function safeAppend(parent, child) {
     { test: /window(s)?.{0,25}open/i,                                           handle: handleWindowsOpen },
     { test: /where\s+(am\s+i|are\s+we)\b/i,                                     handle: handleWorkspace },
     { test: /workspace/i,                                                       handle: handleWorkspace },
-    { test: isSelfDescriptionRequest,                                           handle: handleArchitecture }
+    { test: isIdentityQuestion,                                                 handle: handleIdentity }
   ];
 
   /* ───────────────────────────────────────────────────────────
@@ -39166,7 +39250,7 @@ window.safeAppend = function safeAppend(parent, child) {
      module's capabilities, focused-module questions). Again,
      purely presentational: no data originates here.
   ─────────────────────────────────────────────────────────── */
-  function formatQueryResult(result) {
+  function formatQueryResult(result, rawInput) {
     if (!result) return null;
     switch (result.answer) {
       case 'openWindows': {
@@ -39174,9 +39258,13 @@ window.safeAppend = function safeAppend(parent, child) {
         return wins.length ? ('Currently open: ' + wins.join(', ') + '.') : 'Nothing is open right now.';
       }
       case 'capabilities':
-        return handleCapabilities();
+        return handleCapabilities(rawInput);
       case 'moduleCapabilities': {
         if (!result.module || !window.AtulKnowledge) return null;
+        if (window.AtulNarration && typeof window.AtulNarration.describeModule === 'function') {
+          var narratedMod = window.AtulNarration.describeModule(result.module);
+          if (narratedMod) return narratedMod;
+        }
         var mod = window.AtulKnowledge.getModule(result.module);
         if (!mod) return null;
         return mod.name + ' can: ' + ((result.data && result.data.length) ? result.data.join(', ') : 'nothing registered yet') + '.';
@@ -39188,6 +39276,10 @@ window.safeAppend = function safeAppend(parent, child) {
         return iot ? (iot.name + ' is ' + stateLabel(iot.state) + '.') : null;
       }
       case 'snapshot': {
+        if (window.AtulNarration && typeof window.AtulNarration.describeActivity === 'function') {
+          var narratedActivity = window.AtulNarration.describeActivity();
+          if (narratedActivity) return narratedActivity;
+        }
         var s = result.data || {};
         var open = (s.openWindows || []).length ? s.openWindows.join(', ') : 'nothing';
         return 'Right now: ' + open + ' open, system is ' + s.systemHealth + ', presence is ' + s.presenceState + '.';
@@ -39211,12 +39303,12 @@ window.safeAppend = function safeAppend(parent, child) {
         var matcher = ALIASES[i].test;
         var matched = (matcher instanceof RegExp) ? matcher.test(rawInput) : !!matcher(rawInput);
         if (matched) {
-          var out = ALIASES[i].handle();
+          var out = ALIASES[i].handle(rawInput);
           if (out) return out;
         }
       }
       if (typeof window.AtulKnowledge.query === 'function') {
-        return formatQueryResult(window.AtulKnowledge.query(rawInput));
+        return formatQueryResult(window.AtulKnowledge.query(rawInput), rawInput);
       }
     } catch (e) { /* fail closed — let existing pipeline stand */ }
     return null;
@@ -39246,22 +39338,43 @@ window.safeAppend = function safeAppend(parent, child) {
     // pre-empting every self-description question.
     var _WHY_COLLISION_RE = /^(why|why did you|explain that|explain|what was your reason|your reasoning)(\s|$)/i;
 
+    // Mirrors INTENT_MAP.identity's own keywords/phrases (~line 11005)
+    // exactly. Unlike the why-collision above, this one isn't caught
+    // by looking for a fallback at all: parseIntent (~line 11245)
+    // scores these substrings as a *successful* 'identity' match deep
+    // inside the core _jarvisProcessInternal (~line 13856), and
+    // dispatchOutput returns a real, non-fallback string straight from
+    // RESPONSE_BANK.identity (~line 13411 — including the literal
+    // "AtulAI v3, powered by a unified speech engine..." version
+    // string). looksLikeFallback() correctly sees that as a genuine
+    // answer and never calls tryKnowledge(), so these inputs also need
+    // to be pre-empted before orig() runs at all.
+    var LEGACY_IDENTITY_COLLISION_RE = /(who are you|what are you|your name|introduce yourself|are you an ai|are you atulai|tell me about yourself)/i;
+
     window._jarvisProcessInternal = function knowledgeAwareJarvis(rawInput) {
-      // Narrow pre-check. "Explain your architecture." / "Explain
-      // yourself." start with "explain", so the personality layer's
-      // why/explain intercept answers them directly as a reasoning
-      // request before the legacy chain ever gets a chance to "fail"
-      // and produce a fallback — no post-fallback check, however good,
-      // can catch that. Only inputs that BOTH trigger that collision
-      // AND classify as genuine self-description questions are pre-
-      // empted here; e.g. "Why did you turn off the light?" also starts
-      // with "why" but isn't self-description, so it's left alone and
-      // still gets the real reasoning-explainer response as before.
-      // Every other input — including every other knowledge question —
-      // is unaffected and still flows through the untouched chain first.
+      // Narrow pre-check. Two separate legacy layers each intercept
+      // certain identity-shaped inputs before any fallback is ever
+      // produced, so no post-fallback check — however good — can catch
+      // them there:
+      //   1. The personality layer's why/explain intercept (e.g.
+      //      "Explain yourself.", "Why do you exist?").
+      //   2. The core parser's own 'identity' intent (e.g. "Who are
+      //      you?", "Introduce yourself.", "Tell me about yourself."),
+      //      which returns a real (non-fallback) canned string.
+      // Only inputs that BOTH trigger one of those two collisions AND
+      // classify as genuine identity/purpose/difference/philosophy
+      // questions are pre-empted here; e.g. "Why did you turn off the
+      // light?" starts with "why" but isn't an identity question, so
+      // it's left alone and still gets its real, existing response —
+      // and ordinary conversation containing "your name" or "you" is
+      // similarly unaffected unless it collides with one of these two
+      // specific mechanisms. Every other input — including every other
+      // knowledge question — is unaffected and still flows through the
+      // untouched chain first, exactly as before.
       var trimmed = (rawInput || '').trim();
-      if (_WHY_COLLISION_RE.test(trimmed) && isSelfDescriptionRequest(trimmed)) {
-        var preAnswer = handleArchitecture();
+      var wouldBeSwallowedEarly = _WHY_COLLISION_RE.test(trimmed) || LEGACY_IDENTITY_COLLISION_RE.test(trimmed.toLowerCase());
+      if (wouldBeSwallowedEarly && isIdentityQuestion(trimmed)) {
+        var preAnswer = handleIdentity(trimmed);
         if (preAnswer) return preAnswer;
       }
 
@@ -39294,6 +39407,432 @@ window.safeAppend = function safeAppend(parent, child) {
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.116 — ATULOS KNOWLEDGE PIPELINE INTEGRATION
 ════════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.117 — ATULOS COGNITIVE NARRATION ENGINE
+
+     Purely a presentation layer. Consumes AtulKnowledge (4.115) and
+     produces natural-language explanations instead of registry
+     dumps. It owns no state, stores no facts, and duplicates no
+     knowledge or relationship data — every sentence below is
+     assembled at call-time from window.AtulKnowledge's public API
+     (listModules / getModule / getSnapshot / listCapabilities /
+     getRelationships). If AtulKnowledge has nothing to say, these
+     functions return null so callers can fall back gracefully.
+
+     Public API: window.AtulNarration.{
+       describeSelf, describeArchitecture, describeCapability,
+       describeModules, describeApplications, describeWorkspace,
+       describeState, describeActivity, describeModule,
+       describeOpenWindows, pickDepth
+     }
+
+     COMPATIBILITY HOOK (documented per 4.117's own instructions):
+     Module 4.116's presentation handlers (handleCapabilities,
+     handleModules, handleApplications, handleWorkspace,
+     handleArchitecture, and the 'snapshot' case in
+     formatQueryResult) are updated to prefer this engine's output
+     when window.AtulNarration is present, and fall back to their
+     original, unmodified formatting verbatim otherwise. No parsing,
+     routing, fallback-detection, or wrapper-install logic in 4.116
+     is touched — only what those five handlers hand back as text.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  if (window.AtulNarration) return;
+
+  /* ───────────────────────────────────────────────────────────
+     LOCAL HELPERS — deliberately self-contained (4.116's helpers
+     of the same name live inside its own closure and aren't
+     reachable from here). These duplicate no *data*, only small
+     presentational utility functions, consistent with "do not
+     duplicate knowledge / relationships" — the registry and the
+     relationship graph themselves are read fresh from
+     AtulKnowledge on every call, never cached here.
+  ─────────────────────────────────────────────────────────── */
+  function listAllModulesLocal() {
+    if (!window.AtulKnowledge) return [];
+    var ids = window.AtulKnowledge.listModules();
+    return (ids || []).map(function (id) { return window.AtulKnowledge.getModule(id); }).filter(Boolean);
+  }
+
+  function stateLabelLocal(state) {
+    if (state === null || state === undefined) return 'unknown';
+    if (typeof state === 'object') return 'active';
+    return String(state);
+  }
+
+  function joinNatural(arr) {
+    arr = (arr || []).filter(Boolean);
+    if (!arr.length) return '';
+    if (arr.length === 1) return arr[0];
+    if (arr.length === 2) return arr[0] + ' and ' + arr[1];
+    return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
+  }
+
+  // Heuristic only: most registry descriptions in AtulOS are already
+  // written as third-person-singular verb phrases ("Observes...",
+  // "Moves...", "Controls..."); a few are noun phrases ("Command-line
+  // interface for..."). This picks a grammatically sane connector for
+  // either shape without ever rewriting or storing the description text.
+  var VERB_START_WORDS = ['controls', 'displays', 'observes', 'moves', 'decides', 'develops',
+    'projects', 'defines', 'coordinates', 'handles', 'manages', 'provides', 'enables', 'allows',
+    'offers', 'supports', 'tracks', 'monitors', 'analyzes', 'executes', 'processes', 'reads',
+    'writes', 'generates', 'renders', 'computes', 'detects', 'delivers', 'maintains',
+    'synchronizes', 'softly', 'continuously'];
+
+  function narrateModuleLine(m) {
+    if (!m) return '';
+    var desc = (m.description || '').trim();
+    if (!desc) return m.name + '.';
+    var firstWord = (desc.split(/\s+/)[0] || '').toLowerCase().replace(/[^a-z]/g, '');
+    var isVerbPhrase = VERB_START_WORDS.indexOf(firstWord) !== -1;
+    var body = desc.charAt(0).toLowerCase() + desc.slice(1);
+    if (!/[.!?]$/.test(body)) body += '.';
+    return isVerbPhrase ? (m.name + ' ' + body) : (m.name + ' functions as ' + body);
+  }
+
+  var REL_VERB_MAP = {
+    dependsOn: 'depends on', uses: 'uses', contains: 'contains',
+    interactsWith: 'interacts with', influences: 'influences', usesZonesFrom: 'draws zones from'
+  };
+
+  function describeRelationshipsList(mods, focusId, limit) {
+    if (!window.AtulKnowledge || typeof window.AtulKnowledge.getRelationships !== 'function') return '';
+    var rels;
+    try { rels = focusId ? window.AtulKnowledge.getRelationships(focusId) : window.AtulKnowledge.getRelationships(); }
+    catch (e) { return ''; }
+    if (!rels || !rels.length) return '';
+    var byId = {};
+    mods.forEach(function (m) { byId[m.id] = m; });
+    var lines = rels.slice(0, limit || 6).map(function (r) {
+      var s = byId[r.subject] ? byId[r.subject].name : r.subject;
+      var o = byId[r.object] ? byId[r.object].name : r.object;
+      var verb = REL_VERB_MAP[r.relation] || r.relation;
+      return s + ' ' + verb + ' ' + o + '.';
+    });
+    return lines.join(' ');
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     DEPTH SELECTION — "Automatically choose the most appropriate
+     depth based on the question." Accepts either a raw question
+     string or an explicit numeric depth (1–4) so callers that
+     already know the depth they want can skip inference.
+  ─────────────────────────────────────────────────────────── */
+  function pickDepth(text) {
+    var t = (text || '').toLowerCase();
+    if (/\b(briefly|quick|short|tl;?dr|in short|one line|one sentence)\b/.test(t)) return 1;
+    if (/\b(developer|dev mode|registry|dependencies|internals?|debug)\b/.test(t)) return 4;
+    if (/\b(technical|in detail|detailed|internal architecture)\b/.test(t)) return 3;
+    if (/\bcooperat\w*|\bwork together\b|\binteract\w*|\brelationship\w*/.test(t)) return 3;
+    if (/\barchitecture\b/.test(t)) return 3;
+    return 2;
+  }
+
+  function resolveDepth(depthOrText) {
+    if (typeof depthOrText === 'number') return depthOrText;
+    return pickDepth(depthOrText);
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PUBLIC NARRATION FUNCTIONS
+  ─────────────────────────────────────────────────────────── */
+  function describeArchitecture(depthOrText) {
+    var depth = resolveDepth(depthOrText);
+    var mods = listAllModulesLocal();
+    if (!mods.length) return null;
+
+    var byCategory = {};
+    mods.forEach(function (m) { (byCategory[m.category] = byCategory[m.category] || []).push(m); });
+
+    if (depth <= 1) {
+      var counts = Object.keys(byCategory).map(function (cat) {
+        var n = byCategory[cat].length;
+        return n + ' ' + cat + (n === 1 ? '' : 's');
+      });
+      return 'AtulOS is made up of ' + joinNatural(counts) + ', working together as one system.';
+    }
+
+    var CATEGORY_INTROS = {
+      application: 'AtulOS is built around several core applications.',
+      service: 'Underneath, background services keep things running.',
+      'ai-module': 'A set of cognitive engines shape how the system thinks and behaves.'
+    };
+    var order = ['application', 'service', 'ai-module'];
+    var allCats = order.concat(Object.keys(byCategory).filter(function (c) { return order.indexOf(c) === -1; }));
+
+    var paragraphs = [];
+    allCats.forEach(function (cat) {
+      if (!byCategory[cat] || !byCategory[cat].length) return;
+      var intro = CATEGORY_INTROS[cat] || ('AtulOS also includes ' + cat + ' systems.');
+      paragraphs.push(intro + ' ' + byCategory[cat].map(narrateModuleLine).join(' '));
+    });
+
+    if (depth >= 3) {
+      var relText = describeRelationshipsList(mods);
+      if (relText) paragraphs.push('Some of these systems lean on each other directly: ' + relText);
+    }
+    if (depth >= 4) {
+      var devLines = mods.map(function (m) {
+        var deps = (m.dependencies && m.dependencies.length) ? (' Depends on ' + joinNatural(m.dependencies) + '.') : '';
+        return m.name + ' — v' + (m.version || 'n/a') + ', category: ' + m.category + ', state: ' + stateLabelLocal(m.state) + '.' + deps;
+      });
+      paragraphs.push('At the registry level: ' + devLines.join(' '));
+    }
+
+    paragraphs.push('Together these systems form the operating intelligence of AtulOS.');
+    return paragraphs.join('\n\n');
+  }
+
+  function describeSelf(depthOrText) {
+    var depth = resolveDepth(depthOrText);
+    var mods = listAllModulesLocal();
+    if (!mods.length) return null;
+    var engines = mods.filter(function (m) { return m.category === 'ai-module'; });
+
+    // IDENTITY PHILOSOPHY: this is the one fixed anchor statement in the
+    // whole narration engine — everything else here is assembled from
+    // live AtulKnowledge data, but the *identity claim itself* ("I'm part
+    // of the OS, not a separate chatbot") is a design-philosophy
+    // statement, not a data-derived fact, so it's deliberately written
+    // once and reused as the opening of every depth and every identity
+    // angle (plain identity, purpose, difference, philosophy) rather than
+    // being re-derived per call. It contains no capability claims that
+    // aren't already backed by the live engine/module list that follows.
+    var intro = "I'm AtulAI—the cognitive operating intelligence of AtulOS. Rather than existing as a separate chatbot, " +
+      "I exist as part of the operating system itself. My purpose is to understand the state of AtulOS, coordinate its " +
+      "registered systems, and help you interact with them naturally.";
+
+    if (depth <= 1) return intro;
+
+    var body = [intro];
+    if (engines.length) {
+      body.push('That intelligence comes from several cooperating engines, not one single program: ' + engines.map(narrateModuleLine).join(' '));
+    }
+
+    if (depth >= 3) {
+      var relText = describeRelationshipsList(mods);
+      if (relText) body.push('These systems lean on each other directly: ' + relText);
+    }
+    if (depth >= 4) {
+      var devLines = engines.map(function (m) { return m.name + ' — v' + (m.version || 'n/a') + ', state: ' + stateLabelLocal(m.state) + '.'; });
+      if (devLines.length) body.push('At the registry level: ' + devLines.join(' '));
+    }
+
+    body.push('I currently understand the operating state of AtulOS and the capabilities of registered modules. Autonomous action execution and long-term planning are still under development.');
+    return body.join('\n\n');
+  }
+
+  function describeCapability(depthOrText) {
+    var depth = resolveDepth(depthOrText);
+    if (!window.AtulKnowledge) return null;
+    var caps = window.AtulKnowledge.listCapabilities();
+    var mods = listAllModulesLocal();
+    var byId = {};
+    mods.forEach(function (m) { byId[m.id] = m; });
+
+    var withCaps = Object.keys(caps || {}).filter(function (id) { return caps[id] && caps[id].length; });
+    if (!withCaps.length) return null;
+    var names = withCaps.map(function (id) { return byId[id] ? byId[id].name : id; });
+
+    var body = 'I can help with ' + joinNatural(names) + '.';
+    if (depth <= 1) return body;
+
+    var pieces = ['I currently coordinate multiple systems across AtulOS.', body,
+      'As new modules become available, my capabilities expand automatically.'];
+
+    if (depth >= 3) {
+      var details = withCaps.map(function (id) {
+        var name = byId[id] ? byId[id].name : id;
+        return name + ': ' + caps[id].join(', ') + '.';
+      });
+      pieces.splice(2, 0, 'In more detail — ' + details.join(' '));
+    }
+    return pieces.join(' ');
+  }
+
+  function describeModules(depthOrText) {
+    var depth = resolveDepth(depthOrText);
+    var mods = listAllModulesLocal();
+    if (!mods.length) return null;
+
+    if (depth <= 1) {
+      var activeCount = mods.filter(function (m) {
+        var s = stateLabelLocal(m.state);
+        return s === 'active' || s === 'open' || s === 'connected' || s === 'running';
+      }).length;
+      return activeCount + ' of ' + mods.length + ' registered systems are currently active.';
+    }
+
+    var byCategory = {};
+    mods.forEach(function (m) { (byCategory[m.category] = byCategory[m.category] || []).push(m); });
+    var sentences = Object.keys(byCategory).map(function (cat) {
+      var names = byCategory[cat].map(function (m) { return m.name + ' (' + stateLabelLocal(m.state) + ')'; });
+      return 'Among the ' + cat + ' layer, ' + joinNatural(names) + '.';
+    });
+    return sentences.join(' ');
+  }
+
+  function describeApplications(depthOrText) {
+    var mods = listAllModulesLocal().filter(function (m) { return m.category === 'application'; });
+    if (!mods.length) return null;
+    return 'AtulOS is built around several core applications. ' + mods.map(narrateModuleLine).join(' ');
+  }
+
+  function describeWorkspace() {
+    if (!window.AtulKnowledge) return null;
+    var snap = window.AtulKnowledge.getSnapshot();
+    if (!snap) return null;
+    var ws = snap.workspaceState || 'default';
+    var focus = snap.focusedModule;
+    var base = "You're currently in the " + ws + ' workspace.';
+    var tail = focus
+      ? (' My attention is on ' + focus + ' right now.')
+      : " Nothing is currently requesting focused attention, so I'm remaining in a neutral observational state.";
+    return base + tail;
+  }
+
+  function describeState() {
+    if (!window.AtulKnowledge) return null;
+    var snap = window.AtulKnowledge.getSnapshot();
+    if (!snap) return null;
+    var presence = snap.presenceState || 'unknown';
+    var intent = snap.currentIntent;
+    var phase = snap.intentPhase;
+    var lines = ['My presence is currently ' + presence + '.'];
+    if (intent && intent !== 'unknown' && intent !== 'idle') {
+      lines.push("I'm currently focused on " + intent + (phase && phase !== 'unknown' ? (', in the ' + phase + ' phase') : '') + '.');
+    } else {
+      lines.push("I'm observing the workspace while waiting for interaction.");
+    }
+    return lines.join(' ');
+  }
+
+  function describeActivity() {
+    if (!window.AtulKnowledge) return null;
+    var snap = window.AtulKnowledge.getSnapshot();
+    if (!snap) return null;
+    var openList = snap.openWindows || [];
+    var openText = openList.length ? ('You currently have ' + joinNatural(openList) + ' open.') : 'Nothing is open right now.';
+    var stateText = describeState();
+    var healthText = 'Overall system health is ' + (snap.systemHealth || 'unknown') + '.';
+    return [openText, stateText, healthText].filter(Boolean).join(' ');
+  }
+
+  function describeOpenWindows() {
+    if (!window.AtulKnowledge) return null;
+    var snap = window.AtulKnowledge.getSnapshot();
+    var wins = (snap && snap.openWindows) || [];
+    return wins.length ? ('You currently have ' + joinNatural(wins) + ' open.') : 'Nothing is open right now.';
+  }
+
+  function describeModule(id) {
+    if (!window.AtulKnowledge) return null;
+    var m = window.AtulKnowledge.getModule(id);
+    if (!m) return null;
+    var line = narrateModuleLine(m);
+    var caps = (m.capabilities && m.capabilities.length)
+      ? (' It can ' + joinNatural(m.capabilities.map(function (c) { return c.toLowerCase(); })) + '.')
+      : '';
+    var relText = describeRelationshipsList(listAllModulesLocal(), id, 4);
+    return line + caps + (relText ? (' ' + relText) : '');
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     IDENTITY NARRATION (4.117.1) — "Who are you?", "What is your
+     purpose?", "How are you different from a chatbot?", "What
+     philosophy guides you?" all reuse the same live self-narrative
+     as describeSelf(), with one extra framing sentence chosen by
+     the question's angle. The framing sentences are templates —
+     exactly like this module's own EXAMPLE section — but every
+     name, count, and capability inside them is read fresh from
+     AtulKnowledge on each call, and the limitations sentence in
+     describeSelf() is always preserved so no unsupported ability
+     is ever implied.
+  ─────────────────────────────────────────────────────────── */
+  var IDENTITY_PURPOSE_WORDS = ['purpose', 'exist', 'existence', 'role', 'mission', 'responsibility', 'responsible'];
+  var IDENTITY_DIFFERENCE_WORDS = ['chatbot', 'chatgpt', 'assistant'];
+  var IDENTITY_DIFFERENCE_QUALIFIERS = ['different', 'difference', 'just', 'compare', 'unlike'];
+  var IDENTITY_PHILOSOPHY_WORDS = ['philosophy', 'designed', 'design', 'guide', 'guides', 'guided'];
+
+  function tokenizeSimple(s) {
+    return (s || '').toLowerCase().match(/[a-z0-9']+/g) || [];
+  }
+
+  function classifyIdentityAngle(text) {
+    var t = (text || '').toLowerCase();
+    var tokens = tokenizeSimple(t);
+    var hasSelfRef = tokens.indexOf('you') !== -1 || tokens.indexOf('your') !== -1 || tokens.indexOf('yourself') !== -1;
+
+    var hasDifferenceQualifier = IDENTITY_DIFFERENCE_QUALIFIERS.some(function (w) { return t.indexOf(w) !== -1; });
+    var hasDifferenceWord = IDENTITY_DIFFERENCE_WORDS.some(function (w) { return tokens.indexOf(w) !== -1; });
+    if (hasDifferenceQualifier && (hasDifferenceWord || hasSelfRef)) return 'difference';
+
+    if (hasSelfRef && IDENTITY_PURPOSE_WORDS.some(function (w) { return tokens.indexOf(w) !== -1; })) return 'purpose';
+    if (hasSelfRef && IDENTITY_PHILOSOPHY_WORDS.some(function (w) { return tokens.indexOf(w) !== -1; })) return 'philosophy';
+    if (/\bkind of ai\b/.test(t)) return 'philosophy';
+
+    return 'identity';
+  }
+
+  function describeIdentity(rawInput) {
+    var mods = listAllModulesLocal();
+    if (!mods.length) return null;
+    var engines = mods.filter(function (m) { return m.category === 'ai-module'; });
+    var apps = mods.filter(function (m) { return m.category === 'application'; });
+
+    var selfCore = describeSelf(rawInput);
+    if (!selfCore) return null;
+
+    var angle = classifyIdentityAngle(rawInput);
+
+    if (angle === 'purpose') {
+      var purposeLine = 'My purpose is to observe, coordinate, and assist across AtulOS' +
+        (apps.length ? (' — right now that means helping with ' + joinNatural(apps.map(function (m) { return m.name; })) + '.') : '.') +
+        (engines.length ? (' ' + joinNatural(engines.map(function (m) { return m.name; })) + ' keep me aware of what is happening around you as I do that.') : '');
+      return purposeLine + '\n\n' + selfCore;
+    }
+
+    if (angle === 'difference') {
+      var diffLine = "Unlike a general-purpose chatbot, I'm built directly into AtulOS: my capabilities come from the modules actually registered here" +
+        (apps.length || engines.length ? (' — ' + joinNatural(apps.concat(engines).map(function (m) { return m.name; })) + ' — ') : ' ') +
+        'rather than a fixed general knowledge base, and I can only act on systems that exist in this OS.';
+      return diffLine + '\n\n' + selfCore;
+    }
+
+    if (angle === 'philosophy') {
+      var philLine = engines.length
+        ? ("I'm designed around cooperating engines rather than one monolithic model — " + joinNatural(engines.map(function (m) { return m.name; })) +
+           ' each handle a specific part of how I perceive and respond, mirroring how AtulOS itself is organized as small, specialized systems working together.')
+        : "I'm designed around small, specialized systems working together rather than one monolithic model.";
+      return philLine + '\n\n' + selfCore;
+    }
+
+    return selfCore;
+  }
+
+  window.AtulNarration = {
+    describeSelf: describeSelf,
+    describeArchitecture: describeArchitecture,
+    describeCapability: describeCapability,
+    describeModules: describeModules,
+    describeApplications: describeApplications,
+    describeWorkspace: describeWorkspace,
+    describeState: describeState,
+    describeActivity: describeActivity,
+    describeModule: describeModule,
+    describeOpenWindows: describeOpenWindows,
+    describeIdentity: describeIdentity,
+    pickDepth: pickDepth
+  };
+
+  console.log('[AtulOS 4.117] Cognitive Narration Engine online. API: window.AtulNarration');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.117 — ATULOS COGNITIVE NARRATION ENGINE
+════════════════════════════════════════════════════════════════ -->
+
 
 
 </body>
