@@ -36849,15 +36849,28 @@ window.safeAppend = function safeAppend(parent, child) {
   ─────────────────────────────────────────────────────────── */
   var PRIORITY = { emergency: 4, high: 3, medium: 2, low: 1, background: 0 };
 
+  // [4.112/4.114 hook] sourceKey -> {type: bias}; aggregated at score time.
+  // 'default' preserves the exact prior single-source behaviour for any
+  // caller that omits a source key.
+  var priorityBiasSources = {};
+  function aggregatedBias(type) {
+    var sum = 0;
+    for (var k in priorityBiasSources) sum += priorityBiasSources[k][type] || 0;
+    return sum;
+  }
+  function scoreOf(c) {
+    return (PRIORITY[c.priority] || 0) + aggregatedBias(c.type);
+  }
+
   function pickBest(candidates, current) {
     if (!candidates.length) return null;
     var best = null;
     for (var i = 0; i < candidates.length; i++) {
       var c = candidates[i];
-      var val = PRIORITY[c.priority] || 0;
-      if (!best || val > PRIORITY[best.priority]) {
+      var val = scoreOf(c);
+      if (!best || val > scoreOf(best)) {
         best = c;
-      } else if (val === PRIORITY[best.priority] && current && c.type === current.type) {
+      } else if (val === scoreOf(best) && current && c.type === current.type) {
         best = c; // prefer staying the course on exact ties — avoids flapping
       }
     }
@@ -36872,17 +36885,32 @@ window.safeAppend = function safeAppend(parent, child) {
     lastAt: 0,
     cooldownMs: 180000,     // at least 3 minutes between curiosity events
     idleThresholdMs: 150000, // only after ~2.5 minutes of genuine calm
+    cooldownScale: 1,        // [4.112 hook] multiplies both timings above; default 1 = unchanged
+    weightFn: null,          // [4.112 hook] optional (windowEl) => weight, for comfort-weighted picks
 
     _pickOpenWindow: function () {
       var wins = Array.prototype.slice.call(document.querySelectorAll('.app-window'))
         .filter(function (w) { return w.style.display !== 'none'; });
       if (!wins.length) return null;
-      return wins[Math.floor(Math.random() * wins.length)];
+      if (typeof this.weightFn !== 'function') {
+        return wins[Math.floor(Math.random() * wins.length)];
+      }
+      // Weighted random pick — falls back to uniform behaviour if weights are equal.
+      var self = this;
+      var weights = wins.map(function (w) { return Math.max(0.0001, self.weightFn(w)); });
+      var total = weights.reduce(function (a, b) { return a + b; }, 0);
+      var r = Math.random() * total;
+      for (var i = 0; i < wins.length; i++) {
+        r -= weights[i];
+        if (r <= 0) return wins[i];
+      }
+      return wins[wins.length - 1];
     },
 
     consider: function (idleFor) {
-      if (idleFor < this.idleThresholdMs) return null;
-      if (Date.now() - this.lastAt < this.cooldownMs) return null;
+      var scale = this.cooldownScale > 0 ? this.cooldownScale : 1;
+      if (idleFor < this.idleThresholdMs * scale) return null;
+      if (Date.now() - this.lastAt < this.cooldownMs * scale) return null;
       var win = this._pickOpenWindow();
       if (!win) return null;
       var r = win.getBoundingClientRect();
@@ -37030,7 +37058,7 @@ window.safeAppend = function safeAppend(parent, child) {
 
     if (cur.phase === 'moving') {
       var best = pickBest(candidates, cur);
-      if (best && best.type !== cur.type && PRIORITY[best.priority] > PRIORITY[cur.priority]) {
+      if (best && best.type !== cur.type && scoreOf(best) > scoreOf(cur)) {
         beginDecision(best, true); // Transition Resolver: hesitate, then redirect
         return;
       }
@@ -37062,7 +37090,7 @@ window.safeAppend = function safeAppend(parent, child) {
 
     if (cur.phase === 'holding') {
       var best2 = pickBest(candidates, cur);
-      if (best2 && best2.type !== cur.type && PRIORITY[best2.priority] > PRIORITY[cur.priority]) {
+      if (best2 && best2.type !== cur.type && scoreOf(best2) > scoreOf(cur)) {
         beginDecision(best2, false);
       }
       return;
@@ -37076,6 +37104,16 @@ window.safeAppend = function safeAppend(parent, child) {
     getCurrent: function () { return Intent.current ? Intent.current.type : 'RemainStill'; },
     getPhase: function () { return Intent.current ? Intent.current.phase : 'holding'; },
     futureIntents: FUTURE_INTENTS,
+    // [4.112 hooks] long-timescale influence only — never called by this
+    // module itself, never affects moment-to-moment behaviour on its own.
+    setPriorityBias: function (map, sourceKey) {
+      var key = sourceKey || 'default';
+      if (!map) delete priorityBiasSources[key];
+      else priorityBiasSources[key] = map;
+    },
+    getPriorityBias: function () { return priorityBiasSources; },
+    setCuriosityWeightFn: function (fn) { Curiosity.weightFn = (typeof fn === 'function') ? fn : null; },
+    setCuriosityCooldownScale: function (scale) { Curiosity.cooldownScale = (typeof scale === 'number' && scale > 0) ? scale : 1; },
     hooks: {
       onVoiceConversation:      function () {},
       onMissionSupport:         function () {},
@@ -37216,6 +37254,18 @@ window.safeAppend = function safeAppend(parent, child) {
     state: 'idle',
     trail: [],             // small fixed-size position history for aftereffects
     trailMax: 10,
+    behaviouralBias: { richness: 0, warmth: 0 }, // aggregate of all sources below, recomputed each frame
+    biasSources: {}, // [4.113 hook] sourceKey -> {richness, warmth}; 'default' preserves prior single-source behaviour
+
+    recomputeBias: function () {
+      var r = 0, w = 0;
+      for (var k in this.biasSources) {
+        r += this.biasSources[k].richness || 0;
+        w += this.biasSources[k].warmth || 0;
+      }
+      this.behaviouralBias.richness = r;
+      this.behaviouralBias.warmth = w;
+    },
 
     resolveState: function () {
       var spState = window.AtulSpatial && window.AtulSpatial.getState ? window.AtulSpatial.getState() : 'resting';
@@ -37421,10 +37471,12 @@ window.safeAppend = function safeAppend(parent, child) {
 
       if (ok) {
         var profile = STATE_PROFILES[Env.state] || STATE_PROFILES.idle;
+        var richness = Math.max(0, Math.min(1.6, profile.richness + Env.behaviouralBias.richness));
+        var warmth = Math.max(0, Math.min(0.6, profile.warmth + Env.behaviouralBias.warmth));
         var breathe = Breathing.value(profile.breatheAmp);
-        InfluenceField.draw(this.ctx, Env.pos, profile.richness, profile.warmth, breathe);
+        InfluenceField.draw(this.ctx, Env.pos, richness, warmth, breathe);
         Aftereffects.draw(this.ctx, Env.trail, Env.velocity);
-        GlassCoupling.update(profile.richness);
+        GlassCoupling.update(richness);
       }
 
       this.rafId = requestAnimationFrame(this.frame.bind(this));
@@ -37448,7 +37500,21 @@ window.safeAppend = function safeAppend(parent, child) {
     getState: function () { return Env.state; },
     getVelocity: function () { return Env.velocity; },
     particleCoupling: ParticleCoupling.hooks,
-    hooks: futureHooks
+    hooks: futureHooks,
+    // [4.112 hook] the ONLY sanctioned way another module influences this
+    // engine's output — small numeric nudges, bounded and blended, never a
+    // direct override of what this engine itself decides to draw.
+    setBehaviouralBias: function (bias, sourceKey) {
+      var key = sourceKey || 'default';
+      if (!bias) { delete Env.biasSources[key]; }
+      else {
+        Env.biasSources[key] = {
+          richness: (typeof bias.richness === 'number') ? bias.richness : 0,
+          warmth: (typeof bias.warmth === 'number') ? bias.warmth : 0
+        };
+      }
+      Env.recomputeBias();
+    }
   };
 
   /* ───────────────────────────────────────────────────────────
@@ -37489,6 +37555,1746 @@ window.safeAppend = function safeAppend(parent, child) {
 <!-- ══════════════════════════════════════════════════════════════
      END MODULE 4.111 — ATULAI ENVIRONMENTAL COUPLING ENGINE
 ════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.112 — ATULAI BEHAVIORAL ECOLOGY ENGINE
+     Purely additive. Never animates anything itself — it only calls
+     the small public setters exposed by 4.110 (setPriorityBias,
+     setCuriosityWeightFn, setCuriosityCooldownScale) and 4.111
+     (setBehaviouralBias), all of which default to a full no-op.
+     Everything else it reads (AtulContext.data, AtulIntent.getCurrent/
+     getPhase, AtulSpatial.getState, AtulEnvironment.getState/
+     getVelocity) was already public. Habit memory is a plain in-memory
+     object — it is never written to disk/storage and resets on reload.
+════════════════════════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI BEHAVIORAL ECOLOGY ENGINE  (Module 4.112)
+   Sections: Habit Manager / Comfort Model / Time Rhythm /
+             Activity Rhythm / Adaptive Curiosity / Habit Memory /
+             Environment Relationship / Future Behaviour Hooks
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._behavioralEcologyEnginePatched) return;
+  window._behavioralEcologyEnginePatched = true;
+
+  /* ───────────────────────────────────────────────────────────
+     HABIT MEMORY — session-only, plain JS object. No persistence
+     of any kind; naturally forgotten on reload.
+  ─────────────────────────────────────────────────────────── */
+  var Memory = {
+    sessionStart: Date.now(),
+    locationVisits: {},        // locationKey -> count, this session only
+    recentDestinations: [],    // last few location keys
+    recentModules: [],         // last few AtulContext.focusedWindowId values
+    lastLocationKey: 'home',
+    ignoreStreak: 0,
+    engagementBoost: 0,        // 0..1, rises when observations get a reaction
+    lastRareAt: 0,
+    rareBoostUntil: 0
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     TIME RHYTHM — coarse time-of-day behavioural tendency.
+     Tendencies only; no greetings, no speech, nothing user-facing.
+  ─────────────────────────────────────────────────────────── */
+  var TIME_PROFILES = {
+    morning:   { cooldownMul: 0.80, envRichness:  0.05 },
+    afternoon: { cooldownMul: 1.00, envRichness:  0.00 },
+    evening:   { cooldownMul: 1.25, envRichness: -0.04 },
+    night:     { cooldownMul: 1.80, envRichness: -0.10 }
+  };
+
+  function timeBucket() {
+    var h = new Date().getHours();
+    if (h >= 5 && h < 12) return 'morning';
+    if (h >= 12 && h < 17) return 'afternoon';
+    if (h >= 17 && h < 21) return 'evening';
+    return 'night';
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     ACTIVITY RHYTHM (SESSION FATIGUE) — the longer a continuous,
+     engaged session runs, the calmer AtulAI's tendencies become.
+     This is a distinct, longer-timescale concern from 4.108's
+     moment-to-moment Activity Analyzer — it doesn't re-derive that
+     classification, just watches session duration.
+  ─────────────────────────────────────────────────────────── */
+  function fatigueFactor() {
+    var mins = (Date.now() - Memory.sessionStart) / 60000;
+    return Math.max(0, Math.min(1, (mins - 20) / 70)); // 0 until ~20min, ramps to 1 by ~90min
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     FAVORITE LOCATIONS / COMFORT MODEL
+  ─────────────────────────────────────────────────────────── */
+  function locationKey(d) {
+    if (d.deepspaceActive) return 'deepspace';
+    if (d.terminalActive) return 'terminal';
+    if (d.friendsActive) return 'friends';
+    if (d.focusedWindowId === 'dashboard-window') return 'dashboard';
+    return 'home';
+  }
+
+  function comfortWeight(key) {
+    var visits = Memory.locationVisits[key] || 0;
+    return visits / (visits + 3); // saturates toward ~1, gently, never forces anything
+  }
+
+  function recordVisit(key, focusedWindowId) {
+    if (key === Memory.lastLocationKey) return;
+    Memory.locationVisits[key] = (Memory.locationVisits[key] || 0) + 1;
+    Memory.recentDestinations.push(key);
+    if (Memory.recentDestinations.length > 5) Memory.recentDestinations.shift();
+    if (focusedWindowId) {
+      Memory.recentModules.push(focusedWindowId);
+      if (Memory.recentModules.length > 5) Memory.recentModules.shift();
+    }
+    Memory.lastLocationKey = key;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     ADAPTIVE CURIOSITY — did the user react after an observation?
+     Watches AtulIntent's existing phase transitions (no duplicate
+     timers) and compares against AtulContext's existing activity
+     timestamp. No new detection logic beyond simple edge-checking.
+  ─────────────────────────────────────────────────────────── */
+  var prevPhase = 'holding';
+  var pendingObservationAt = 0;
+  var awaitingReaction = false;
+
+  function trackEngagement(ctxData) {
+    var intent = window.AtulIntent;
+    var phase = intent && intent.getPhase ? intent.getPhase() : 'holding';
+
+    if (phase === 'observing' && prevPhase !== 'observing') {
+      pendingObservationAt = Date.now();
+      awaitingReaction = true;
+    }
+    if (awaitingReaction && phase !== 'observing') {
+      var reacted = ctxData.lastActivity > pendingObservationAt;
+      if (reacted) {
+        Memory.ignoreStreak = 0;
+        Memory.engagementBoost = Math.min(1, Memory.engagementBoost + 0.15);
+      } else {
+        Memory.ignoreStreak = Math.min(6, Memory.ignoreStreak + 1);
+        Memory.engagementBoost = Math.max(0, Memory.engagementBoost - 0.10);
+      }
+      awaitingReaction = false;
+    }
+    prevPhase = phase;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     RARE BEHAVIOURS — very infrequent, and only ever realized by
+     briefly making the *existing* curiosity mechanism (4.110) far
+     more likely to fire right now, rather than inventing any new
+     animation of its own (this engine never animates).
+  ─────────────────────────────────────────────────────────── */
+  function updateRareWindow(idleFor, now) {
+    if (now < Memory.rareBoostUntil) return true;
+    var longIdle = idleFor > 300000; // 5+ minutes
+    var dueForRareEvent = (now - Memory.lastRareAt) > (25 + Math.random() * 20) * 60000; // every 25-45 min
+    if (longIdle && dueForRareEvent) {
+      Memory.lastRareAt = now;
+      Memory.rareBoostUntil = now + 90000; // give the natural mechanism ~90s to actually trigger
+      return true;
+    }
+    return false;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE BEHAVIOUR HOOKS — architecture only, dormant.
+  ─────────────────────────────────────────────────────────── */
+  var futureHooks = {
+    dailyRhythm:            { enabled: false, register: function () {} },
+    seasonalBehaviour:       { enabled: false, register: function () {} },
+    userPreferenceLearning:  { enabled: false, register: function () {} },
+    persistentHabits:        { enabled: false, register: function () {} },
+    collaborativePresence:   { enabled: false, register: function () {} },
+    multiAgentBehaviour:     { enabled: false, register: function () {} }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     HABIT MANAGER — the single throttled tick that composes every
+     signal above into the small set of biases it's allowed to set.
+  ─────────────────────────────────────────────────────────── */
+  var lastEvalT = 0;
+  var evalInterval = 2500; // habits evolve slowly; no need for a fast cadence
+
+  function tick(t) {
+    if (t - lastEvalT < evalInterval) return;
+    lastEvalT = t;
+
+    var ctx = window.AtulContext;
+    if (!ctx || !ctx.data) return;
+    var d = ctx.data;
+    var now = Date.now();
+    var idleFor = now - d.lastActivity;
+
+    var key = locationKey(d);
+    recordVisit(key, d.focusedWindowId);
+    trackEngagement(d);
+
+    var timeProfile = TIME_PROFILES[timeBucket()];
+    var fatigue = fatigueFactor();
+    var rareActive = updateRareWindow(idleFor, now);
+    var comfort = comfortWeight(key);
+
+    /* Environment Relationship — only through AtulEnvironment's own
+       public setter; never touches its internals. */
+    var intentPhase = window.AtulIntent && window.AtulIntent.getPhase ? window.AtulIntent.getPhase() : 'holding';
+    var envRichness = timeProfile.envRichness
+      - comfort * 0.06                       // comfort -> softer, calmer richness
+      + (intentPhase === 'observing' ? 0.15 : 0) // observation -> focused local richness
+      - fatigue * 0.08;                       // long session -> lower ambient activity
+    var envWarmth = comfort * 0.05 + (key !== 'home' ? 0.04 : 0) - fatigue * 0.03;
+    if (window.AtulEnvironment && window.AtulEnvironment.setBehaviouralBias) {
+      window.AtulEnvironment.setBehaviouralBias({ richness: envRichness, warmth: envWarmth });
+    }
+
+    /* Intent priority bias — long-timescale nudges only; small
+       fractional values so real-time context always still wins. */
+    var bias = {
+      IdleReflection: (rareActive ? 1.4 : 0) + Memory.engagementBoost * 0.3 - fatigue * 0.5 - Memory.ignoreStreak * 0.12,
+      InspectActivity: -fatigue * 0.3,
+      ObserveWindow: comfort * 0.25,
+      WatchActiveModule: comfort * 0.20
+    };
+    if (window.AtulIntent && window.AtulIntent.setPriorityBias) {
+      window.AtulIntent.setPriorityBias(bias);
+    }
+
+    /* Adaptive curiosity frequency + comfort-weighted destination. */
+    var cooldownScale = timeProfile.cooldownMul
+      * (1 + fatigue * 0.8)
+      * (rareActive ? 0.28 : 1)
+      * (1 + Memory.ignoreStreak * 0.15);
+    cooldownScale = Math.max(0.25, Math.min(4, cooldownScale));
+    if (window.AtulIntent && window.AtulIntent.setCuriosityCooldownScale) {
+      window.AtulIntent.setCuriosityCooldownScale(cooldownScale);
+    }
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PUBLIC API
+  ─────────────────────────────────────────────────────────── */
+  window.AtulHabits = {
+    getMemorySnapshot: function () {
+      return {
+        sessionMinutes: Math.round((Date.now() - Memory.sessionStart) / 60000),
+        locationVisits: Object.assign({}, Memory.locationVisits),
+        recentDestinations: Memory.recentDestinations.slice(),
+        recentModules: Memory.recentModules.slice(),
+        ignoreStreak: Memory.ignoreStreak,
+        engagementBoost: Memory.engagementBoost
+      };
+    },
+    hooks: futureHooks
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BOOT — reuses a single rAF loop, throttled; sets the comfort-
+     weighted curiosity picker once (it reads live Memory each call,
+     so it never needs re-setting). Pauses when the tab is hidden.
+  ─────────────────────────────────────────────────────────── */
+  var rafId = null;
+
+  function frame(t) {
+    if (!document.hidden) tick(t);
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function boot() {
+    if (!window.AtulIntent || !window.AtulContext) {
+      var tries = 0;
+      var retry = setInterval(function () {
+        tries++;
+        if ((window.AtulIntent && window.AtulContext) || tries > 20) {
+          clearInterval(retry);
+          if (window.AtulIntent && window.AtulContext) finishBoot();
+        }
+      }, 250);
+      return;
+    }
+    finishBoot();
+  }
+
+  function finishBoot() {
+    if (window.AtulIntent && window.AtulIntent.setCuriosityWeightFn) {
+      window.AtulIntent.setCuriosityWeightFn(function (windowEl) {
+        var id = windowEl && windowEl.dataset ? windowEl.dataset.windowId : null;
+        var weight = 1;
+        if (id && Memory.recentModules.indexOf(id) !== -1) weight += 1.2; // comfort: mildly favor familiar windows
+        return weight;
+      });
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    setTimeout(boot, 0);
+  }
+
+  console.log('[AtulOS 4.112] Behavioral Ecology Engine online. AtulAI now develops session-long habits via existing Intent/Environment APIs. API: window.AtulHabits');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.112 — ATULAI BEHAVIORAL ECOLOGY ENGINE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.113 — ATULAI HOLOGRAPHIC MANIFESTATION ENGINE
+     Purely additive. A completely new, self-contained interaction
+     layer — creates its own DOM elements, never touches or replaces
+     any existing window/UI. Reads window.AtulSpatial.getCurrentAbsolute()
+     /getState(), window.AtulIntent.getPhase(), and
+     window.LivingPresenceEngine.pulse() — all already public. Uses
+     window.AtulEnvironment.setBehaviouralBias(bias, 'manifestation')
+     — the one prior-module patch this needed (see 4.111 above) was
+     turning that single-slot setter into a small named-source map so
+     this module's coupling and 4.112's habit-driven coupling can both
+     contribute without clobbering each other. Nothing else changed.
+════════════════════════════════════════════════════════════════ -->
+<style>
+.atulai-projection {
+  position: fixed;
+  z-index: 8600; /* above the orb (8500) — a HUD layer, not a window */
+  width: 268px;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 480ms ease, transform 480ms cubic-bezier(.2,.8,.2,1);
+}
+.atulai-projection.is-visible { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+.atulai-projection.is-dismissing { opacity: 0; transform: translate(-50%, -50%) scale(0.4); pointer-events: none; }
+
+.atulai-projection-inner {
+  position: relative;
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+  background: linear-gradient(160deg, rgba(99,168,255,0.09), rgba(99,168,255,0.02));
+  border: 1px solid rgba(140,205,255,0.35);
+  box-shadow: 0 0 30px rgba(80,190,255,0.16), inset 0 0 22px rgba(80,190,255,0.05);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--fg, #dbe4ef);
+}
+.atulai-projection-scanlines {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.035) 0px, transparent 2px, transparent 4px);
+  animation: atulaiProjScan 9s linear infinite;
+  opacity: 0.6;
+}
+@keyframes atulaiProjScan { from { background-position-y: 0; } to { background-position-y: 240px; } }
+
+.atulai-projection-particles { position: absolute; inset: 0; pointer-events: none; }
+
+.atulai-projection-close {
+  position: absolute; top: 6px; right: 8px;
+  width: 18px; height: 18px; line-height: 16px; text-align: center;
+  border-radius: 50%;
+  border: 1px solid rgba(140,205,255,0.4);
+  background: rgba(10,20,30,0.3);
+  color: var(--accent, #63a8ff);
+  font-size: 12px; cursor: pointer;
+  opacity: 0; transition: opacity 240ms ease;
+}
+.atulai-projection-inner:hover .atulai-projection-close { opacity: 0.85; }
+.atulai-projection-close:hover { opacity: 1 !important; }
+
+.atulai-projection-header {
+  font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent, #63a8ff); opacity: 0.85;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 9px; padding-bottom: 7px;
+  border-bottom: 1px solid rgba(140,205,255,0.18);
+}
+.atulai-projection-clock { opacity: 0.6; font-variant-numeric: tabular-nums; }
+
+.atulai-projection-row { margin-bottom: 7px; }
+.atulai-projection-row:last-child { margin-bottom: 0; }
+.atulai-projection-row-top {
+  display: flex; justify-content: space-between; font-size: 10.5px;
+  letter-spacing: 0.04em; margin-bottom: 3px; opacity: 0.9;
+}
+.atulai-projection-row-label { opacity: 0.65; }
+.atulai-projection-row-value { color: var(--accent, #63a8ff); font-variant-numeric: tabular-nums; }
+.atulai-projection-bar {
+  height: 3px; border-radius: 2px; background: rgba(140,205,255,0.12); overflow: hidden;
+}
+.atulai-projection-bar-fill {
+  height: 100%; background: linear-gradient(90deg, rgba(99,168,255,0.5), rgba(99,168,255,0.95));
+  border-radius: 2px; transition: width 700ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atulai-projection-scanlines { animation: none; }
+}
+</style>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI HOLOGRAPHIC MANIFESTATION ENGINE  (Module 4.113)
+   Sections: Manifestation Manager / Projection Factory /
+             Animation Controller / Projection Physics /
+             Projection Renderer / Spatial Attachment /
+             Projection Queue / Future Projection Registry
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._manifestationEnginePatched) return;
+  window._manifestationEnginePatched = true;
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ───────────────────────────────────────────────────────────
+     PROJECTION QUEUE + MANIFESTATION MANAGER — tracks every open
+     projection, its DOM, its lifecycle phase, and stacking order.
+  ─────────────────────────────────────────────────────────── */
+  var Manifest = {
+    active: {},   // id -> record
+    stack: [],    // ordering for z-index / focus-on-hover
+    nextId: 1,
+    registry: {}, // type -> factory  (Future Projection Registry)
+    rafId: null
+  };
+
+  function restackZIndex() {
+    for (var i = 0; i < Manifest.stack.length; i++) {
+      var r = Manifest.active[Manifest.stack[i]];
+      if (r) r.el.style.zIndex = 8600 + i;
+    }
+  }
+
+  function bringToFront(id) {
+    var idx = Manifest.stack.indexOf(id);
+    if (idx === -1 || idx === Manifest.stack.length - 1) return;
+    Manifest.stack.splice(idx, 1);
+    Manifest.stack.push(id);
+    restackZIndex();
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PROJECTION FACTORY — "System Status", the one implemented
+     projection type. Real data where AtulAI itself is the source
+     (orb state, intent phase, clock); illustrative placeholders
+     elsewhere, clearly a framework validation, not a dashboard.
+  ─────────────────────────────────────────────────────────── */
+  var SystemStatusFactory = {
+    create: function () {
+      var el = document.createElement('div');
+      el.className = 'atulai-projection';
+      el.innerHTML =
+        '<div class="atulai-projection-inner">' +
+          '<canvas class="atulai-projection-particles"></canvas>' +
+          '<div class="atulai-projection-scanlines"></div>' +
+          '<button class="atulai-projection-close" aria-label="Dismiss">&times;</button>' +
+          '<div class="atulai-projection-header"><span>System Status</span><span class="atulai-projection-clock">--:--:--</span></div>' +
+          '<div class="atulai-projection-rows">' +
+            row('CPU', 'cpu') + row('MEMORY', 'mem') + row('NETWORK', 'net') +
+            row('ORB STATE', 'orb', true) + row('SYSTEM HEALTH', 'health', true) +
+          '</div>' +
+        '</div>';
+
+      function row(label, key, textOnly) {
+        return '<div class="atulai-projection-row" data-key="' + key + '">' +
+          '<div class="atulai-projection-row-top"><span class="atulai-projection-row-label">' + label + '</span>' +
+          '<span class="atulai-projection-row-value">--</span></div>' +
+          (textOnly ? '' : '<div class="atulai-projection-bar"><div class="atulai-projection-bar-fill" style="width:0%"></div></div>') +
+          '</div>';
+      }
+
+      var closeBtn = el.querySelector('.atulai-projection-close');
+      closeBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = el.getAttribute('data-projection-id');
+        if (id) dismiss(id);
+      });
+
+      // Small, self-contained particle drift — independent of, and never
+      // reaching into, Module 4.107's own (private) particle system.
+      var canvas = el.querySelector('.atulai-projection-particles');
+      var particles = [];
+      for (var i = 0; i < 7; i++) {
+        particles.push({
+          x: Math.random(), y: Math.random(),
+          vy: 0.00006 + Math.random() * 0.00008,
+          r: 0.6 + Math.random() * 1.0,
+          o: 0.08 + Math.random() * 0.14
+        });
+      }
+      el._particles = particles;
+      el._particleCanvas = canvas;
+
+      return el;
+    },
+
+    update: function (el, ctx) {
+      var clock = el.querySelector('.atulai-projection-clock');
+      if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour12: false });
+
+      setRow(el, 'cpu', Math.round(18 + Math.sin(ctx.t * 0.0004) * 9 + Math.random() * 4) + '%', true);
+      setRow(el, 'mem', Math.round(42 + Math.sin(ctx.t * 0.00021 + 1.4) * 6 + Math.random() * 3) + '%', true);
+      setRow(el, 'net', Math.round(3 + Math.sin(ctx.t * 0.0009) * 3 + Math.random() * 2) + ' KB/s', true);
+      setRow(el, 'orb', ctx.orbState || 'resting');
+      setRow(el, 'health', 'NOMINAL');
+
+      // particles
+      var canvas = el._particleCanvas;
+      if (canvas && canvas.width) {
+        var pctx = canvas.getContext('2d');
+        pctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (var i = 0; i < el._particles.length; i++) {
+          var p = el._particles[i];
+          p.y -= p.vy * ctx.dt;
+          if (p.y < -0.05) { p.y = 1.05; p.x = Math.random(); }
+          pctx.beginPath();
+          pctx.fillStyle = 'hsla(205,90%,75%,' + p.o + ')';
+          pctx.arc(p.x * canvas.width, p.y * canvas.height, p.r * (canvas.width / 268), 0, Math.PI * 2);
+          pctx.fill();
+        }
+      }
+
+      function setRow(root, key, value, hasBar) {
+        var rowEl = root.querySelector('.atulai-projection-row[data-key="' + key + '"]');
+        if (!rowEl) return;
+        var valEl = rowEl.querySelector('.atulai-projection-row-value');
+        if (valEl) valEl.textContent = value;
+        if (hasBar) {
+          var fill = rowEl.querySelector('.atulai-projection-bar-fill');
+          if (fill) {
+            var pct = parseFloat(value);
+            if (!isNaN(pct)) fill.style.width = Math.max(3, Math.min(100, pct)) + '%';
+          }
+        }
+      }
+    },
+
+    destroy: function () { /* no external resources held — DOM removal is enough */ }
+  };
+  Manifest.registry.systemStatus = SystemStatusFactory;
+
+  /* Future projection types — architecture only, never registered:
+     missionBrief, reminder, iotStatus, friendActivity, notifications,
+     calendar, search. AtulManifest.register(type, factory) is how a
+     later module would add one — nothing here does that for them. */
+
+  /* ───────────────────────────────────────────────────────────
+     ENVIRONMENT COUPLING — reuses 4.111's own public setter with
+     a distinct source key so it never overwrites 4.112's habitual
+     bias (or vice versa); both are summed by 4.111 itself.
+  ─────────────────────────────────────────────────────────── */
+  function applyEnvironmentCoupling(active) {
+    if (!window.AtulEnvironment || !window.AtulEnvironment.setBehaviouralBias) return;
+    if (active) window.AtulEnvironment.setBehaviouralBias({ richness: 0.12, warmth: 0.05 }, 'manifestation');
+    else window.AtulEnvironment.setBehaviouralBias(null, 'manifestation');
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     ANIMATION CONTROLLER — the origin sequence (and its reverse).
+     Intent → tiny pause → orb pulse → light expands → materializes
+     → idle float. Dismiss reverses it.
+  ─────────────────────────────────────────────────────────── */
+  function materialize(record) {
+    if (window.LivingPresenceEngine && window.LivingPresenceEngine.pulse) {
+      window.LivingPresenceEngine.pulse(); // "orb energy concentrates"
+    }
+    var delay = 260 + Math.random() * 220; // tiny preparation pause, naturally varying
+    setTimeout(function () {
+      if (!Manifest.active[record.id]) return; // dismissed while still preparing
+      record.phase = 'idle';
+      record.el.classList.add('is-visible'); // CSS transition does the "light expands outward"
+    }, delay);
+  }
+
+  function dismiss(id) {
+    var record = Manifest.active[id];
+    if (!record) return;
+    record.phase = 'dismissing';
+    record.el.classList.remove('is-visible');
+    record.el.classList.add('is-dismissing');
+    // [4.114 hook] give back the docked zone, if any, when Workspace is present.
+    if (window.AtulWorkspace && window.AtulWorkspace.releaseZone) window.AtulWorkspace.releaseZone(id);
+    setTimeout(function () {
+      if (record.el.parentNode) record.el.parentNode.removeChild(record.el);
+      delete Manifest.active[id];
+      Manifest.stack = Manifest.stack.filter(function (x) { return x !== id; });
+      if (!Object.keys(Manifest.active).length) applyEnvironmentCoupling(false);
+    }, 420);
+  }
+
+  function dismissAll() {
+    Object.keys(Manifest.active).forEach(dismiss);
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     SPATIAL ATTACHMENT + PROJECTION PHYSICS — every open
+     projection tracks AtulAI's current position with a gentle lag
+     (believable connection, never rigid), plus continuous
+     hover/drift/rotation/breathing at very low amplitude. State
+     coupling: 'preparing' stabilizes the physics (tiny focus
+     increase, per spec section 10).
+  ─────────────────────────────────────────────────────────── */
+  function updateProjection(record, t, dt) {
+    var spatial = window.AtulSpatial;
+    var orbAbs = (spatial && spatial.getCurrentAbsolute && spatial.getCurrentAbsolute())
+      || { x: window.innerWidth - 50, y: window.innerHeight - 150 };
+
+    var anchorX, anchorY;
+    // [4.114 hook] if the Living Workspace Engine is present and this
+    // projection has a docked zone, use its live anchor. Otherwise fall
+    // back to the original fixed offset — identical to pre-4.114 behaviour.
+    var workspace = window.AtulWorkspace;
+    var zoneAnchor = (workspace && record.zone && workspace.getZoneAnchor) ? workspace.getZoneAnchor(record.zone) : null;
+    if (zoneAnchor) {
+      anchorX = zoneAnchor.x;
+      anchorY = zoneAnchor.y;
+    } else {
+      anchorX = Math.max(150, Math.min(window.innerWidth - 150, orbAbs.x - 30));
+      anchorY = Math.max(110, Math.min(window.innerHeight - 210, orbAbs.y - 170));
+    }
+
+    if (!record.anchor) record.anchor = { x: anchorX, y: anchorY };
+    record.anchor.x += (anchorX - record.anchor.x) * 0.035; // gentle lag = "subtly follows"
+    record.anchor.y += (anchorY - record.anchor.y) * 0.035;
+    record.el.style.left = record.anchor.x.toFixed(1) + 'px';
+    record.el.style.top = record.anchor.y.toFixed(1) + 'px';
+
+    var spState = spatial && spatial.getState ? spatial.getState() : 'resting';
+    var stabilize = (spState === 'preparing') ? 0.3 : 1;
+
+    record.physicsPhase += dt * 0.0011;
+    var hover = Math.sin(record.physicsPhase) * 3 * stabilize;
+    var drift = Math.cos(record.physicsPhase * 0.7) * 2 * stabilize;
+    var rot = Math.sin(record.physicsPhase * 0.5) * 0.6 * stabilize;
+    var breathe = 1 + Math.sin(record.physicsPhase * 0.35) * 0.008 * stabilize;
+
+    var inner = record.inner;
+    if (inner) {
+      inner.style.transform = 'translate(' + drift.toFixed(2) + 'px,' + hover.toFixed(2) + 'px) rotate(' + rot.toFixed(2) + 'deg) scale(' + breathe.toFixed(4) + ')';
+      // [4.114 hook] Focus Bubble — subtle emphasis only, no blur.
+      if (workspace && workspace.getEmphasis) {
+        var emph = workspace.getEmphasis(record.id);
+        inner.style.opacity = emph.opacity;
+        inner.style.filter = 'brightness(' + emph.brightness + ')';
+      }
+    }
+
+    var intentPhase = window.AtulIntent && window.AtulIntent.getPhase ? window.AtulIntent.getPhase() : 'holding';
+    if (record.factory.update) {
+      record.factory.update(record.el, { orbState: spState, intentPhase: intentPhase, t: t, dt: dt });
+    }
+  }
+
+  function frame(t) {
+    var dt = Math.min(48, t - (Manifest._lastT || t));
+    Manifest._lastT = t;
+    var ids = Object.keys(Manifest.active);
+    if (!ids.length) { Manifest.rafId = null; return; } // stop entirely — zero idle cost when nothing is open
+    for (var i = 0; i < ids.length; i++) updateProjection(Manifest.active[ids[i]], t, dt);
+    Manifest.rafId = requestAnimationFrame(frame);
+  }
+
+  function ensureLoop() {
+    if (!Manifest.rafId) { Manifest._lastT = 0; Manifest.rafId = requestAnimationFrame(frame); }
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PROJECTION RENDERER — sizes each projection's own tiny
+     particle canvas once it's in the DOM (needs real dimensions).
+  ─────────────────────────────────────────────────────────── */
+  function sizeParticleCanvas(el) {
+    var canvas = el.querySelector('.atulai-projection-particles');
+    if (!canvas) return;
+    var rect = el.getBoundingClientRect();
+    var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    canvas.width = Math.max(1, Math.round((rect.width || 268) * dpr));
+    canvas.height = Math.max(1, Math.round((rect.height || 160) * dpr));
+    canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PUBLIC API
+  ─────────────────────────────────────────────────────────── */
+  function show(type, data, opts) {
+    var factory = Manifest.registry[type];
+    if (!factory) { console.warn('[AtulManifest] Unknown projection type:', type); return null; }
+
+    var id = 'proj_' + (Manifest.nextId++);
+    var el = factory.create(data);
+    el.setAttribute('data-projection-id', id);
+    document.body.appendChild(el);
+    setTimeout(function () { sizeParticleCanvas(el); }, 0);
+
+    var record = {
+      id: id, type: type, el: el, factory: factory,
+      inner: el.querySelector('.atulai-projection-inner'),
+      phase: 'preparing',
+      physicsPhase: Math.random() * Math.PI * 2,
+      anchor: null,
+      zone: null
+    };
+    Manifest.active[id] = record;
+    Manifest.stack.push(id);
+    restackZIndex();
+
+    // [4.114 hook] every manifestation requests a workspace zone instead of
+    // assuming its own placement. Falls back to the original fixed-offset
+    // anchor (in updateProjection) if Workspace isn't present.
+    if (window.AtulWorkspace && window.AtulWorkspace.reserveZone) {
+      var preferred = (opts && opts.zone) || 'FRONT';
+      var reservation = window.AtulWorkspace.reserveZone(preferred, id, 1);
+      if (reservation) record.zone = reservation.zone;
+    }
+
+    // Focus-on-hover — brings this projection above any siblings, and tells
+    // the Workspace's Focus Bubble (if present) which one has attention.
+    el.addEventListener('mouseenter', function () {
+      bringToFront(id);
+      if (window.AtulWorkspace && window.AtulWorkspace.setFocused) window.AtulWorkspace.setFocused(id);
+    });
+
+    materialize(record);
+    applyEnvironmentCoupling(true);
+    ensureLoop();
+    return id;
+  }
+
+  window.AtulManifest = {
+    show: show,
+    dismiss: dismiss,
+    dismissAll: dismissAll,
+    register: function (type, factory) {
+      if (typeof type === 'string' && factory && typeof factory.create === 'function') {
+        Manifest.registry[type] = factory;
+      }
+    },
+    getActive: function () { return Manifest.stack.slice(); }
+  };
+
+  console.log('[AtulOS 4.113] Holographic Manifestation Engine online. Try window.AtulManifest.show(\'systemStatus\') in the console. API: window.AtulManifest');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.113 — ATULAI HOLOGRAPHIC MANIFESTATION ENGINE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.114 — ATULAI LIVING WORKSPACE ENGINE
+     Purely additive. Defines logical spatial zones around AtulAI —
+     no visual output of its own (no DOM, no canvas). Reads
+     window.AtulSpatial.getCurrentAbsolute() (already public). Reuses
+     Module 4.113's own requestAnimationFrame loop entirely — this
+     engine runs no loop of its own; zone anchors are computed live,
+     on demand, whenever a consumer calls getZoneAnchor(). Two small,
+     documented patches were needed elsewhere:
+       - 4.113 now requests a zone via reserveZone()/getZoneAnchor()
+         and falls back to its original fixed placement if this
+         module isn't present (see the [4.114 hook] comments in 4.113).
+       - 4.110's setPriorityBias became a named-source map (mirroring
+         the fix already made to 4.111) so this module's nudge and
+         4.112's habit-driven nudge can coexist without clobbering.
+     Nothing here modifies Environment/Intent/Behavior internals —
+     only their existing public setters are called.
+════════════════════════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULAI LIVING WORKSPACE ENGINE  (Module 4.114)
+   Sections: Workspace Manager / Zone Registry / Docking Controller /
+             Layout Resolver / Focus Bubble / Spatial Relationships /
+             Workspace Physics / Future Workspace Registry
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._livingWorkspaceEnginePatched) return;
+  window._livingWorkspaceEnginePatched = true;
+
+  /* ───────────────────────────────────────────────────────────
+     ZONE REGISTRY — logical regions around AtulAI. Purely data;
+     "position" is resolved live from the orb's current absolute
+     position (reused from 4.109 via 4.109's own public getter,
+     never recomputed independently) plus a per-zone offset.
+  ─────────────────────────────────────────────────────────── */
+  var ZONE_NAMES = ['RIGHT', 'LEFT', 'TOP', 'BOTTOM', 'FRONT', 'NEAR', 'FAR'];
+
+  var ZONE_OFFSETS = {
+    RIGHT:  { dx: 195, dy: -55 },
+    LEFT:   { dx: -195, dy: -55 },
+    TOP:    { dx: 0,   dy: -225 },
+    BOTTOM: { dx: 0,   dy: 155 },
+    FRONT:  { dx: -30, dy: -170 }, // roughly matches 4.113's original standalone placement
+    NEAR:   { dx: 65,  dy: -95 },
+    FAR:    { dx: 265, dy: -145 }
+  };
+
+  // Subtle tilt only — descriptive metadata today, not yet applied to any
+  // visual transform (documented in the 4.113 integration notes above).
+  var ZONE_ROTATION = { RIGHT: 1.2, LEFT: -1.2, TOP: 0, BOTTOM: 0, FRONT: 0, NEAR: 0, FAR: 0.6 };
+
+  // Nominal available-space metadata (descriptive; not enforced packing —
+  // only one projection type exists today, so occupancy is effectively
+  // one-object-per-zone. Real packing is future work.)
+  var ZONE_SPACE = {
+    RIGHT: { width: 280, height: 240 }, LEFT: { width: 280, height: 240 },
+    TOP: { width: 320, height: 200 }, BOTTOM: { width: 320, height: 200 },
+    FRONT: { width: 268, height: 220 }, NEAR: { width: 240, height: 200 },
+    FAR: { width: 240, height: 200 }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     WORKSPACE MANAGER — occupancy, priority, collision avoidance.
+  ─────────────────────────────────────────────────────────── */
+  var occupancy = {}; // zoneName -> { ownerId, priority }
+  var focusedOwnerId = null;
+
+  function occupiedCount() { return Object.keys(occupancy).length; }
+
+  /* ───────────────────────────────────────────────────────────
+     WORKSPACE STATES — only dormant/preparing/active are ever
+     assigned; focused/expanding/collapsing/transitioning are
+     defined as architecture-only labels, never emitted today.
+  ─────────────────────────────────────────────────────────── */
+  var state = 'dormant';
+  var stateTimer = null;
+
+  function noteOccupancyChanged() {
+    var count = occupiedCount();
+    var wasState = state;
+    if (count === 0) {
+      clearTimeout(stateTimer);
+      state = 'dormant';
+    } else if (state === 'dormant') {
+      state = 'preparing'; // "workspace expands"
+      clearTimeout(stateTimer);
+      stateTimer = setTimeout(function () {
+        if (occupiedCount() > 0) state = 'active'; // "zone activates"
+      }, 260);
+    } else if (state !== 'preparing') {
+      state = 'active';
+    }
+    if (wasState !== state) pushEnvironmentIntegration();
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     ENVIRONMENT INTEGRATION — only through existing public
+     setters, each with its own source key so nothing this module
+     touches ever overwrites another module's contribution.
+  ─────────────────────────────────────────────────────────── */
+  function pushEnvironmentIntegration() {
+    var active = state !== 'dormant';
+    if (window.AtulEnvironment && window.AtulEnvironment.setBehaviouralBias) {
+      window.AtulEnvironment.setBehaviouralBias(active ? { richness: 0.06, warmth: 0.02 } : null, 'workspace');
+    }
+    if (window.AtulIntent && window.AtulIntent.setPriorityBias) {
+      // A workspace in active use nudges AtulAI to stay very slightly more
+      // attentive to the module it's currently presenting information from.
+      window.AtulIntent.setPriorityBias(active ? { ObserveWindow: 0.08, WatchActiveModule: 0.08 } : null, 'workspace');
+    }
+    // Behavior Engine (4.112) exposes no settable surface of its own today —
+    // its influence flows the other direction (into Intent/Environment), so
+    // there is nothing to integrate with there yet. Documented, not invented.
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     DOCKING CONTROLLER — zone reservation with graceful fallback
+     when every zone is taken, and priority-based bumping.
+  ─────────────────────────────────────────────────────────── */
+  function reserveZone(preferredZone, ownerId, priority) {
+    priority = typeof priority === 'number' ? priority : 1;
+    var order = ZONE_NAMES.indexOf(preferredZone) !== -1
+      ? [preferredZone].concat(ZONE_NAMES.filter(function (z) { return z !== preferredZone; }))
+      : ZONE_NAMES.slice();
+
+    for (var i = 0; i < order.length; i++) {
+      var z = order[i];
+      var holder = occupancy[z];
+      if (!holder || holder.ownerId === ownerId) {
+        occupancy[z] = { ownerId: ownerId, priority: priority };
+        noteOccupancyChanged();
+        return { zone: z };
+      }
+    }
+
+    // Every zone taken — only bump a strictly lower-priority holder.
+    var lowestZone = null, lowestPriority = Infinity;
+    for (var z2 in occupancy) {
+      if (occupancy[z2].priority < lowestPriority) { lowestPriority = occupancy[z2].priority; lowestZone = z2; }
+    }
+    if (lowestZone && priority > lowestPriority) {
+      occupancy[lowestZone] = { ownerId: ownerId, priority: priority };
+      noteOccupancyChanged();
+      return { zone: lowestZone, bumped: true };
+    }
+    // Nothing available to reserve — still hand back a usable (shared) zone
+    // name so the caller has somewhere sensible to render, per spec's
+    // "avoid overlapping" being a soft, not hard, guarantee for now.
+    return { zone: preferredZone || 'FRONT', forced: true };
+  }
+
+  function releaseZone(ownerId) {
+    var changed = false;
+    for (var z in occupancy) {
+      if (occupancy[z].ownerId === ownerId) { delete occupancy[z]; changed = true; }
+    }
+    if (focusedOwnerId === ownerId) focusedOwnerId = null;
+    if (changed) noteOccupancyChanged();
+  }
+
+  function moveZone(ownerId, newZone) {
+    var current = null;
+    for (var z in occupancy) if (occupancy[z].ownerId === ownerId) current = z;
+    if (!current) return reserveZone(newZone, ownerId, 1);
+    var priority = occupancy[current].priority;
+    if (occupancy[newZone] && occupancy[newZone].ownerId !== ownerId) return { zone: current, denied: true };
+    delete occupancy[current];
+    occupancy[newZone] = { ownerId: ownerId, priority: priority };
+    return { zone: newZone };
+  }
+
+  function getAvailableZone() {
+    for (var i = 0; i < ZONE_NAMES.length; i++) {
+      if (!occupancy[ZONE_NAMES[i]]) return ZONE_NAMES[i];
+    }
+    return null;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     LAYOUT RESOLVER + WORKSPACE PHYSICS (Micro Orbits) — the zone
+     anchor itself carries a slow, very-low-amplitude orbital drift,
+     computed on demand from elapsed time rather than via any
+     dedicated loop. A manifestation's own hover/drift/breathing
+     (4.113) then rides on top of this anchor — two distinct,
+     non-duplicated layers of motion.
+  ─────────────────────────────────────────────────────────── */
+  var zonePhaseSeed = {}; // zoneName -> random phase offset, assigned once
+
+  function getZoneAnchor(zoneName) {
+    var offset = ZONE_OFFSETS[zoneName] || ZONE_OFFSETS.FRONT;
+    var spatial = window.AtulSpatial;
+    var orbAbs = (spatial && spatial.getCurrentAbsolute && spatial.getCurrentAbsolute())
+      || { x: window.innerWidth - 50, y: window.innerHeight - 150 };
+
+    if (zonePhaseSeed[zoneName] === undefined) zonePhaseSeed[zoneName] = Math.random() * Math.PI * 2;
+    var now = performance.now();
+    var phase = zonePhaseSeed[zoneName] + now * 0.00007; // extremely slow, ~90s-scale orbit
+    var orbitX = Math.cos(phase) * 4;   // amplitude kept tiny on purpose — "never distracting"
+    var orbitY = Math.sin(phase) * 3;
+
+    var x = orbAbs.x + offset.dx + orbitX;
+    var y = orbAbs.y + offset.dy + orbitY;
+    x = Math.max(150, Math.min(window.innerWidth - 150, x));
+    y = Math.max(110, Math.min(window.innerHeight - 210, y));
+
+    return { x: x, y: y, rotation: ZONE_ROTATION[zoneName] || 0 };
+  }
+
+  function getZone(zoneName) {
+    var occ = occupancy[zoneName];
+    return {
+      name: zoneName,
+      anchor: getZoneAnchor(zoneName),
+      space: ZONE_SPACE[zoneName] || ZONE_SPACE.FRONT,
+      occupied: !!occ,
+      ownerId: occ ? occ.ownerId : null,
+      priority: occ ? occ.priority : 0
+    };
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     FOCUS BUBBLE — active manifestation gets subtle emphasis,
+     everything else softens slightly. No blur, per spec.
+  ─────────────────────────────────────────────────────────── */
+  function setFocused(ownerId) { focusedOwnerId = ownerId; }
+
+  function getEmphasis(ownerId) {
+    if (!focusedOwnerId || focusedOwnerId === ownerId) {
+      return { opacity: 1, brightness: 1.04 };
+    }
+    return { opacity: 0.84, brightness: 0.92 };
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE WORKSPACE REGISTRY — generic bookkeeping for object
+     types that don't exist yet (Mission Cards, IoT Devices, Live
+     Cameras, Reminder Nodes, Memory Objects, DeepSpace Instruments,
+     Friend Presence, Calendar, Search). No docking/rendering logic
+     is implemented for any of them — this is pure registration.
+  ─────────────────────────────────────────────────────────── */
+  var registeredObjects = {};
+
+  function registerObject(id, meta) {
+    registeredObjects[id] = meta || {};
+  }
+  function unregisterObject(id) {
+    delete registeredObjects[id];
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PUBLIC API
+  ─────────────────────────────────────────────────────────── */
+  window.AtulWorkspace = {
+    reserveZone: reserveZone,
+    releaseZone: releaseZone,
+    moveZone: moveZone,
+    getAvailableZone: getAvailableZone,
+    getZoneAnchor: getZoneAnchor,
+    getZone: getZone,
+    getZones: function () { return ZONE_NAMES.slice(); },
+    setFocused: setFocused,
+    getEmphasis: getEmphasis,
+    getState: function () { return state; },
+    registerObject: registerObject,
+    unregisterObject: unregisterObject
+  };
+
+  console.log('[AtulOS 4.114] Living Workspace Engine online. Spatial zones (' + ZONE_NAMES.join('/') + ') now available for docking. API: window.AtulWorkspace');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.114 — ATULAI LIVING WORKSPACE ENGINE
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.115 — ATULOS CORE INTELLIGENCE & SYSTEM KNOWLEDGE ENGINE
+     Purely additive, purely a knowledge layer — no DOM created, no
+     visuals, no animation loop, no polling. Every read either goes
+     through an already-public getter (LivingPresenceEngine, AtulContext,
+     AtulSpatial, AtulIntent, AtulEnvironment, AtulHabits, AtulManifest,
+     AtulWorkspace) or a plain, on-demand DOM read (document.getElementById
+     + .style.display), done only when getSnapshot()/query()/buildContext()
+     is actually called — never on a timer. No existing command, window,
+     or pipeline is touched. Zero compatibility patches were needed for
+     this module: everything it observes was already exposed.
+════════════════════════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ATULOS CORE INTELLIGENCE & SYSTEM KNOWLEDGE ENGINE  (Module 4.115)
+   Sections: Module Registry / Knowledge Store / Relationship Manager /
+             Capability Registry / Snapshot Builder / Context Builder /
+             Semantic Query Engine / Action Descriptor Builder /
+             Future Integration Layer
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  if (window._systemKnowledgeEnginePatched) return;
+  window._systemKnowledgeEnginePatched = true;
+
+  function safeCall(fn, fallback) {
+    try {
+      var v = typeof fn === 'function' ? fn() : undefined;
+      return (v === undefined) ? fallback : v;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     MODULE REGISTRY + KNOWLEDGE STORE — generic, lightweight.
+     A module's "state" and "health" are stored as function
+     references and only ever called lazily — nothing here
+     duplicates or caches another module's internal state.
+  ─────────────────────────────────────────────────────────── */
+  var modules = {}; // id -> record
+
+  function register(id, meta) {
+    if (!id) return;
+    var base = {
+      id: id,
+      name: id,
+      description: '',
+      version: '1.0',
+      category: 'module',
+      capabilities: [],
+      actions: [],
+      dependencies: [],
+      visibility: 'visible',
+      metadata: {},
+      getState: function () { return 'unknown'; },
+      getHealth: function () { return 'unknown'; }
+    };
+    for (var k in (meta || {})) base[k] = meta[k];
+    modules[id] = base;
+  }
+
+  function unregister(id) { delete modules[id]; }
+
+  function update(id, patch) {
+    // Descriptive-field updates only (name/description/capabilities/etc.).
+    // Live state is never stored here — it's always pulled fresh via
+    // getState()/getHealth() at query time.
+    if (!modules[id] || !patch) return;
+    for (var k in patch) modules[id][k] = patch[k];
+  }
+
+  function describeModule(id) {
+    var m = modules[id];
+    if (!m) return null;
+    return {
+      id: m.id, name: m.name, description: m.description, version: m.version,
+      category: m.category, capabilities: m.capabilities.slice(), actions: m.actions.slice(),
+      dependencies: m.dependencies.slice(), visibility: m.visibility, metadata: m.metadata,
+      state: safeCall(m.getState, 'unknown'),
+      health: safeCall(m.getHealth, 'unknown')
+    };
+  }
+
+  function listModules() { return Object.keys(modules); }
+
+  /* ───────────────────────────────────────────────────────────
+     RELATIONSHIP MANAGER — simple, queryable triples.
+  ─────────────────────────────────────────────────────────── */
+  var relationships = [];
+
+  function addRelationship(subject, relation, object) {
+    relationships.push({ subject: subject, relation: relation, object: object });
+  }
+  function getRelationships(id) {
+    if (!id) return relationships.slice();
+    return relationships.filter(function (r) { return r.subject === id || r.object === id; });
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     CAPABILITY REGISTRY — descriptive only, never executable.
+  ─────────────────────────────────────────────────────────── */
+  function listCapabilities(id) {
+    if (id) return modules[id] ? modules[id].capabilities.slice() : [];
+    var out = {};
+    for (var k in modules) out[k] = modules[k].capabilities.slice();
+    return out;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     LIVE STATE MODEL helpers — thin, on-demand DOM reads for
+     legacy windows that predate any of this AI infrastructure and
+     so have no public getter of their own. Reused across snapshot/
+     query/bootstrap rather than re-implemented per call site.
+  ─────────────────────────────────────────────────────────── */
+  function windowIsOpen(windowId) {
+    return safeCall(function () {
+      var el = document.getElementById(windowId);
+      return !!(el && el.style.display !== 'none');
+    }, false);
+  }
+
+  function listOpenWindows() {
+    return safeCall(function () {
+      return Array.prototype.slice.call(document.querySelectorAll('.app-window'))
+        .filter(function (w) { return w.style.display !== 'none'; })
+        .map(function (w) { return w.dataset ? w.dataset.windowId : w.id; });
+    }, []);
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     SNAPSHOT BUILDER — a plain object summarizing current
+     operating state. Intended (per spec) to later become the
+     primary context handed to Gemini; nothing here calls Gemini.
+  ─────────────────────────────────────────────────────────── */
+  function getSnapshot() {
+    return {
+      timestamp: Date.now(),
+      focusedModule: safeCall(function () { return window.AtulContext.data.focusedWindowId; }, null),
+      openWindows: listOpenWindows(),
+      orbState: safeCall(function () { return window.AtulSpatial.getState(); }, 'unknown'),
+      presenceState: safeCall(function () { return window.LivingPresenceEngine.getState(); }, 'unknown'),
+      currentIntent: safeCall(function () { return window.AtulIntent.getCurrent(); }, 'unknown'),
+      intentPhase: safeCall(function () { return window.AtulIntent.getPhase(); }, 'unknown'),
+      environment: safeCall(function () {
+        return { state: window.AtulEnvironment.getState(), velocity: window.AtulEnvironment.getVelocity() };
+      }, null),
+      workspaceState: safeCall(function () { return window.AtulWorkspace.getState(); }, 'unknown'),
+      openManifestations: safeCall(function () { return window.AtulManifest.getActive(); }, []),
+      iot: {
+        // Best-effort only — AtulOS has no dedicated IoT public API today;
+        // this reuses the one signal 4.108 already exposes (read-only).
+        firebaseConnected: safeCall(function () { return !!window.AtulContext.data.firebaseConnected; }, false)
+      },
+      systemHealth: computeSystemHealth()
+    };
+  }
+
+  function computeSystemHealth() {
+    var perf = safeCall(function () { return window.AtulContext.data.performanceLevel; }, 1);
+    if (typeof perf !== 'number') return 'unknown';
+    if (perf > 0.75) return 'nominal';
+    if (perf > 0.4) return 'reduced';
+    return 'degraded';
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     CONTEXT BUILDER + SEMANTIC QUERY ENGINE — deliberately a
+     lightweight lexical matcher, not a real NLU/classifier. This
+     is an honest, documented simplification: it's the foundation
+     future modules can replace with something smarter without
+     changing the public API surface.
+  ─────────────────────────────────────────────────────────── */
+  var STOPWORDS = { the: 1, and: 1, for: 1, are: 1, with: 1, this: 1, that: 1, from: 1, into: 1, your: 1, you: 1, can: 1, what: 1, does: 1, currently: 1, happening: 1 };
+
+  function tokenize(s) {
+    var raw = (s || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+    return raw.filter(function (t) { return t.length > 2 && !STOPWORDS[t]; });
+  }
+
+  function scoreModule(m, tokens) {
+    var text = (m.name + ' ' + m.description + ' ' + m.capabilities.join(' ') + ' ' + m.category).toLowerCase();
+    var score = 0;
+    for (var i = 0; i < tokens.length; i++) {
+      if (text.indexOf(tokens[i]) !== -1) score++;
+    }
+    return score;
+  }
+
+  function buildContext(requestText) {
+    var tokens = tokenize(requestText);
+    var scored = [];
+    for (var id in modules) {
+      var s = scoreModule(modules[id], tokens);
+      if (s > 0) scored.push({ id: id, score: s });
+    }
+    scored.sort(function (a, b) { return b.score - a.score; });
+    var top = scored.slice(0, 5).map(function (s) { return describeModule(s.id); });
+    return { query: requestText, relevantModules: top, snapshot: getSnapshot() };
+  }
+
+  function findModuleByName(name) {
+    var needle = (name || '').toLowerCase().trim();
+    if (!needle) return null;
+    for (var id in modules) {
+      var m = modules[id];
+      if (id.toLowerCase() === needle || m.name.toLowerCase() === needle) return m;
+    }
+    for (var id2 in modules) {
+      var m2 = modules[id2];
+      if (m2.name.toLowerCase().indexOf(needle) !== -1 || needle.indexOf(m2.name.toLowerCase()) !== -1) return m2;
+    }
+    return null;
+  }
+
+  function query(question) {
+    var q = (question || '').toLowerCase();
+
+    if (/open (application|app|window)s?|what.?s open|applications? (are|is) open/.test(q)) {
+      return { answer: 'openWindows', data: listOpenWindows() };
+    }
+    if (/what can you control|your capabilities|what capabilities/.test(q) && !/does\s+\w+/.test(q)) {
+      return { answer: 'capabilities', data: listCapabilities() };
+    }
+    var capMatch = q.match(/capabilit(?:y|ies)\s+(?:does|do)\s+([a-z0-9 ]+?)\s+(?:provide|have|offer)/);
+    if (capMatch) {
+      var found = findModuleByName(capMatch[1]);
+      return { answer: 'moduleCapabilities', module: found ? found.id : null, data: found ? found.capabilities.slice() : [] };
+    }
+    if (/which module is (active|focused)|what.?s (active|focused)/.test(q)) {
+      return { answer: 'focusedModule', data: safeCall(function () { return window.AtulContext.data.focusedWindowId; }, null) };
+    }
+    if (/(device|iot).*(connect|online|status)/.test(q)) {
+      return { answer: 'iotState', data: describeModule('iot') };
+    }
+    if (/what is (currently )?happening|current activity|what.?s going on/.test(q)) {
+      return { answer: 'snapshot', data: getSnapshot() };
+    }
+    // Fallback — treat any other question as a context-building request.
+    return { answer: 'context', data: buildContext(question) };
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     ACTION DESCRIPTOR BUILDER — prepares, never executes. The
+     confidence value is a heuristic placeholder (proportional to
+     lexical match strength), explicitly not a calibrated score.
+  ─────────────────────────────────────────────────────────── */
+  function prepareAction(text) {
+    var ctx = buildContext(text);
+    var top = ctx.relevantModules[0];
+    var topScore = top ? scoreModule(modules[top.id], tokenize(text)) : 0;
+    return {
+      intent: text,
+      requiredModule: top ? top.id : null,
+      requiredCapability: (top && top.capabilities.length) ? top.capabilities[0] : null,
+      parameters: {},
+      confidence: top ? Math.max(0.1, Math.min(0.9, topScore / 4)) : 0
+    };
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     FUTURE INTEGRATION LAYER — architecture only, dormant.
+  ─────────────────────────────────────────────────────────── */
+  var futureHooks = {
+    voice:                  { enabled: false, register: function () {} },
+    planning:               { enabled: false, register: function () {} },
+    memory:                 { enabled: false, register: function () {} },
+    automation:             { enabled: false, register: function () {} },
+    notifications:          { enabled: false, register: function () {} },
+    plugins:                { enabled: false, register: function () {} },
+    remoteDevices:          { enabled: false, register: function () {} },
+    cloudServices:          { enabled: false, register: function () {} },
+    multiAgentCollaboration:{ enabled: false, register: function () {} }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BOOTSTRAP REGISTRATION — seeds the registry with AtulOS's
+     known systems. Legacy applications (Terminal, DeepSpace, IoT,
+     Friends, Nancy Studio, Dashboard, System Monitor) predate this
+     engine and can't register themselves, so their entries here
+     are descriptive metadata only, with getState() reading purely
+     from already-public signals (AtulContext.data, DOM display).
+     The AI modules (4.107-4.114) register with real live getters.
+  ─────────────────────────────────────────────────────────── */
+  function bootstrapRegistry() {
+    register('terminal', {
+      name: 'Terminal', category: 'application', version: 'n/a',
+      description: 'Command-line interface for executing AtulOS commands, history and clipboard operations.',
+      capabilities: ['Execute commands', 'Clear history', 'Copy', 'Paste'],
+      getState: function () { return windowIsOpen('terminal') ? 'open' : 'closed'; }
+    });
+    register('deepspace', {
+      name: 'DeepSpace', category: 'application', version: 'n/a',
+      description: 'Mission control, orbital navigation, planetary scanning and mission simulation subsystem.',
+      capabilities: ['Navigate', 'Scan', 'Mission View', 'Planet View'],
+      getState: function () {
+        return safeCall(function () {
+          var el = document.getElementById('deepspace-container');
+          return (el && el.classList.contains('ds-active')) ? 'active' : 'inactive';
+        }, 'unknown');
+      }
+    });
+    register('iot', {
+      name: 'IoT', category: 'service', version: 'n/a',
+      description: 'Controls and monitors connected smart devices and hardware — fans, lights, sensors — synced through Firebase.',
+      capabilities: ['Toggle Devices', 'Read Sensors', 'Sync Hardware'],
+      getState: function () {
+        return safeCall(function () { return window.AtulContext.data.firebaseConnected ? 'connected' : 'disconnected'; }, 'unknown');
+      }
+    });
+    register('friends', {
+      name: 'Friends', category: 'application', version: 'n/a',
+      description: 'Friend profiles, presence, and messaging with scoped authentication.',
+      capabilities: ['Open Profile', 'Message', 'Presence'],
+      getState: function () {
+        return (windowIsOpen('friend-profile-window') || windowIsOpen('milestones-window')) ? 'open' : 'closed';
+      }
+    });
+    register('nancyStudio', {
+      name: 'Nancy Studio', category: 'application', version: 'n/a',
+      description: 'Content generation, editing and export studio.',
+      capabilities: ['Generate', 'Edit', 'Export'],
+      getState: function () { return windowIsOpen('nancy-studio-window') ? 'open' : 'closed'; }
+    });
+    register('dashboard', {
+      name: 'Dashboard', category: 'application', version: 'n/a',
+      description: 'Overview dashboard summarizing recent activity, friends and system status.',
+      capabilities: ['Overview', 'Recent Activity'],
+      getState: function () { return windowIsOpen('dashboard-window') ? 'open' : 'closed'; }
+    });
+    register('systemMonitor', {
+      name: 'System Monitor', category: 'application', version: 'n/a',
+      description: 'Displays system performance metrics.',
+      capabilities: ['View Metrics'],
+      getState: function () { return windowIsOpen('system-monitor-window') ? 'open' : 'closed'; }
+    });
+
+    register('livingPresence', {
+      name: 'Living Presence Engine', category: 'ai-module', version: '4.107',
+      description: 'Continuous ambient life and energy visualization for the AtulAI orb.',
+      capabilities: ['Ambient animation', 'State-driven glow', 'Pulse cue'],
+      getState: function () { return window.LivingPresenceEngine.getState(); }
+    });
+    register('contextAwareness', {
+      name: 'Context Awareness Engine', category: 'ai-module', version: '4.108',
+      description: 'Observes application focus, DeepSpace state, theme, and user activity.',
+      capabilities: ['Focus tracking', 'Activity analysis', 'Gaze targeting'],
+      getState: function () {
+        var d = window.AtulContext.data;
+        return { focusedWindowId: d.focusedWindowId, deepspaceActive: d.deepspaceActive, theme: d.theme };
+      }
+    });
+    register('spatialPresence', {
+      name: 'Spatial Presence Engine', category: 'ai-module', version: '4.109',
+      description: 'Moves AtulAI through the environment toward relevant context via spring physics.',
+      capabilities: ['Contextual repositioning', 'Idle micro-navigation'],
+      getState: function () { return window.AtulSpatial.getState(); }
+    });
+    register('intentEngine', {
+      name: 'Intent Engine', category: 'ai-module', version: '4.110',
+      description: 'Decides why AtulAI should act before Spatial/Presence engines decide how.',
+      capabilities: ['Decision delay', 'Priority resolution', 'Curiosity generation'],
+      getState: function () { return { current: window.AtulIntent.getCurrent(), phase: window.AtulIntent.getPhase() }; }
+    });
+    register('environmentalCoupling', {
+      name: 'Environmental Coupling Engine', category: 'ai-module', version: '4.111',
+      description: 'Softly acknowledges AtulAI\'s position and state through ambient lighting and glass richness.',
+      capabilities: ['Ambient lighting', 'Glass coupling', 'Movement aftereffects'],
+      getState: function () { return { state: window.AtulEnvironment.getState(), velocity: window.AtulEnvironment.getVelocity() }; }
+    });
+    register('behavioralEcology', {
+      name: 'Behavioral Ecology Engine', category: 'ai-module', version: '4.112',
+      description: 'Develops session-long habits — favorite locations, time-of-day tendencies, adaptive curiosity.',
+      capabilities: ['Habit memory', 'Comfort weighting', 'Session fatigue modeling'],
+      getState: function () { return window.AtulHabits.getMemorySnapshot(); }
+    });
+    register('manifestationEngine', {
+      name: 'Holographic Manifestation Engine', category: 'ai-module', version: '4.113',
+      description: 'Projects lightweight holographic information panels that originate from AtulAI.',
+      capabilities: ['Show projection', 'Dismiss projection', 'Register projection type'],
+      getState: function () { return window.AtulManifest.getActive(); }
+    });
+    register('livingWorkspace', {
+      name: 'Living Workspace Engine', category: 'ai-module', version: '4.114',
+      description: 'Defines logical spatial zones around AtulAI for docking manifestations.',
+      capabilities: ['Zone reservation', 'Focus bubble', 'Micro orbits'],
+      getState: function () { return window.AtulWorkspace.getState(); }
+    });
+
+    /* Relationships — illustrative, matching the spec's own examples
+       plus a few describing our own module chain. */
+    addRelationship('deepspace', 'dependsOn', 'environmentalCoupling');
+    addRelationship('nancyStudio', 'uses', 'manifestationEngine');
+    addRelationship('livingWorkspace', 'contains', 'manifestationEngine');
+    addRelationship('terminal', 'interactsWith', 'contextAwareness');
+    addRelationship('intentEngine', 'influences', 'spatialPresence');
+    addRelationship('intentEngine', 'influences', 'livingWorkspace');
+    addRelationship('behavioralEcology', 'influences', 'intentEngine');
+    addRelationship('behavioralEcology', 'influences', 'environmentalCoupling');
+    addRelationship('manifestationEngine', 'dependsOn', 'livingPresence');
+    addRelationship('manifestationEngine', 'dependsOn', 'spatialPresence');
+    addRelationship('manifestationEngine', 'usesZonesFrom', 'livingWorkspace');
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PUBLIC API
+  ─────────────────────────────────────────────────────────── */
+  window.AtulKnowledge = {
+    register: register,
+    unregister: unregister,
+    update: update,
+    getModule: describeModule,
+    listModules: listModules,
+    getSnapshot: getSnapshot,
+    query: query,
+    listCapabilities: listCapabilities,
+    buildContext: buildContext,
+    prepareAction: prepareAction,
+    addRelationship: addRelationship,
+    getRelationships: getRelationships,
+    hooks: futureHooks
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     BOOT — no loop, no timer beyond a brief readiness retry for
+     the AI modules this engine bootstraps references to.
+  ─────────────────────────────────────────────────────────── */
+  function boot() {
+    bootstrapRegistry();
+    console.log('[AtulOS 4.115] Core Intelligence & System Knowledge Engine online. ' + listModules().length + ' modules registered. API: window.AtulKnowledge');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    setTimeout(boot, 0);
+  }
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.115 — ATULOS CORE INTELLIGENCE & SYSTEM KNOWLEDGE ENGINE
+════════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.116 — ATULOS KNOWLEDGE PIPELINE INTEGRATION
+
+     Purely an integration layer. Bridges Module 4.115 (AtulKnowledge)
+     into the existing AtulAI conversation pipeline by adding exactly
+     ONE new compatibility wrapper around window._jarvisProcessInternal,
+     following the same guard-flag / _orig-capture pattern used by
+     every prior wrapper in this file (see e.g. the U7/U8 patches and
+     the confidence-aware / help-aware / nancy-aware wrappers above).
+
+     This is NOT a redesign, NOT a new parser, NOT an Action Engine.
+     No existing wrapper, command table, or UI is modified. The
+     existing parser always runs first (via the captured `orig`
+     chain); AtulKnowledge is only consulted when that chain falls
+     back to its generic "I didn't understand" response, and only
+     the public API surface of Module 4.115 is used:
+       listModules / getModule / getSnapshot / query / listCapabilities
+     No response text is hardcoded — every line below is assembled
+     from live data returned by those calls.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  if (window._knowledgeIntegrationPatched) return;
+  window._knowledgeIntegrationPatched = true;
+
+  /* ───────────────────────────────────────────────────────────
+     FALLBACK DETECTION — reuses the exact vocabulary already
+     established by the confidence-aware patch (~line 11876) and
+     the U8 pipeline patch's own fallbackMarkers (~line 17147),
+     so "unknown command" means the same thing everywhere in the
+     chain. Nothing new is introduced here, just consulted again.
+  ─────────────────────────────────────────────────────────── */
+  var FALLBACK_MARKERS = [
+    "didn't get that", "didn't quite catch", "didn't quite understand",
+    "not sure", "try 'help'", "can you clarify", "can you rephrase",
+    "fallback", "🤔", "❓",
+    // The personality wrapper (~line 13075) sits BETWEEN the legacy
+    // chain and this module and rewrites raw fallbacks into its own
+    // friendly phrasing before we ever see them — these are that
+    // wrapper's exact _FRIENDLY_FALLBACK / _FAIL_NUDGE strings.
+    "couldn't identify", "not sure what you meant", "command not recognized",
+    "command not recognised", "need help?"
+  ];
+
+  function looksLikeFallback(result) {
+    if (!result || typeof result !== 'string') return false;
+    var lower = result.toLowerCase();
+    return FALLBACK_MARKERS.some(function (m) { return lower.indexOf(m) !== -1; });
+  }
+
+  function stateLabel(state) {
+    if (state === null || state === undefined) return 'unknown';
+    if (typeof state === 'object') return 'active';
+    return String(state);
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     SEMANTIC ALIASES — lightweight, non-exact matching so that
+     "what apps are installed", "what applications exist", etc.
+     all resolve the same way. Each handler answers purely from
+     AtulKnowledge's public API; if the engine has nothing to
+     say, the handler returns null and the caller falls through
+     exactly as the existing pipeline already does.
+  ─────────────────────────────────────────────────────────── */
+  function listAllModules() {
+    if (!window.AtulKnowledge) return [];
+    var ids = window.AtulKnowledge.listModules();
+    return ids.map(function (id) { return window.AtulKnowledge.getModule(id); }).filter(Boolean);
+  }
+
+  function handleCapabilities() {
+    if (!window.AtulKnowledge) return null;
+    var caps = window.AtulKnowledge.listCapabilities();
+    var lines = Object.keys(caps || {}).map(function (id) {
+      return (caps[id] && caps[id].length) ? (id + ': ' + caps[id].join(', ')) : null;
+    }).filter(Boolean);
+    return lines.length ? ("Here's what I can do:\n" + lines.join('\n')) : null;
+  }
+
+  function handleApplications() {
+    var mods = listAllModules().filter(function (m) { return m.category === 'application'; });
+    if (!mods.length) return null;
+    var lines = mods.map(function (m) { return m.name + ' (' + stateLabel(m.state) + ')'; });
+    return 'Available applications: ' + lines.join(', ') + '.';
+  }
+
+  function handleModules() {
+    var mods = listAllModules();
+    if (!mods.length) return null;
+    var lines = mods.map(function (m) { return m.name + ' — ' + stateLabel(m.state); });
+    return 'Modules:\n' + lines.join('\n');
+  }
+
+  function handleWindowsOpen() {
+    if (!window.AtulKnowledge) return null;
+    var snap = window.AtulKnowledge.getSnapshot();
+    var wins = (snap && snap.openWindows) || [];
+    return wins.length ? ('Currently open: ' + wins.join(', ') + '.') : 'Nothing is open right now.';
+  }
+
+  function handleArchitecture() {
+    var mods = listAllModules();
+    if (!mods.length) return null;
+    var byCategory = {};
+    mods.forEach(function (m) { (byCategory[m.category] = byCategory[m.category] || []).push(m.name); });
+    var lines = Object.keys(byCategory).map(function (cat) { return cat + ': ' + byCategory[cat].join(', '); });
+    return "AtulOS is made up of:\n" + lines.join('\n');
+  }
+
+  function handleWorkspace() {
+    if (!window.AtulKnowledge) return null;
+    var snap = window.AtulKnowledge.getSnapshot();
+    if (!snap) return null;
+    return "You're currently in the " + (snap.workspaceState || 'default') + ' workspace, focused on ' + (snap.focusedModule || 'nothing') + '.';
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     SELF-DESCRIPTION CLASSIFIER — token-overlap based (same
+     lightweight-lexical philosophy Module 4.115's own buildContext
+     already uses at ~line 38738's scoreModule), rather than one
+     more brittle regex chain. Two independent signals both have
+     to be present — a "structural/engine" topic word AND a
+     self-referential word ("you"/"your"/"AtulOS"/etc.) — before a
+     question like "How do you work?" or "What powers you?" is
+     classified as a knowledge question. A few strong, unambiguous
+     topic words (architecture/structure/structured) qualify on
+     their own. This intentionally generalizes beyond exact phrases
+     so paraphrases of the same intent still classify correctly.
+  ─────────────────────────────────────────────────────────── */
+  var ARCH_TOPIC_WORDS = ['architecture', 'engine', 'engines', 'module', 'modules', 'system',
+    'systems', 'structure', 'structured', 'structural', 'built', 'build', 'composed', 'compose',
+    'power', 'powers', 'powered', 'internal', 'construct', 'constructed', 'made', 'work', 'works', 'working'];
+  var SELF_REF_WORDS = ['you', 'your', 'yourself', 'atulos', 'it', 'i', 'am', 'me'];
+  var ARCH_STRONG_WORDS = ['architecture', 'structure', 'structured', 'structural'];
+
+  function tokenizeSimple(s) {
+    return (s || '').toLowerCase().match(/[a-z0-9']+/g) || [];
+  }
+
+  function isSelfDescriptionRequest(text) {
+    // Idiomatic self-description phrasing has no "topic" word at all
+    // ("Explain yourself.", "Describe yourself.") — recognized directly.
+    if (/\b(explain|describe|tell me about)\s+(yourself|your\s*self)\b/i.test(text || '')) return true;
+    var tokens = tokenizeSimple(text);
+    var strongHit = tokens.some(function (t) { return ARCH_STRONG_WORDS.indexOf(t) !== -1; });
+    if (strongHit) return true;
+    var topicHit = tokens.some(function (t) { return ARCH_TOPIC_WORDS.indexOf(t) !== -1; });
+    var selfHit = tokens.some(function (t) { return SELF_REF_WORDS.indexOf(t) !== -1; });
+    return topicHit && selfHit;
+  }
+
+  var ALIASES = [
+    { test: /what (can|could|do) you (do|offer)|your capabilit|what capabilit/i, handle: handleCapabilities },
+    { test: /(application|app)s?.{0,25}(available|installed|exist)/i,            handle: handleApplications },
+    { test: /module(s)?.{0,25}(active|running|loaded|do you have)/i,             handle: handleModules },
+    { test: /systems?.{0,20}(running|online|active|loaded)/i,                    handle: handleModules },
+    { test: /window(s)?.{0,25}open/i,                                           handle: handleWindowsOpen },
+    { test: /where\s+(am\s+i|are\s+we)\b/i,                                     handle: handleWorkspace },
+    { test: /workspace/i,                                                       handle: handleWorkspace },
+    { test: isSelfDescriptionRequest,                                           handle: handleArchitecture }
+  ];
+
+  /* ───────────────────────────────────────────────────────────
+     Formats an AtulKnowledge.query() result — used as a second
+     pass for question shapes the aliases above don't cover
+     (e.g. "what is currently happening", IoT status, a named
+     module's capabilities, focused-module questions). Again,
+     purely presentational: no data originates here.
+  ─────────────────────────────────────────────────────────── */
+  function formatQueryResult(result) {
+    if (!result) return null;
+    switch (result.answer) {
+      case 'openWindows': {
+        var wins = result.data || [];
+        return wins.length ? ('Currently open: ' + wins.join(', ') + '.') : 'Nothing is open right now.';
+      }
+      case 'capabilities':
+        return handleCapabilities();
+      case 'moduleCapabilities': {
+        if (!result.module || !window.AtulKnowledge) return null;
+        var mod = window.AtulKnowledge.getModule(result.module);
+        if (!mod) return null;
+        return mod.name + ' can: ' + ((result.data && result.data.length) ? result.data.join(', ') : 'nothing registered yet') + '.';
+      }
+      case 'focusedModule':
+        return result.data ? ("Right now I'm focused on " + result.data + '.') : null;
+      case 'iotState': {
+        var iot = result.data;
+        return iot ? (iot.name + ' is ' + stateLabel(iot.state) + '.') : null;
+      }
+      case 'snapshot': {
+        var s = result.data || {};
+        var open = (s.openWindows || []).length ? s.openWindows.join(', ') : 'nothing';
+        return 'Right now: ' + open + ' open, system is ' + s.systemHealth + ', presence is ' + s.presenceState + '.';
+      }
+      case 'context':
+      default: {
+        var ctx = result.data;
+        if (!ctx || !ctx.relevantModules || !ctx.relevantModules.length) return null;
+        var parts = ctx.relevantModules.map(function (m) {
+          return m.name + ' (' + stateLabel(m.state) + ') — ' + (m.description || 'no description');
+        });
+        return "Here's what I know:\n" + parts.join('\n');
+      }
+    }
+  }
+
+  function tryKnowledge(rawInput) {
+    if (!window.AtulKnowledge) return null;
+    try {
+      for (var i = 0; i < ALIASES.length; i++) {
+        var matcher = ALIASES[i].test;
+        var matched = (matcher instanceof RegExp) ? matcher.test(rawInput) : !!matcher(rawInput);
+        if (matched) {
+          var out = ALIASES[i].handle();
+          if (out) return out;
+        }
+      }
+      if (typeof window.AtulKnowledge.query === 'function') {
+        return formatQueryResult(window.AtulKnowledge.query(rawInput));
+      }
+    } catch (e) { /* fail closed — let existing pipeline stand */ }
+    return null;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     INTEGRATION WRAPPER — this is the only functional change
+     this module makes. It is installed as the outermost link in
+     the _jarvisProcessInternal chain (this script runs last), so
+     it always defers to the full existing chain first and only
+     ever substitutes an answer when that chain's own result is a
+     generic fallback string.
+  ─────────────────────────────────────────────────────────── */
+  var _attempts = 0;
+  function installPatch() {
+    var orig = window._jarvisProcessInternal;
+    if (typeof orig !== 'function') {
+      if (_attempts++ < 30) setTimeout(installPatch, 150);
+      return;
+    }
+    if (orig._knowledgePatched) return;
+
+    // Mirrors the personality layer's own _WHY_RE trigger (~line 13174)
+    // exactly — used only to know which inputs THAT layer would swallow
+    // early (before the legacy chain ever produces a fallback), so the
+    // pre-check below can stay scoped to the true collision instead of
+    // pre-empting every self-description question.
+    var _WHY_COLLISION_RE = /^(why|why did you|explain that|explain|what was your reason|your reasoning)(\s|$)/i;
+
+    window._jarvisProcessInternal = function knowledgeAwareJarvis(rawInput) {
+      // Narrow pre-check. "Explain your architecture." / "Explain
+      // yourself." start with "explain", so the personality layer's
+      // why/explain intercept answers them directly as a reasoning
+      // request before the legacy chain ever gets a chance to "fail"
+      // and produce a fallback — no post-fallback check, however good,
+      // can catch that. Only inputs that BOTH trigger that collision
+      // AND classify as genuine self-description questions are pre-
+      // empted here; e.g. "Why did you turn off the light?" also starts
+      // with "why" but isn't self-description, so it's left alone and
+      // still gets the real reasoning-explainer response as before.
+      // Every other input — including every other knowledge question —
+      // is unaffected and still flows through the untouched chain first.
+      var trimmed = (rawInput || '').trim();
+      if (_WHY_COLLISION_RE.test(trimmed) && isSelfDescriptionRequest(trimmed)) {
+        var preAnswer = handleArchitecture();
+        if (preAnswer) return preAnswer;
+      }
+
+      var result = orig(rawInput);
+      if (looksLikeFallback(result)) {
+        var knowledgeAnswer = tryKnowledge(rawInput);
+        if (knowledgeAnswer) return knowledgeAnswer;
+      }
+      return result;
+    };
+
+    // Carry forward every guard flag already on the chain, plus our own.
+    for (var k in orig) {
+      if (Object.prototype.hasOwnProperty.call(orig, k) && /Patched$/.test(k)) {
+        window._jarvisProcessInternal[k] = orig[k];
+      }
+    }
+    window._jarvisProcessInternal._knowledgePatched = true;
+
+    console.log('[AtulOS 4.116] Knowledge pipeline integration active — AtulKnowledge is now consulted on fallback.');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(installPatch, 200); });
+  } else {
+    setTimeout(installPatch, 200);
+  }
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.116 — ATULOS KNOWLEDGE PIPELINE INTEGRATION
+════════════════════════════════════════════════════════════════ -->
+
 
 </body>
 </html>
