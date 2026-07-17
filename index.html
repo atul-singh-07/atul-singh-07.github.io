@@ -39833,6 +39833,632 @@ window.safeAppend = function safeAppend(parent, child) {
      END MODULE 4.117 — ATULOS COGNITIVE NARRATION ENGINE
 ════════════════════════════════════════════════════════════════ -->
 
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.118 — ATULAI VOICE CONSTITUTION LAYER
+     Implements: AtulAI Communication Constitution v2.0
+
+     WHAT THIS IS
+     A final, additive voice-normalization layer. It does NOT change
+     what AtulAI decides to say (intent matching, command routing,
+     narration content are untouched) — it only reshapes the OUTGOING
+     TEXT of AI-authored responses so they read/sound the way the
+     Constitution specifies: natural, calm, unrepetitive, light on
+     emoji, honest about uncertainty.
+
+     WHY THE OUTPUT PRIMITIVES, NOT THE CONTENT MODULES
+     AtulAI's responses are produced by many independent modules
+     (personality layer, Nancy, friends, dashboard, milestones,
+     narration engine, session engine, etc.), each returning its own
+     string. Rewriting every hardcoded string in every module would
+     violate patch discipline (touches existing systems, high
+     regression risk, unmaintainable). Instead this module wraps the
+     THREE functions every one of those modules already funnels
+     through to actually speak/display a response:
+         window.jarvisSpeak(text)
+         window.dispatchOutput(response)
+         window.aiAppendMessage(role, text, animate)
+     Every AI-authored string, regardless of which module produced
+     it, passes through one of these on its way to the user. That
+     makes them the correct, minimal, future-proof interception
+     point — new modules added later automatically inherit the
+     Constitution without needing their own patch.
+
+     Also wraps window._jarvisProcessInternal + window.executeCommand
+     (return-value only) as a belt-and-suspenders pass, consistent
+     with the existing chained-wrap pattern in this file, so any
+     caller reading the RETURN VALUE directly (rather than relying on
+     jarvisSpeak/dispatchOutput/aiAppendMessage side effects) also
+     gets Constitution-normalized text.
+
+     IDEMPOTENCY
+     Because a single logical response can pass through more than one
+     of the wrapped functions (e.g. _jarvisProcessInternal returns
+     text, a caller then calls aiAppendMessage with that same text),
+     this module keeps a small rolling cache of strings it has
+     already normalized. If normalized text is handed back to the
+     filter again, it's returned unchanged rather than re-processed —
+     this prevents double opener-rotation and guarantees the filter
+     is safe to sit at multiple points in the same call chain.
+
+     NO new UI. NO new commands. NO changes to intent/routing logic.
+     Patch type: additive IIFE wrapping jarvisSpeak + dispatchOutput +
+     aiAppendMessage + _jarvisProcessInternal + executeCommand.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  if (window.__atulVoiceConstitutionInstalled) return;
+  window.__atulVoiceConstitutionInstalled = true;
+
+  // ── 1. PHRASE MAP — robotic / corporate → natural (Constitution: CONVERSATION STYLE, WHEN YOU DON'T KNOW, WHEN TALKING ABOUT YOURSELF, HONESTY) ──
+  var PHRASE_MAP = [
+    [/\bI have successfully executed your request\.?/gi, 'Done.'],
+    [/\bI have successfully completed (?:that|this|the) (?:task|request|action)\.?/gi, 'Done.'],
+    [/\bRequest (?:has been )?successfully (?:executed|completed|processed)\.?/gi, 'Done.'],
+    [/\bGreetings\.?/gi, 'Hey.'],
+    [/\bHow may I assist you today\??/gi, 'What are we building today?'],
+    [/\bHow may I help you\??/gi, 'What do you need?'],
+    [/\bI couldn't identify that command\.?/gi, "I don't know that yet."],
+    [/\bI (?:could not|couldn't) recognize (?:that|this) command\.?/gi, "I don't know that yet."],
+    [/\bUnrecognized command\.?/gi, "That's not something I currently understand."],
+    [/\bInvalid command\.?/gi, "I don't have enough information for that yet."],
+    [/\bI['’]?m an advanced AI assistant\.?/gi, "I'm AtulAI — the operating intelligence behind AtulOS."],
+    [/\bI['’]?m powered by [^.!\n]*[.!]?/gi, "I'm AtulAI — the operating intelligence behind AtulOS."],
+    [/\bI can do anything\.?/gi, 'I can currently understand and coordinate the systems registered inside AtulOS. As new modules are added, my capabilities grow with it.'],
+    [/\bAs an AI(?:,| language model,)?/gi, 'As AtulAI,'],
+    [/\bI am AtulAI\.?/gi, "I'm AtulAI."],
+    [/\bPlease stand by\.?/gi, 'One sec.'],
+    [/\bProcessing your request\.?/gi, 'One sec.'],
+    [/\bTask complete\.?/gi, 'Done.'],
+    [/\bOperation successful\.?/gi, 'Done.']
+  ];
+
+  // ── 2. OPENER ROTATION (Constitution: ADAPT TO THE USER — never repeat the same opening back-to-back) ──
+  var OPENERS = ['Good question.', 'Interesting.', "Let's think about that.", 'Nice.', 'Happy to explain.', "Here's how I see it."];
+  var _lastOpenerIndex = -1;
+
+  function _rotateOpener(text) {
+    for (var i = 0; i < OPENERS.length; i++) {
+      var opener = OPENERS[i];
+      if (text.indexOf(opener) === 0 && i === _lastOpenerIndex) {
+        var nextIndex = (i + 1) % OPENERS.length;
+        var replaced = OPENERS[nextIndex] + text.slice(opener.length);
+        _lastOpenerIndex = nextIndex;
+        return replaced;
+      }
+      if (text.indexOf(opener) === 0) {
+        _lastOpenerIndex = i;
+        return text;
+      }
+    }
+    return text;
+  }
+
+  // ── 3. EMOJI DISCIPLINE (Constitution: EMOJIS — rarely, only when they help, no spam) ──
+  var ALLOWED_EMOJI = ['✅', '🛠️', '🛠', '🌌', '🔌'];
+  // Unicode property escape — matches any emoji/pictographic character.
+  // Falls back to a no-op matcher on engines without 'u'-flag property
+  // escape support (emoji simply pass through unfiltered in that case).
+  var EMOJI_RE;
+  try {
+    EMOJI_RE = new RegExp('\\p{Extended_Pictographic}', 'gu');
+  } catch (e) {
+    EMOJI_RE = /(?:)/g; // no-op fallback, never matches meaningfully
+  }
+
+  function _disciplineEmoji(text) {
+    var seenAllowed = false;
+    return text.replace(EMOJI_RE, function (match) {
+      if (ALLOWED_EMOJI.indexOf(match) !== -1 && !seenAllowed) {
+        seenAllowed = true;
+        return match;
+      }
+      return '';
+    }).replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+([.,!?])/g, '$1').replace(/[ \t]+(\n|$)/g, '$1').trim();
+  }
+
+  // ── 4. IDEMPOTENCY CACHE — small rolling window so re-filtering already-clean text is a no-op ──
+  var _seen = [];
+  var _SEEN_MAX = 24;
+  function _alreadyFiltered(text) {
+    return _seen.indexOf(text) !== -1;
+  }
+  function _remember(text) {
+    _seen.push(text);
+    if (_seen.length > _SEEN_MAX) _seen.shift();
+  }
+
+  // ── 5. THE FILTER ──
+  function applyVoiceConstitution(text) {
+    if (typeof text !== 'string' || !text) return text;
+    if (_alreadyFiltered(text)) return text;
+
+    var out = text;
+    for (var i = 0; i < PHRASE_MAP.length; i++) {
+      out = out.replace(PHRASE_MAP[i][0], PHRASE_MAP[i][1]);
+    }
+    out = _disciplineEmoji(out);
+    out = _rotateOpener(out);
+
+    _remember(out);
+    return out;
+  }
+
+  window.AtulVoiceConstitution = { apply: applyVoiceConstitution };
+
+  // ── 6. WRAP OUTPUT PRIMITIVES (the real interception point — every module funnels through these) ──
+
+  var _origSpeak = window.jarvisSpeak;
+  if (typeof _origSpeak === 'function' && !_origSpeak._voicePatched) {
+    window.jarvisSpeak = function voiceConstitutionSpeak(text) {
+      return _origSpeak.call(this, applyVoiceConstitution(text));
+    };
+    window.jarvisSpeak._voicePatched = true;
+  }
+
+  var _origDispatch = window.dispatchOutput;
+  if (typeof _origDispatch === 'function' && !_origDispatch._voicePatched) {
+    window.dispatchOutput = function voiceConstitutionDispatch(response) {
+      return _origDispatch.call(this, applyVoiceConstitution(response));
+    };
+    window.dispatchOutput._voicePatched = true;
+  }
+
+  var _origAppend = window.aiAppendMessage;
+  if (typeof _origAppend === 'function' && !_origAppend._voicePatched) {
+    window.aiAppendMessage = function voiceConstitutionAppend(role, text, animate) {
+      var isAI = (role === 'ai' || role === 'AI' || role === 'JARVIS');
+      return _origAppend.call(this, role, isAI ? applyVoiceConstitution(text) : text, animate);
+    };
+    window.aiAppendMessage._voicePatched = true;
+  }
+
+  // ── 7. WRAP _jarvisProcessInternal + executeCommand (return-value pass, carries all prior flags) ──
+
+  var _origJarvis = window._jarvisProcessInternal;
+  if (typeof _origJarvis === 'function' && !_origJarvis._voicePatched) {
+    window._jarvisProcessInternal = function voiceConstitutionJarvis(rawInput) {
+      var result = _origJarvis(rawInput);
+      return (typeof result === 'string') ? applyVoiceConstitution(result) : result;
+    };
+    window._jarvisProcessInternal._voicePatched          = true;
+    window._jarvisProcessInternal._atlasPatched          = (_origJarvis._atlasPatched          || false);
+    window._jarvisProcessInternal._confidencePatched     = (_origJarvis._confidencePatched     || false);
+    window._jarvisProcessInternal._dashboardPatched      = (_origJarvis._dashboardPatched      || false);
+    window._jarvisProcessInternal._expeditionPatched     = (_origJarvis._expeditionPatched     || false);
+    window._jarvisProcessInternal._friendsPatched        = (_origJarvis._friendsPatched        || false);
+    window._jarvisProcessInternal._futuresPatched        = (_origJarvis._futuresPatched        || false);
+    window._jarvisProcessInternal._helpPatched           = (_origJarvis._helpPatched           || false);
+    window._jarvisProcessInternal._knowledgePatched      = (_origJarvis._knowledgePatched      || false);
+    window._jarvisProcessInternal._mcePatched            = (_origJarvis._mcePatched            || false);
+    window._jarvisProcessInternal._milestonesPatched     = (_origJarvis._milestonesPatched     || false);
+    window._jarvisProcessInternal._missionCommandPatched = (_origJarvis._missionCommandPatched || false);
+    window._jarvisProcessInternal._nancyPatched          = (_origJarvis._nancyPatched          || false);
+    window._jarvisProcessInternal._personalityPatched    = (_origJarvis._personalityPatched    || false);
+    window._jarvisProcessInternal._sessionPatched        = (_origJarvis._sessionPatched        || false);
+    window._jarvisProcessInternal._simulPatched          = (_origJarvis._simulPatched          || false);
+    window._jarvisProcessInternal._smPatched             = (_origJarvis._smPatched             || false);
+  }
+
+  var _origExec = window.executeCommand;
+  if (typeof _origExec === 'function' && !_origExec._voicePatched) {
+    window.executeCommand = function voiceConstitutionExecuteCommand(rawInput) {
+      var result = _origExec(rawInput);
+      return (typeof result === 'string') ? applyVoiceConstitution(result) : result;
+    };
+    window.executeCommand._voicePatched          = true;
+    window.executeCommand._atlasPatched          = (_origExec._atlasPatched          || false);
+    window.executeCommand._confidencePatched     = (_origExec._confidencePatched     || false);
+    window.executeCommand._dashboardPatched      = (_origExec._dashboardPatched      || false);
+    window.executeCommand._expeditionPatched     = (_origExec._expeditionPatched     || false);
+    window.executeCommand._friendsPatched        = (_origExec._friendsPatched        || false);
+    window.executeCommand._futuresHelpPatched    = (_origExec._futuresHelpPatched    || false);
+    window.executeCommand._futuresPatched        = (_origExec._futuresPatched        || false);
+    window.executeCommand._helpPatched           = (_origExec._helpPatched           || false);
+    window.executeCommand._mceHelpPatched        = (_origExec._mceHelpPatched        || false);
+    window.executeCommand._mcePatched            = (_origExec._mcePatched            || false);
+    window.executeCommand._milestonesPatched     = (_origExec._milestonesPatched     || false);
+    window.executeCommand._missionCommandPatched = (_origExec._missionCommandPatched || false);
+    window.executeCommand._nancyPatched          = (_origExec._nancyPatched          || false);
+    window.executeCommand._personalityPatched    = (_origExec._personalityPatched    || false);
+    window.executeCommand._sessionPatched        = (_origExec._sessionPatched        || false);
+    window.executeCommand._simulPatched          = (_origExec._simulPatched          || false);
+    window.executeCommand._smPatched             = (_origExec._smPatched            || false);
+  }
+
+  console.log('[AtulOS 4.118] Voice Constitution Layer online. API: window.AtulVoiceConstitution.apply(text)');
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.118 — ATULAI VOICE CONSTITUTION LAYER
+════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE 4.119 — ATULOS CONVERSATIONAL MEMORY & CONTEXT ENGINE
+     Implements the "AtulAI Working Memory" spec.
+
+     WHAT THIS IS
+     Runtime-only conversational context — NOT long-term memory, NOT
+     a user profile, NOT persistent storage. A rolling window of the
+     last ~20 exchanges plus a small amount of derived state (current
+     topic, previous topic, conversation depth) that lets follow-up
+     questions ("Explain more.", "How does it work?", "Why?") resolve
+     against what was just discussed instead of falling back to a
+     generic "I didn't understand" response.
+
+     SAFEST ADDITIVE INTEGRATION POINT (inspected before writing this)
+     _jarvisProcessInternal is the single chat-answer choke point that
+     Modules 4.115–4.118 already wrap (Knowledge Pipeline, Cognitive
+     Narration, Voice Constitution). executeCommand is a SEPARATE,
+     parallel pipeline for device/terminal commands with its own
+     pronoun resolution (resolveContext / AI_MEMORY.lastDevice) and is
+     deliberately left untouched — this module only concerns itself
+     with the conversational/knowledge side, exactly the same scope
+     already established by 4.116/4.117. This module installs as the
+     outermost wrapper (script runs last in the file), so it always
+     sees the fully-processed legacy answer, and any answer it
+     produces directly is run back through Module 4.118's voice filter
+     so tone/emoji/opener rules still apply to it.
+
+     WHAT IT REUSES (no data or descriptions are duplicated here)
+       window.AtulKnowledge.buildContext(text) — topic detection
+       window.AtulKnowledge.getModule(id)      — depth-tiered module facts
+       window.AtulKnowledge.getRelationships   — "how do they connect" facts
+       window.AtulNarration.describeSelf(depth)— identity follow-ups
+       window.AtulNarration.pickDepth(text)    — depth inference on fresh topics
+       window.AtulVoiceConstitution.apply(text)— tone pass on direct answers
+
+     GUARDRAILS (per spec's DO NOT list)
+     - No AI generation — every direct answer is assembled from live
+       AtulKnowledge/AtulNarration data, never invented text.
+     - No persistent storage — everything lives in closures over
+       plain JS variables; nothing touches localStorage/sessionStorage/
+       IndexedDB, and clear() (or a full reload) wipes all of it.
+     - Device/IoT-shaped input ("turn it off", "switch on the fan")
+       is explicitly excluded up front and left entirely to the
+       existing AI_MEMORY / resolveContext pronoun system — this
+       module never resolves a pronoun that legacy already owns.
+     - Zero commands removed, zero precedence changes: this only ever
+       activates for inputs that would otherwise have produced a
+       fresh (non-follow-up) answer from the untouched chain, or that
+       the chain has no notion of at all ("go deeper", "simplify that").
+
+     Patch type: additive IIFE wrapping _jarvisProcessInternal only.
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  if (window._conversationMemoryEngineInstalled) return;
+  window._conversationMemoryEngineInstalled = true;
+
+  /* ───────────────────────────────────────────────────────────
+     STATE — pure runtime. Nothing here survives a reload, and
+     clear() resets every field below to its initial value.
+  ─────────────────────────────────────────────────────────── */
+  var MAX_HISTORY = 20;
+  var history = [];              // [{input, response, ts}] — rolling window
+  var currentTopic = null;       // {id, name, isIdentity}
+  var previousTopic = null;
+  var depth = 2;                 // 1 overview … 4 developer, mirrors AtulNarration's scale
+  var recentActions = [];        // last few raw inputs, for FUTURE HOOKS consumers
+
+  /* ───────────────────────────────────────────────────────────
+     DETECTION VOCABULARY
+  ─────────────────────────────────────────────────────────── */
+  // Mirrors Module 4.116's own LEGACY_IDENTITY_COLLISION_RE intentionally —
+  // same detection target, so "who this conversation is about" agrees with
+  // what the legacy chain itself already treats as an identity question.
+  var IDENTITY_RE = /(who are you|what are you|your name|introduce yourself|are you an ai|are you atulai|tell me about yourself)/i;
+
+  // Anything device/IoT-shaped defers entirely to the existing AI_MEMORY /
+  // resolveContext pronoun system — this module never touches it. Matches
+  // bare verbs too (not just "turn off" as an adjacent phrase) because
+  // pronoun commands split them: "turn it off", "switch it on".
+  var DEVICE_RE = /\b(light|fan|buzzer|turn|switch|enable|disable)\b/i;
+
+  var FOLLOWUP_LEADIN_RE = /^(explain (that|this|more)\b|tell me more\b|go deeper\b|go further\b|why\??$|how\??$|can you simplify(\s+(it|that))?\??$|what do you mean\??$|show (an )?example\b|give (me )?another (one|example)\b|compare (them|those|it)\b|summari[sz]e (that|it)\b|elaborate\b)/i;
+
+  var PRONOUN_RE = /\b(it|that|this|they|them|those)\b/i;
+  var FAVOURITE_RE = /\bfavo?urite\b/i;
+  var SIMPLE_RE = /\bsimplify|briefly|short|one line|one sentence\b/i;
+
+  /* ───────────────────────────────────────────────────────────
+     SMALL HELPERS
+  ─────────────────────────────────────────────────────────── */
+  function _joinNatural(arr) {
+    if (!arr || !arr.length) return '';
+    if (arr.length === 1) return String(arr[0]);
+    if (arr.length === 2) return arr[0] + ' and ' + arr[1];
+    return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
+  }
+
+  // Route any text this module produces itself back through Module 4.118's
+  // tone layer, so directly-synthesized answers still obey the Constitution
+  // (rewritten/delegated answers already pass through it naturally, since
+  // they flow through the untouched orig() chain which 4.118 also wraps).
+  function _voiced(text) {
+    if (window.AtulVoiceConstitution && typeof window.AtulVoiceConstitution.apply === 'function') {
+      return window.AtulVoiceConstitution.apply(text);
+    }
+    return text;
+  }
+
+  function _record(rawInput, result) {
+    history.push({ input: rawInput, response: result, ts: Date.now() });
+    if (history.length > MAX_HISTORY) history.shift();
+    recentActions.push(rawInput);
+    if (recentActions.length > 5) recentActions.shift();
+  }
+
+  function _bumpDepth() {
+    depth = Math.min(4, depth + 1);
+    return depth;
+  }
+
+  function _resetDepth(text) {
+    depth = (window.AtulNarration && typeof window.AtulNarration.pickDepth === 'function')
+      ? window.AtulNarration.pickDepth(text)
+      : 2;
+    return depth;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     TOPIC DETECTION — reuses AtulKnowledge's own fuzzy scorer via
+     buildContext(); duplicates no module data, just reads the
+     ranked result it already computes.
+  ─────────────────────────────────────────────────────────── */
+  function _detectTopic(rawInput) {
+    var trimmed = (rawInput || '').trim();
+    if (!trimmed) return null;
+    if (IDENTITY_RE.test(trimmed)) return { id: '__identity__', name: 'AtulAI', isIdentity: true };
+    if (window.AtulKnowledge && typeof window.AtulKnowledge.buildContext === 'function') {
+      try {
+        var ctx = window.AtulKnowledge.buildContext(trimmed);
+        if (ctx && ctx.relevantModules && ctx.relevantModules.length) {
+          var m = ctx.relevantModules[0];
+          return { id: m.id, name: m.name, isIdentity: false };
+        }
+      } catch (e) { /* fail closed — no topic detected */ }
+    }
+    return null;
+  }
+
+  function _isFollowUp(rawInput) {
+    var trimmed = (rawInput || '').trim();
+    if (!trimmed) return false;
+    if (DEVICE_RE.test(trimmed)) return false;
+    if (FOLLOWUP_LEADIN_RE.test(trimmed)) return true;
+    // Short pronoun-bearing questions are almost always follow-ups; longer
+    // ones naming their own subject are treated as fresh topics regardless
+    // of an incidental "it"/"that" inside them.
+    if (PRONOUN_RE.test(trimmed) && trimmed.split(/\s+/).length <= 8) return true;
+    return false;
+  }
+
+  function _substituteTopic(text, topicName) {
+    var replaced = false;
+    var out = text.replace(/\b(it|that|this|they|them|those)\b/i, function (m) {
+      if (replaced) return m;
+      replaced = true;
+      return 'the ' + topicName;
+    });
+    if (!replaced) {
+      out = out.replace(/\bits\b/i, function () {
+        replaced = true;
+        return topicName + "'s";
+      });
+    }
+    return out;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     DEPTH-TIERED MODULE DESCRIPTION — assembled purely from
+     window.AtulKnowledge.getModule()/getRelationships(); never
+     invents a fact that isn't already in the registry.
+  ─────────────────────────────────────────────────────────── */
+  function _describeModuleAtDepth(id, d) {
+    if (!window.AtulKnowledge || typeof window.AtulKnowledge.getModule !== 'function') return null;
+    var m = window.AtulKnowledge.getModule(id);
+    if (!m) return null;
+
+    var parts = [m.name + (m.description ? ' — ' + m.description : '.')];
+    if (d >= 2 && m.capabilities && m.capabilities.length) {
+      parts.push('It handles ' + _joinNatural(m.capabilities) + '.');
+    }
+    if (d >= 3 && m.actions && m.actions.length) {
+      parts.push('Available actions: ' + _joinNatural(m.actions) + '.');
+    }
+    if (d >= 3 && m.dependencies && m.dependencies.length) {
+      parts.push('It depends on ' + _joinNatural(m.dependencies) + '.');
+    }
+    if (d >= 4) {
+      parts.push('Current state: ' + m.state + ', health: ' + m.health + '.');
+      if (typeof window.AtulKnowledge.getRelationships === 'function') {
+        var rels = window.AtulKnowledge.getRelationships(id);
+        if (rels && rels.length) {
+          var relLines = rels.slice(0, 4).map(function (r) {
+            return r.subject + ' ' + r.relation + ' ' + r.object + '.';
+          });
+          parts.push(relLines.join(' '));
+        }
+      }
+    }
+    return parts.join(' ');
+  }
+
+  // Handles the Example-4 case ("Which of those is your favourite
+  // capability?") honestly, grounded in a real registered module rather
+  // than an invented preference.
+  function _favouriteAnswer() {
+    var pick = null;
+    if (window.AtulKnowledge && typeof window.AtulKnowledge.listModules === 'function') {
+      var ids = window.AtulKnowledge.listModules();
+      for (var i = 0; i < ids.length; i++) {
+        var m = window.AtulKnowledge.getModule(ids[i]);
+        if (m && m.category === 'ai-module') { pick = m; break; }
+      }
+    }
+    if (!pick) return "I don't really have favourites — I don't experience preference the way you do.";
+    return "I don't really have favourites, but " + pick.name + ' is probably the most representative of ' +
+      "how AtulOS is evolving, since it's one of the systems that shapes how I perceive and respond.";
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     REFERENCE RESOLUTION — the core of the module. Returns:
+       null                        → not a resolvable follow-up
+       { mode:'direct', text }     → final answer, return as-is
+       { mode:'rewrite', text }    → pronoun-substituted input;
+                                      caller passes this to orig()
+  ─────────────────────────────────────────────────────────── */
+  function resolveReference(rawInput) {
+    var trimmed = (rawInput || '').trim();
+    if (!trimmed) return null;
+    if (!_isFollowUp(trimmed)) return null;
+    if (!currentTopic) return null;
+
+    if (FAVOURITE_RE.test(trimmed)) {
+      return { mode: 'direct', text: _voiced(_favouriteAnswer()) };
+    }
+
+    var wantsSimple = SIMPLE_RE.test(trimmed);
+
+    // Identity follow-ups are fully self-contained via AtulNarration
+    // (which already accepts a numeric depth) — always answered directly,
+    // pronoun or not, since the legacy chain has no notion of "go deeper".
+    if (currentTopic.isIdentity) {
+      depth = wantsSimple ? 1 : _bumpDepth();
+      if (window.AtulNarration && typeof window.AtulNarration.describeSelf === 'function') {
+        var selfText = window.AtulNarration.describeSelf(depth);
+        if (selfText) return { mode: 'direct', text: _voiced(selfText) };
+      }
+      return null;
+    }
+
+    // Module topic + explicit pronoun → rewrite and hand back to the
+    // existing chain (4.116's knowledge pipeline already answers
+    // "tell me about X" / "how does X work" style questions).
+    if (PRONOUN_RE.test(trimmed)) {
+      _bumpDepth();
+      return { mode: 'rewrite', text: _substituteTopic(trimmed, currentTopic.name) };
+    }
+
+    // Bare depth request on a module topic ("go deeper", "explain more",
+    // "simplify") — no pronoun to substitute, so answer directly from the
+    // registry at the new depth.
+    depth = wantsSimple ? 1 : _bumpDepth();
+    var directDesc = _describeModuleAtDepth(currentTopic.id, depth);
+    if (directDesc) return { mode: 'direct', text: _voiced(directDesc) };
+    return null;
+  }
+
+  /* ───────────────────────────────────────────────────────────
+     PUBLIC API — window.AtulConversation
+  ─────────────────────────────────────────────────────────── */
+  window.AtulConversation = {
+    remember: function (input, response) { _record(input, response); },
+    recall: function (n) {
+      var count = (typeof n === 'number' && n > 0) ? n : history.length;
+      return history.slice(-count);
+    },
+    getCurrentTopic: function () {
+      return currentTopic ? { id: currentTopic.id, name: currentTopic.name, isIdentity: !!currentTopic.isIdentity } : null;
+    },
+    getPreviousTopic: function () {
+      return previousTopic ? { id: previousTopic.id, name: previousTopic.name, isIdentity: !!previousTopic.isIdentity } : null;
+    },
+    getHistory: function () { return history.slice(); },
+    clear: function () {
+      history = [];
+      currentTopic = null;
+      previousTopic = null;
+      depth = 2;
+      recentActions = [];
+    },
+    setDepth: function (n) { if (typeof n === 'number' && n >= 1 && n <= 4) depth = n; },
+    getDepth: function () { return depth; },
+    resolveReference: function (text) {
+      var ref = resolveReference(text);
+      return ref ? { mode: ref.mode, text: ref.text } : null;
+    },
+    // FUTURE HOOKS — architecture only, dormant, mirrors the same
+    // pattern already established by window.AtulKnowledge.hooks.
+    hooks: {
+      voiceConversation:       { enabled: false, register: function () {} },
+      missionConversation:     { enabled: false, register: function () {} },
+      iotConversation:         { enabled: false, register: function () {} },
+      developerConversation:   { enabled: false, register: function () {} },
+      friendConversation:      { enabled: false, register: function () {} },
+      nancyStudioConversation: { enabled: false, register: function () {} }
+    }
+  };
+
+  /* ───────────────────────────────────────────────────────────
+     INTEGRATION WRAPPER — installed as the outermost link in the
+     _jarvisProcessInternal chain (this script runs last). Every
+     prior wrapper (confidence / help / session / personality /
+     nancy / friends / dashboard / milestones / sm / knowledge /
+     voice-constitution) still runs first via the captured `orig`
+     chain for any input this module doesn't resolve.
+  ─────────────────────────────────────────────────────────── */
+  var _attempts = 0;
+  function installPatch() {
+    var orig = window._jarvisProcessInternal;
+    if (typeof orig !== 'function') {
+      if (_attempts++ < 30) setTimeout(installPatch, 150);
+      return;
+    }
+    if (orig._conversationPatched) return;
+
+    window._jarvisProcessInternal = function conversationAwareJarvis(rawInput) {
+      var trimmed = (rawInput || '').trim();
+      if (!trimmed) return orig(rawInput);
+
+      var ref = resolveReference(trimmed);
+      var result;
+
+      if (ref && ref.mode === 'direct') {
+        result = ref.text;
+      } else if (ref && ref.mode === 'rewrite') {
+        result = orig(ref.text);
+      } else {
+        result = orig(rawInput);
+        // Fresh (non-follow-up) turn — see if it introduced a new topic.
+        var detected = _detectTopic(trimmed);
+        if (detected && (!currentTopic || detected.id !== currentTopic.id)) {
+          previousTopic = currentTopic;
+          currentTopic = detected;
+          _resetDepth(trimmed);
+        }
+      }
+
+      _record(rawInput, result);
+      return result;
+    };
+
+    // Carry forward every guard flag already on the chain, plus our own —
+    // same mechanism Module 4.116 uses.
+    for (var k in orig) {
+      if (Object.prototype.hasOwnProperty.call(orig, k) && /Patched$/.test(k)) {
+        window._jarvisProcessInternal[k] = orig[k];
+      }
+    }
+    window._jarvisProcessInternal._conversationPatched = true;
+
+    console.log('[AtulOS 4.119] Conversational Memory & Context Engine online. API: window.AtulConversation');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(installPatch, 250); });
+  } else {
+    setTimeout(installPatch, 250);
+  }
+})();
+</script>
+<!-- ══════════════════════════════════════════════════════════════
+     END MODULE 4.119 — ATULOS CONVERSATIONAL MEMORY & CONTEXT ENGINE
+════════════════════════════════════════════════════════════════ -->
 
 
 </body>
